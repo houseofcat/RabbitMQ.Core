@@ -362,11 +362,7 @@ namespace RabbitMQ.Client.Framing.Impl
                         {
                             try
                             {
-#if NETFX_CORE
-                                System.Threading.Tasks.Task.Delay(m_factory.NetworkRecoveryInterval).Wait();
-#else
                                 Thread.Sleep(m_factory.NetworkRecoveryInterval);
-#endif
                                 self.PerformAutomaticRecovery();
                             }
                             finally
@@ -830,11 +826,7 @@ namespace RabbitMQ.Client.Framing.Impl
                         }
                     }
 
-#if NETFX_CORE
-                    System.Threading.Tasks.Task.Delay(m_factory.NetworkRecoveryInterval).Wait();
-#else
                     Thread.Sleep(m_factory.NetworkRecoveryInterval);
-#endif
                 }
             }
 

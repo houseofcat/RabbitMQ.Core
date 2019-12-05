@@ -1,5 +1,3 @@
-#if !NETFX_CORE
-
 using System;
 using System.IO;
 using System.Net.Security;
@@ -65,4 +63,3 @@ namespace RabbitMQ.Client
         }
     }
 }
-#endif

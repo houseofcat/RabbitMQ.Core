@@ -11,13 +11,11 @@ namespace RabbitMQ.Util
     ///</remarks>
     public static class DebugUtil
     {
-#if !(NETFX_CORE)
         ///<summary>Print a hex dump of the supplied bytes to stdout.</summary>
         public static void Dump(byte[] bytes)
         {
             Dump(bytes, Console.Out);
         }
-#endif
 
         ///<summary>Print a hex dump of the supplied bytes to the supplied TextWriter.</summary>
         public static void Dump(byte[] bytes, TextWriter writer)
@@ -110,13 +108,8 @@ namespace RabbitMQ.Util
             {
                 Type t = value.GetType();
                 writer.WriteLine(t.FullName);
-#if !(NETFX_CORE)
-                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance
-                                                            | BindingFlags.Public
-                                                            | BindingFlags.DeclaredOnly))
-#else
-                foreach (PropertyInfo pi in t.GetRuntimeProperties())
-#endif
+
+                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
                     if (pi.GetIndexParameters().Length == 0)
                     {

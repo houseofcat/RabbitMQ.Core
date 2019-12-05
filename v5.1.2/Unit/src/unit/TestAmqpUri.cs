@@ -168,11 +168,7 @@ namespace RabbitMQ.Client.Unit
         }
         public static bool IsRunningOnMono()
         {
-            #if CORECLR
-            return false;
-            #else
             return Type.GetType("Mono.Runtime") != null;
-            #endif
         }
     }
 }

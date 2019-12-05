@@ -260,12 +260,10 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public AmqpTcpEndpoint[] KnownHosts { get; set; }
 
-#if !NETFX_CORE
         public EndPoint LocalEndPoint
         {
             get { return m_frameHandler.LocalEndPoint; }
         }
-#endif
 
         public int LocalPort
         {
@@ -279,12 +277,10 @@ namespace RabbitMQ.Client.Framing.Impl
             get { return (ProtocolBase)Endpoint.Protocol; }
         }
 
-#if !NETFX_CORE
         public EndPoint RemoteEndPoint
         {
             get { return m_frameHandler.RemoteEndPoint; }
         }
-#endif
 
         public int RemotePort
         {
@@ -394,12 +390,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 }
             }
 
-#if NETFX_CORE
             var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout));
-#else
-            var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout));
-#endif
-
             if (!receivedSignal)
             {
                 m_frameHandler.Close();
@@ -484,22 +475,10 @@ namespace RabbitMQ.Client.Framing.Impl
             m_model0.FinishClose();
         }
 
-#if NETFX_CORE
-
-        /// <remarks>
-        /// We need to close the socket, otherwise suspending the application will take the maximum time allowed
-        /// </remarks>
-        public void HandleApplicationSuspend(object sender, SuspendingEventArgs suspendingEventArgs)
-        {
-            Abort(Constants.InternalError, "Application Suspend");
-        }
-
-#else
         public void HandleDomainUnload(object sender, EventArgs ea)
         {
             Abort(Constants.InternalError, "Domain Unload");
         }
-#endif
 
         public void HandleMainLoopException(ShutdownEventArgs reason)
         {
@@ -596,7 +575,6 @@ namespace RabbitMQ.Client.Framing.Impl
                 {
                     shutdownCleanly = HardProtocolExceptionHandler(hpe);
                 }
-#if !NETFX_CORE
                 catch (Exception ex)
                 {
                     HandleMainLoopException(new ShutdownEventArgs(ShutdownInitiator.Library,
@@ -604,40 +582,21 @@ namespace RabbitMQ.Client.Framing.Impl
                         "Unexpected Exception",
                         ex));
                 }
-#endif
 
                 // If allowed for clean shutdown, run main loop until the
                 // connection closes.
                 if (shutdownCleanly)
                 {
-#pragma warning disable 0168
                     try
                     {
                         ClosingLoop();
                     }
-#if NETFX_CORE
-                    catch (Exception ex)
-                    {
-                        if (SocketError.GetStatus(ex.HResult) != SocketErrorStatus.Unknown)
-                        {
-                            // means that socket was closed when frame handler
-                            // attempted to use it. Since we are shutting down,
-                            // ignore it.
-                        }
-                        else
-                        {
-                            throw ex;
-                        }
-                    }
-#else
-                    catch (SocketException se)
+                    catch (SocketException)
                     {
                         // means that socket was closed when frame handler
                         // attempted to use it. Since we are shutting down,
                         // ignore it.
                     }
-#endif
-#pragma warning restore 0168
                 }
 
                 FinishClose();
@@ -928,20 +887,7 @@ namespace RabbitMQ.Client.Framing.Impl
             {
                 m_hasDisposedHeartBeatReadTimer = false;
                 m_hasDisposedHeartBeatWriteTimer = false;
-#if NETFX_CORE
-                lock(_heartBeatWriteLock)
-                {
-                    _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback);
-                    _heartbeatWriteTimer.Change(200, Timeout.Infinite);
-                }
 
-                lock (_heartBeatReadLock)
-                {
-                    _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback);
-
-                    _heartbeatReadTimer.Change(300, Timeout.Infinite);
-                }
-#else
                 lock (_heartBeatWriteLock)
                 {
                     _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
@@ -955,7 +901,6 @@ namespace RabbitMQ.Client.Framing.Impl
 
                     _heartbeatReadTimer.Change(300, Timeout.Infinite);
                 }
-#endif
             }
         }
 
@@ -963,16 +908,12 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             var taskName = "AMQP Connection " + Endpoint;
 
-#if NETFX_CORE
-            Task.Factory.StartNew(this.MainLoop, TaskCreationOptions.LongRunning);
-#else
             var mainLoopThread = new Thread(MainLoop)
             {
                 Name = taskName,
                 IsBackground = useBackgroundThread
             };
             mainLoopThread.Start();
-#endif
         }
 
         public void HeartbeatReadTimerCallback(object state)

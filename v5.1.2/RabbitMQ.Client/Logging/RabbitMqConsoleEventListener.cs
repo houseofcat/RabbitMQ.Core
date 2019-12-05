@@ -2,11 +2,7 @@ namespace RabbitMQ.Client.Logging
 {
     using System;
     using System.Collections.Generic;
-#if NET451
-    using Microsoft.Diagnostics.Tracing;
-#else
     using System.Diagnostics.Tracing;
-#endif
 
     public sealed class RabbitMqConsoleEventListener : EventListener, IDisposable
     {
@@ -22,11 +18,11 @@ namespace RabbitMQ.Client.Logging
                 if (pl is IDictionary<string, object> dict)
                 {
                     var rex = new RabbitMqExceptionDetail(dict);
-                    Console.WriteLine("{0}: {1}", eventData.Level, rex.ToString());
+                    Console.WriteLine($"{0}: {1}", eventData.Level, rex.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("{0}: {1}", eventData.Level, pl.ToString());
+                    Console.WriteLine($"{0}: {1}", eventData.Level, pl.ToString());
                 }
             }
         }

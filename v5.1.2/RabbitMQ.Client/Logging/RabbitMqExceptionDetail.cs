@@ -2,11 +2,7 @@ namespace RabbitMQ.Client.Logging
 {
     using System;
     using System.Collections.Generic;
-#if NET451
-    using Microsoft.Diagnostics.Tracing;
-#else
     using System.Diagnostics.Tracing;
-#endif
 
     [EventData]
     public class RabbitMqExceptionDetail

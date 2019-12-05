@@ -1,11 +1,7 @@
 namespace RabbitMQ.Client.Logging
 {
     using System;
-#if NET451
-    using Microsoft.Diagnostics.Tracing;
-#else
     using System.Diagnostics.Tracing;
-#endif
 
     [EventSource(Name = "rabbitmq-dotnet-client")]
     public sealed class RabbitMqClientEventSource : EventSource
