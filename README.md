@@ -1,6 +1,9 @@
 # RabbitMQ.Core  
  The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x  
  
+#### NetCore (3.0, 3.1)
+[![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/) [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)
+ 
 ### What version is it based on?  
 v5.1.2
 
