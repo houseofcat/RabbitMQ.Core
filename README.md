@@ -1,7 +1,7 @@
 # RabbitMQ.Core  
  The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x  
  
-#### NetCore (3.0, 3.1)
+#### NetCore (2.2, 3.0, 3.1)
 [![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/) [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)
  
 ### What is the library based on?  
@@ -21,28 +21,28 @@ Isolated sections will also included new SLNs/Projs/CodeGens/NuGets per major ve
 The goal is to modernize, modernize, modernize, while trying to use that same namespace so it can be a drop in replacement.   
 
 ### What's different?  
- * Targets NetCoreApp3.0 + 3.1.  
- * Built in C# 8.0.  
+ * Targets NetCoreApp2.2, 3.0, 3.1.  
+ * Builds with C# 8.0/VS2019.  
  * Various code semantic simplifications made.  
    * Most have been available since C# 6.1+   
- * Roslynator recommendations.   
- * Deleted [Obsolete] or [Deprecated] where it made sense.   
- 
- ### How To Build  
+ * Roslynator recommendations.  
+ * Deleted [Obsolete] or [Deprecated] where it made sense.  
+
+### How To Build  
  * Open Solution/Folder build.
  
- **Alternatively Run CodeGen**  
+**Alternatively Run CodeGen**  
  * Before opening solution/project/folder, try running build first for your system.  
  * Run the specific ***.bat*** file for your version.  
  * You should be good to go after that (with a clean AMQP API generation file inside of RabbitMQ.Client folder).  
  
- ### Linux Support?
+### Linux Support?
  ***Shrugs*** It should?  
  It does compile for Ubunutu... give it a shot and let me know!  
  
 `dotnet build --runtime ubuntu.19.04-x64`
  
- ### Pivotal's License
+### Pivotal's License
  
 ```
 // This source code is dual-licensed under the Apache License, version
