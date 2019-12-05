@@ -1,5 +1,5 @@
 # RabbitMQ.Core
- The Unofficial Port of the Official RabbitMQ.Client To Pure NetCore 3.x
+ The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x
  
 ### What version is it based on?
 v5.1.2. 
