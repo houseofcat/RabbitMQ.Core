@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apigen", "Apigen\Apigen.csproj", "{48BB5307-C756-487A-BA6C-CA94EDB78255}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apigen", "v5.1.2\Apigen\Apigen.csproj", "{48BB5307-C756-487A-BA6C-CA94EDB78255}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApigenBootstrap", "ApigenBootstrap\ApigenBootstrap.csproj", "{4ED17DF4-B36B-4E3E-AE72-D823C0FCE41C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApigenBootstrap", "v5.1.2\ApigenBootstrap\ApigenBootstrap.csproj", "{4ED17DF4-B36B-4E3E-AE72-D823C0FCE41C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Client", "RabbitMQ.Client\RabbitMQ.Client.csproj", "{4AB577AB-298C-4D06-88C5-67E9E883D4E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Client", "v5.1.2\RabbitMQ.Client\RabbitMQ.Client.csproj", "{4AB577AB-298C-4D06-88C5-67E9E883D4E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unit", "Unit\Unit.csproj", "{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unit", "v5.1.2\Unit\Unit.csproj", "{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>ApigenBootstrap</AssemblyName>
+    <PackageId>ApigenBootstrap</PackageId>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\RabbitMQ.Client\client\api\AmqpTimestamp.cs;..\RabbitMQ.Client\client\api\Interfaces\IBasicConsumer.cs;..\RabbitMQ.Client\client\api\Interfaces\IBasicProperties.cs;..\RabbitMQ.Client\client\api\Interfaces\IContentHeader.cs;..\RabbitMQ.Client\client\api\Interfaces\IModel.cs;..\RabbitMQ.Client\client\api\PublicationAddress.cs;..\RabbitMQ.Client\client\api\Interfaces\IBasicPublishBatch.cs;..\RabbitMQ.Client\client\api\BasicGetResult.cs;..\RabbitMQ.Client\client\api\QueueDeclareOk.cs;..\RabbitMQ.Client\client\api\ShutdownEventArgs.cs;..\RabbitMQ.Client\client\api\ShutdownInitiator.cs;..\RabbitMQ.Client\client\events\BasicReturnEventArgs.cs;..\RabbitMQ.Client\client\events\BasicAckEventArgs.cs;..\RabbitMQ.Client\client\events\BasicNackEventArgs.cs;..\RabbitMQ.Client\client\events\CallbackExceptionEventArgs.cs;..\RabbitMQ.Client\client\events\ConsumerEventArgs.cs;..\RabbitMQ.Client\client\events\FlowControlEventArgs.cs;..\RabbitMQ.Client\client\impl\Interfaces\IFullModel.cs" />
+  </ItemGroup>
+
+</Project>
