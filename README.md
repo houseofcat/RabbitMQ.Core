@@ -17,7 +17,8 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
 ### What's different?
  * Targets NetCoreApp3.0 + 3.1.  
  * Built in C# 8.0.  
- * Various code semantic simplifications that have been available since C# 6.1+  
+ * Various code semantic simplifications made.
+   * Most have been available since C# 6.1+  
  * Roslynator recommendations.  
  * Deleted [Obsolete] or [Deprecated] where it made sense.  
  
@@ -34,7 +35,7 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
  
  ### Pivotal's License
  
-```csharp
+```
 // This source code is dual-licensed under the Apache License, version
 // 2.0, and the Mozilla Public License, version 1.1.
 //
