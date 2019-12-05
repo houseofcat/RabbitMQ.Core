@@ -21,6 +21,17 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
  * Roslynator recommendations.  
  * Deleted [Obsolete] or [Deprecated] where it made sense.  
  
+ ### How To Build
+ * Before opening solution/project/folder, try running build first for your system.
+ * Run the specific ***.bat*** file for your version.
+ * You should be good to go after than.
+ 
+ ### Linux Support?
+ ***Shrugs*** It should?  
+ It does compile for Ubunutu... give it a shot and let me know!  
+ 
+`dotnet build --runtime ubuntu.19.04-x64`
+ 
  ### Pivotal's License
  
 ```csharp
