@@ -1,31 +1,31 @@
-# RabbitMQ.Core
- The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x
+# RabbitMQ.Core  
+ The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x  
  
-### What version is it based on?
-v5.1.2. 
+### What version is it based on?  
+v5.1.2.  
 
 ### Why this version?
-It's pretty hardened. It's got a lot of room for improvement memory allocation wise - but high performance can be maintained through it and it has stood the test of time. Pivotal's Client team has been working v6.x.x for over a year now. At this time though, 6.0.0 is not close to ready and I don't see them jumping straight into NetCore 3.x either way.
+It's pretty hardened. It's got a lot of room for improvement memory allocation wise - but high performance can be maintained through it and it has stood the test of time.  
 
-### Why not v6.0.0?
-I will convert v6.x.x too after its been released (and vetted). The source control will be individually maintained in isolation. It should be super simple and straightforward to see which code you need to look at without jumping through hoops.
+### Why not v6.0.0?  
+ Pivotal's Client team has been working v6.x.x for over a year now. At this time though, 6.0.0 is not close to ready and I don't see them jumping straight into NetCore 3.x either way. I ***will*** add a convert for v6.x.x too, but after it has been properly released (and vetted). The source control will be individually maintained in isolation. It should be super simple and straightforward to see which code you need to look at without jumping through hoops.  
 
-### Versioning Strategy
-Isolated sections will also included new SLNs/Projs/CodeGens/NuGets per major version ported.  
-The goal is to modernize, modernize, modernize, while trying to use that same namespace so it can be a drop in replacement.
+### Versioning Strategy  
+Isolated sections will also included new SLNs/Projs/CodeGens/NuGets per major version ported.    
+The goal is to modernize, modernize, modernize, while trying to use that same namespace so it can be a drop in replacement.   
 
-### What's different?
+### What's different?  
  * Targets NetCoreApp3.0 + 3.1.  
  * Built in C# 8.0.  
- * Various code semantic simplifications made.
-   * Most have been available since C# 6.1+  
- * Roslynator recommendations.  
- * Deleted [Obsolete] or [Deprecated] where it made sense.  
+ * Various code semantic simplifications made.  
+   * Most have been available since C# 6.1+   
+ * Roslynator recommendations.   
+ * Deleted [Obsolete] or [Deprecated] where it made sense.   
  
- ### How To Build
- * Before opening solution/project/folder, try running build first for your system.
- * Run the specific ***.bat*** file for your version.
- * You should be good to go after than.
+ ### How To Build  
+ * Before opening solution/project/folder, try running build first for your system.  
+ * Run the specific ***.bat*** file for your version.  
+ * You should be good to go after than.  
  
  ### Linux Support?
  ***Shrugs*** It should?  
