@@ -4,8 +4,8 @@
 #### NetCore (3.0, 3.1)
 [![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/) [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)
  
-### What version is it based on?  
-v5.1.2
+### What is the library based on?  
+Pivotal's RabbitMQ DotNet Client v5.1.2
 
 Specifically branch `5.x` from `12/4/2019`.  
 Specific Commit: https://github.com/rabbitmq/rabbitmq-dotnet-client/commit/ddbea177be2cbb5834df35992f6abbcd9263571d
