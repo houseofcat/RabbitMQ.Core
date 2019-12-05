@@ -4,8 +4,8 @@
 ### What version is it based on?  
 v5.1.2
 
-Specifically branch 5.x from 12/4/2019.  
-Commit: https://github.com/rabbitmq/rabbitmq-dotnet-client/commit/ddbea177be2cbb5834df35992f6abbcd9263571d
+Specifically branch `5.x` from `12/4/2019`.  
+Specific Commit: https://github.com/rabbitmq/rabbitmq-dotnet-client/commit/ddbea177be2cbb5834df35992f6abbcd9263571d
 
 ### Why this version?
 It's pretty hardened. It's got a lot of room for improvement memory allocation wise - but high performance can be maintained through it and it has stood the test of time.  
