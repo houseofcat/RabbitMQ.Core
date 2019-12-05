@@ -11,7 +11,7 @@ Specific Commit: https://github.com/rabbitmq/rabbitmq-dotnet-client/commit/ddbea
 It's pretty hardened. It's got a lot of room for improvement memory allocation wise - but high performance can be maintained through it and it has stood the test of time.  
 
 ### Why not v6.0.0?  
- Pivotal's Client team has been working v6.x.x for over a year now. At this time though, 6.0.0 is not close to ready and I don't see them jumping straight into NetCore 3.x either way. I ***will*** add a convert for v6.x.x too, but after it has been properly released (and vetted). The source control will be individually maintained in isolation. It should be super simple and straightforward to see which code you need to look at without jumping through hoops.  
+ Pivotal's Client team has been working v6.x.x for over a year now (as of 12/5/2019). At this time, 6.0.0 is not close to ready and I don't see them jumping straight into NetCore 3.x either way. I ***will*** add a convert for v6.x.x too, but after it has been properly released (and vetted). The source control will be individually maintained in isolation. It should be super simple and straightforward to see which code you need to look at without jumping through hoops.  
 
 ### Versioning Strategy  
 Isolated sections will also included new SLNs/Projs/CodeGens/NuGets per major version ported.    
