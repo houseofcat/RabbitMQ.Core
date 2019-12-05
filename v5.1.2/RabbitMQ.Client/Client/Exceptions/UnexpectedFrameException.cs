@@ -1,6 +1,7 @@
 using RabbitMQ.Client.Framing;
+using RabbitMQ.Client.Impl;
 
-namespace RabbitMQ.Client.Impl
+namespace RabbitMQ.Client.Exceptions
 {
     /// <summary>
     /// Thrown when the connection receives a frame that it wasn't expecting.

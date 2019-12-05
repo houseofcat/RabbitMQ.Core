@@ -48,13 +48,8 @@ namespace RabbitMQ.Client.Impl
                 // at the point the following statement executes.
                 m_bitAccumulator = (byte)(m_bitAccumulator | (byte)m_bitMask);
             }
-            m_bitMask = m_bitMask << 1;
+            m_bitMask <<= 1;
             m_needBitFlush = true;
-        }
-
-        public void WriteContent(byte[] val)
-        {
-            throw new NotSupportedException("WriteContent should not be called");
         }
 
         public void WriteLong(uint val)

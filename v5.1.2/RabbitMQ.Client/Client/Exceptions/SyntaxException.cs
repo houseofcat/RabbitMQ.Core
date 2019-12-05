@@ -1,21 +1,21 @@
 using RabbitMQ.Client.Framing;
 using System;
 
-namespace RabbitMQ.Client.Impl
+namespace RabbitMQ.Client.Exceptions
 {
     /// <summary> Thrown when our peer sends a frame that contains
     /// illegal values for one or more fields. </summary>
-    public class SyntaxError : HardProtocolException
+    public class SyntaxException : HardProtocolException
     {
-        public SyntaxError(string message) : base(message)
+        public SyntaxException(string message) : base(message)
         {
         }
 
-        protected SyntaxError()
+        protected SyntaxException()
         {
         }
 
-        protected SyntaxError(string message, Exception innerException) : base(message, innerException)
+        protected SyntaxException(string message, Exception innerException) : base(message, innerException)
         {
         }
 

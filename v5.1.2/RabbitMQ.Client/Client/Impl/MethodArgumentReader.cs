@@ -26,7 +26,7 @@ namespace RabbitMQ.Client.Impl
             }
 
             bool result = (m_bits & m_bit) != 0;
-            m_bit = m_bit << 1;
+            m_bit <<= 1;
             return result;
         }
 

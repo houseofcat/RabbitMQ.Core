@@ -16,8 +16,8 @@ namespace RabbitMQ.Util
     public class BlockingCell
     {
         private readonly object _lock = new object();
-        private object m_value = null;
-        private bool m_valueSet = false;
+        private object m_value;
+        private bool m_valueSet;
 
         ///<summary>Retrieve the cell's value, blocking if none exists
         ///at present, or supply a value to an empty cell, thereby

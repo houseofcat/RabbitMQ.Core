@@ -63,7 +63,7 @@ namespace RabbitMQ.Util
         {
             if (queue.Count == 0)
             {
-                return default(T);
+                return default;
             }
             T item = queue.First.Value;
             queue.RemoveFirst();

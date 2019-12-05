@@ -1,7 +1,6 @@
-using RabbitMQ.Client.Exceptions;
 using System;
 
-namespace RabbitMQ.Client.Impl
+namespace RabbitMQ.Client.Exceptions
 {
     /// <summary> Instances of subclasses of subclasses
     /// HardProtocolException and SoftProtocolException are thrown in

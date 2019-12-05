@@ -55,7 +55,6 @@ namespace RabbitMQ.Util
     {
     }
 
-
     ///<summary>A thread-safe shared queue implementation.</summary>
     public class SharedQueue<T> : IEnumerable<T>
     {
@@ -201,7 +200,7 @@ namespace RabbitMQ.Util
                     int remainingTime = millisecondsTimeout - elapsedTime;
                     if (remainingTime <= 0)
                     {
-                        result = default(T);
+                        result = default;
                         return false;
                     }
 
@@ -308,7 +307,6 @@ namespace RabbitMQ.Util
         }
     }
 
-
     ///<summary>Implementation of the IEnumerator interface, for
     ///permitting SharedQueue to be used in foreach loops.</summary>
     public struct SharedQueueEnumerator<T> : IEnumerator<T>
@@ -321,7 +319,7 @@ namespace RabbitMQ.Util
         public SharedQueueEnumerator(SharedQueue<T> queue)
         {
             m_queue = queue;
-            m_current = default(T);
+            m_current = default;
         }
 
         object IEnumerator.Current
@@ -361,7 +359,7 @@ namespace RabbitMQ.Util
             }
             catch (EndOfStreamException)
             {
-                m_current = default(T);
+                m_current = default;
                 return false;
             }
         }

@@ -14,7 +14,7 @@ namespace RabbitMQ.Client
                 try
                 {
                     t = selector(ep);
-                    if (t.Equals(default(T)) == false)
+                    if (!t.Equals(default(T)))
                     {
                         return t;
                     }
@@ -25,7 +25,7 @@ namespace RabbitMQ.Client
                 }
             }
 
-            if (Object.Equals(t, default(T)) && exceptions.Count > 0)
+            if (object.Equals(t, default(T)) && exceptions.Count > 0)
             {
                 throw new AggregateException(exceptions);
             }

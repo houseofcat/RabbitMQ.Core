@@ -16,7 +16,7 @@ namespace RabbitMQ.Client
             // two step approach is taken, as TryGetValue does not aquire locks
             // if this fails, GetOrAdd is called, which takes a lock
 
-            if (workPools.TryGetValue(model, out WorkPool workPool) == false)
+            if (!workPools.TryGetValue(model, out WorkPool workPool))
             {
                 var newWorkPool = new WorkPool(model);
                 workPool = workPools.GetOrAdd(model, newWorkPool);
@@ -78,7 +78,7 @@ namespace RabbitMQ.Client
 
             private async Task Loop()
             {
-                while (tokenSource.IsCancellationRequested == false)
+                while (!tokenSource.IsCancellationRequested)
                 {
                     while (workQueue.TryDequeue(out Work work))
                     {

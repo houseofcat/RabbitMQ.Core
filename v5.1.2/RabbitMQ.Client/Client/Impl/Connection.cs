@@ -5,21 +5,11 @@ using RabbitMQ.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
-
-#if NETFX_CORE
-
-using System.Threading.Tasks;
-using Windows.Networking.Sockets;
-using Windows.ApplicationModel;
-
-#else
 using System.Net;
 using System.Net.Sockets;
-#endif
-
+using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Reflection;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
@@ -35,10 +25,8 @@ namespace RabbitMQ.Client.Framing.Impl
         private EventHandler<EventArgs> m_recoverySucceeded;
         private EventHandler<ConnectionRecoveryErrorEventArgs> connectionRecoveryFailure;
 
-        private IDictionary<string, object> m_clientProperties;
-
-        private volatile ShutdownEventArgs m_closeReason = null;
-        private volatile bool m_closed = false;
+        private volatile ShutdownEventArgs m_closeReason;
+        private volatile bool m_closed;
 
         private EventHandler<ConnectionBlockedEventArgs> m_connectionBlocked;
         private EventHandler<ShutdownEventArgs> m_connectionShutdown;
@@ -59,7 +47,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         private ushort m_heartbeat = 0;
         private TimeSpan m_heartbeatTimeSpan = TimeSpan.FromSeconds(0);
-        private int m_missedHeartbeats = 0;
+        private int m_missedHeartbeats;
 
         private Timer _heartbeatWriteTimer;
         private Timer _heartbeatReadTimer;
@@ -238,11 +226,7 @@ namespace RabbitMQ.Client.Framing.Impl
             get { return m_sessionManager.ChannelMax; }
         }
 
-        public IDictionary<string, object> ClientProperties
-        {
-            get { return m_clientProperties; }
-            set { m_clientProperties = value; }
-        }
+        public IDictionary<string, object> ClientProperties { get; set; }
 
         public ShutdownEventArgs CloseReason
         {
@@ -319,13 +303,15 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public static IDictionary<string, object> DefaultClientProperties()
         {
-            IDictionary<string, object> table = new Dictionary<string, object>();
-            table["product"] = Encoding.UTF8.GetBytes("RabbitMQ");
-            table["version"] = Encoding.UTF8.GetBytes(version);
-            table["platform"] = Encoding.UTF8.GetBytes(".NET");
-            table["copyright"] = Encoding.UTF8.GetBytes("Copyright (c) 2007-2016 Pivotal Software, Inc.");
-            table["information"] = Encoding.UTF8.GetBytes("Licensed under the MPL.  " +
-                                                          "See http://www.rabbitmq.com/");
+            IDictionary<string, object> table = new Dictionary<string, object>
+            {
+                ["product"] = Encoding.UTF8.GetBytes("RabbitMQ"),
+                ["version"] = Encoding.UTF8.GetBytes(version),
+                ["platform"] = Encoding.UTF8.GetBytes(".NET"),
+                ["copyright"] = Encoding.UTF8.GetBytes("Copyright (c) 2007-2016 Pivotal Software, Inc."),
+                ["information"] = Encoding.UTF8.GetBytes("Licensed under the MPL.  " +
+                                                          "See http://www.rabbitmq.com/")
+            };
             return table;
         }
 
@@ -377,12 +363,8 @@ namespace RabbitMQ.Client.Framing.Impl
                     m_session0.Transmit(ConnectionCloseWrapper(reason.ReplyCode,
                         reason.ReplyText));
                 }
-                catch (AlreadyClosedException)
+                catch (AlreadyClosedException) when (abort)
                 {
-                    if (!abort)
-                    {
-                        throw;
-                    }
                 }
 #pragma warning disable 0168
                 catch (NotSupportedException)
@@ -854,29 +836,14 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             if (ShutdownReport.Count == 0)
             {
-#if NETFX_CORE
-                System.Diagnostics.Debug.WriteLine(
-#else
-                Console.Error.WriteLine(
-#endif
-"No errors reported when closing connection {0}", this);
+                Console.Error.WriteLine("No errors reported when closing connection {0}", this);
             }
             else
             {
-#if NETFX_CORE
-                System.Diagnostics.Debug.WriteLine(
-#else
-                Console.Error.WriteLine(
-#endif
-"Log of errors while closing connection {0}:", this);
+                Console.Error.WriteLine("Log of errors while closing connection {0}:", this);
                 foreach (ShutdownReportEntry entry in ShutdownReport)
                 {
-#if NETFX_CORE
-                    System.Diagnostics.Debug.WriteLine(
-#else
-                    Console.Error.WriteLine(
-#endif
-entry.ToString());
+                    Console.Error.WriteLine(entry.ToString());
                 }
             }
         }
@@ -1101,7 +1068,7 @@ entry.ToString());
 
             lock (_heartBeatWriteLock)
             {
-                if (m_closed == false && _heartbeatWriteTimer != null)
+                if (!m_closed && _heartbeatWriteTimer != null)
                 {
                     _heartbeatWriteTimer.Change((int)m_heartbeatTimeSpan.TotalMilliseconds, Timeout.Infinite);
                 }
@@ -1289,12 +1256,14 @@ entry.ToString());
                     serverVersion.Minor);
             }
 
-            m_clientProperties = new Dictionary<string, object>(m_factory.ClientProperties);
-            m_clientProperties["capabilities"] = Protocol.Capabilities;
-            m_clientProperties["connection_name"] = ClientProvidedName;
+            ClientProperties = new Dictionary<string, object>(m_factory.ClientProperties)
+            {
+                ["capabilities"] = Protocol.Capabilities,
+                ["connection_name"] = ClientProvidedName
+            };
 
             // FIXME: parse out locales properly!
-            ConnectionTuneDetails connectionTune = default(ConnectionTuneDetails);
+            ConnectionTuneDetails connectionTune = default;
             bool tuned = false;
             try
             {
@@ -1314,7 +1283,7 @@ entry.ToString());
                     ConnectionSecureOrTune res;
                     if (challenge == null)
                     {
-                        res = m_model0.ConnectionStartOk(m_clientProperties,
+                        res = m_model0.ConnectionStartOk(ClientProperties,
                             mechanismFactory.Name,
                             response,
                             "en_US");

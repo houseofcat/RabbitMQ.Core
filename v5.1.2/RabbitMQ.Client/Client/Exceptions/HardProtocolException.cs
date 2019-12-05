@@ -1,4 +1,4 @@
-namespace RabbitMQ.Client.Impl
+namespace RabbitMQ.Client.Exceptions
 {
     ///<summary>Subclass of ProtocolException representing problems
     ///requiring a connection.close.</summary>

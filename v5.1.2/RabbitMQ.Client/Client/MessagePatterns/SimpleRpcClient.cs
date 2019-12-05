@@ -218,7 +218,7 @@ namespace RabbitMQ.Client.MessagePatterns
         public virtual byte[] Call(byte[] body)
         {
             BasicDeliverEventArgs reply = Call(null, body);
-            return reply == null ? null : reply.Body;
+            return reply?.Body;
         }
 
         ///<summary>Sends a byte[] message and IBasicProperties

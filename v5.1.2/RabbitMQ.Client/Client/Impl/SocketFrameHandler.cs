@@ -39,7 +39,7 @@ namespace RabbitMQ.Client.Impl
         private readonly object _semaphore = new object();
         private readonly object _sslStreamLock = new object();
         private bool _closed;
-        private readonly bool _ssl = false;
+        private readonly bool _ssl;
 
         public SocketFrameHandler(AmqpTcpEndpoint endpoint,
             Func<AddressFamily, ITcpClient> socketFactory,
@@ -160,7 +160,7 @@ namespace RabbitMQ.Client.Impl
 
         public InboundFrame ReadFrame()
         {
-            return RabbitMQ.Client.Impl.InboundFrame.ReadFrom(m_reader);
+            return InboundFrame.ReadFrom(m_reader);
         }
 
         private static readonly byte[] amqp = Encoding.ASCII.GetBytes("AMQP");

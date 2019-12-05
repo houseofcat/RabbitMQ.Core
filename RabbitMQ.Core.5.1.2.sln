@@ -11,6 +11,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Client", "v5.1.2\R
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unit", "v5.1.2\Unit\Unit.csproj", "{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{AD8563BE-8480-4B9D-B957-A7A3C26232C8}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		Build.v5.1.2.bat = Build.v5.1.2.bat
+		LICENSE = LICENSE
+		PIVOTAL_LICENSE = PIVOTAL_LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

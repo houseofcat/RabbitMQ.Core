@@ -2,14 +2,7 @@ using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Client.Framing;
 using RabbitMQ.Util;
 using System.IO;
-
-#if NETFX_CORE
-using Windows.Networking.Sockets;
-#else
-
 using System.Net.Sockets;
-
-#endif
 
 namespace RabbitMQ.Client.Impl
 {
@@ -17,7 +10,7 @@ namespace RabbitMQ.Client.Impl
     {
         public HeaderOutboundFrame(int channel, ContentHeaderBase header, int bodyLength) : base(FrameType.FrameHeader, channel)
         {
-            NetworkBinaryWriter writer = base.GetWriter();
+            NetworkBinaryWriter writer = GetWriter();
 
             writer.Write((ushort)header.ProtocolClassId);
             header.WriteTo(writer, (ulong)bodyLength);
@@ -28,7 +21,7 @@ namespace RabbitMQ.Client.Impl
     {
         public BodySegmentOutboundFrame(int channel, byte[] body, int offset, int count) : base(FrameType.FrameBody, channel)
         {
-            NetworkBinaryWriter writer = base.GetWriter();
+            NetworkBinaryWriter writer = GetWriter();
 
             writer.Write(body, offset, count);
         }
@@ -38,7 +31,7 @@ namespace RabbitMQ.Client.Impl
     {
         public MethodOutboundFrame(int channel, MethodBase method) : base(FrameType.FrameMethod, channel)
         {
-            NetworkBinaryWriter writer = base.GetWriter();
+            NetworkBinaryWriter writer = GetWriter();
 
             writer.Write((ushort)method.ProtocolClassId);
             writer.Write((ushort)method.ProtocolMethodId);
@@ -57,7 +50,7 @@ namespace RabbitMQ.Client.Impl
 
         public EmptyOutboundFrame() : base(FrameType.FrameHeartbeat, 0)
         {
-            base.GetWriter().Write(m_emptyByteArray);
+            GetWriter().Write(m_emptyByteArray);
         }
 
         public override string ToString()
@@ -109,7 +102,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    public class InboundFrame : Frame
+    public sealed class InboundFrame : Frame
     {
         private InboundFrame(FrameType type, int channel, byte[] payload) : base(type, channel, payload)
         {
@@ -157,28 +150,12 @@ namespace RabbitMQ.Client.Impl
             {
                 type = reader.ReadByte();
             }
-            catch (IOException ioe)
+            catch (IOException ioe) when (
+                ioe.InnerException != null
+                && (ioe.InnerException is SocketException)
+                && ((SocketException)ioe.InnerException).SocketErrorCode == SocketError.TimedOut)
             {
-#if NETFX_CORE
-                if (ioe.InnerException != null
-                    && SocketError.GetStatus(ioe.InnerException.HResult) == SocketErrorStatus.ConnectionTimedOut)
-                {
-                    throw ioe.InnerException;
-                }
-
-                throw;
-#else
-                // If it's a WSAETIMEDOUT SocketException, unwrap it.
-                // This might happen when the limit of half-open connections is
-                // reached.
-                if (ioe.InnerException == null ||
-                    !(ioe.InnerException is SocketException) ||
-                    ((SocketException)ioe.InnerException).SocketErrorCode != SocketError.TimedOut)
-                {
-                    throw;
-                }
                 throw ioe.InnerException;
-#endif
             }
 
             if (type == 'A')
@@ -209,17 +186,17 @@ namespace RabbitMQ.Client.Impl
 
         public NetworkBinaryReader GetReader()
         {
-            return new NetworkBinaryReader(new MemoryStream(base.Payload));
+            return new NetworkBinaryReader(new MemoryStream(Payload));
         }
 
         public override string ToString()
         {
             return base.ToString() + string.Format("(type={0}, channel={1}, {2} bytes of payload)",
-                base.Type,
-                base.Channel,
-                base.Payload == null
+                Type,
+                Channel,
+                Payload == null
                     ? "(null)"
-                    : base.Payload.Length.ToString());
+                    : Payload.Length.ToString());
         }
     }
 

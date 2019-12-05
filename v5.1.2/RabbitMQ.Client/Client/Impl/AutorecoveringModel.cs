@@ -28,8 +28,8 @@ namespace RabbitMQ.Client.Impl
 
         protected ushort prefetchCountConsumer = 0;
         protected ushort prefetchCountGlobal = 0;
-        protected bool usesPublisherConfirms = false;
-        protected bool usesTransactions = false;
+        protected bool usesPublisherConfirms;
+        protected bool usesTransactions;
         private EventHandler<EventArgs> m_recovery;
 
         public IConsumerDispatcher ConsumerDispatcher

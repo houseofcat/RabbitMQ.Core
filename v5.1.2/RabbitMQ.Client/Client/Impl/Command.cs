@@ -96,8 +96,6 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-
-
         public void TransmitAsSingleFrame(int channelNumber, Connection connection)
         {
             connection.WriteFrame(new MethodOutboundFrame(channelNumber, Method));
@@ -105,8 +103,10 @@ namespace RabbitMQ.Client.Impl
 
         public void TransmitAsFrameSet(int channelNumber, Connection connection)
         {
-            var frames = new List<OutboundFrame>();
-            frames.Add(new MethodOutboundFrame(channelNumber, Method));
+            var frames = new List<OutboundFrame>
+            {
+                new MethodOutboundFrame(channelNumber, Method)
+            };
             if (Method.HasContent)
             {
                 var body = ConsolidateBody(); // Cache, since the property is compiled.
@@ -124,7 +124,6 @@ namespace RabbitMQ.Client.Impl
 
             connection.WriteFrameSet(frames);
         }
-
 
         public static List<OutboundFrame> CalculateFrames(int channelNumber, Connection connection, IList<Command> commands)
         {

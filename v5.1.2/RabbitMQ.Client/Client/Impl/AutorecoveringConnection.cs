@@ -27,8 +27,8 @@ namespace RabbitMQ.Client.Framing.Impl
         protected readonly TaskFactory recoveryTaskFactory = new TaskFactory();
         protected readonly object recoveryLockTarget = new object();
         // used to block connection recovery attempts after Close() is unvoked
-        protected bool manuallyClosed = false;
-        protected bool performingRecovery = false;
+        protected bool manuallyClosed;
+        protected bool performingRecovery;
 
         protected List<AutorecoveringModel> m_models = new List<AutorecoveringModel>();
 

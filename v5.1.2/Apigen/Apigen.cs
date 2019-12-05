@@ -413,7 +413,7 @@ namespace RabbitMQ.Client.Apigen
             EmitLine("");
             EmitContentHeaderReader();
             EmitLine("  }");
-            EmitLine("  public class Constants {");
+            EmitLine("  public static class Constants {");
             foreach (KeyValuePair<string, int> de in m_constants)
             {
                 EmitLine("    ///<summary>(= " + de.Value + ")</summary>");
@@ -780,7 +780,7 @@ namespace RabbitMQ.Client.Apigen
             }
             EmitLine("        default: break;");
             EmitLine("      }");
-            EmitLine("      throw new RabbitMQ.Client.Impl.UnknownClassOrMethodException(classId, methodId);");
+            EmitLine("      throw new RabbitMQ.Client.Exceptions.UnknownClassOrMethodException(classId, methodId);");
             EmitLine("    }");
         }
 
@@ -800,7 +800,7 @@ namespace RabbitMQ.Client.Apigen
             }
             EmitLine("        default: break;");
             EmitLine("      }");
-            EmitLine("      throw new RabbitMQ.Client.Impl.UnknownClassOrMethodException(classId, 0);");
+            EmitLine("      throw new RabbitMQ.Client.Exceptions.UnknownClassOrMethodException(classId, 0);");
             EmitLine("    }");
         }
 

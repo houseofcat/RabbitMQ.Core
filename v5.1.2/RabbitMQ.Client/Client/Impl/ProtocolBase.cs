@@ -1,12 +1,6 @@
-using System.Collections.Generic;
-
-#if !NETFX_CORE
-#else
-using Windows.Networking.Sockets;
-#endif
-
 using RabbitMQ.Client.Impl;
 using RabbitMQ.Util;
+using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
@@ -38,7 +32,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public bool CanSendWhileClosed(Command cmd)
         {
-            return cmd.Method is Impl.ChannelCloseOk;
+            return cmd.Method is ChannelCloseOk;
         }
 
         public void CreateChannelClose(ushort reasonCode,
@@ -47,11 +41,11 @@ namespace RabbitMQ.Client.Framing.Impl
             out int replyClassId,
             out int replyMethodId)
         {
-            request = new Command(new Impl.ChannelClose(reasonCode,
+            request = new Command(new ChannelClose(reasonCode,
                 reasonText,
                 0, 0));
-            replyClassId = Impl.ChannelCloseOk.ClassId;
-            replyMethodId = Impl.ChannelCloseOk.MethodId;
+            replyClassId = ChannelCloseOk.ClassId;
+            replyMethodId = ChannelCloseOk.MethodId;
         }
 
         public void CreateConnectionClose(ushort reasonCode,
@@ -60,11 +54,11 @@ namespace RabbitMQ.Client.Framing.Impl
             out int replyClassId,
             out int replyMethodId)
         {
-            request = new Command(new Impl.ConnectionClose(reasonCode,
+            request = new Command(new ConnectionClose(reasonCode,
                 reasonText,
                 0, 0));
-            replyClassId = Impl.ConnectionCloseOk.ClassId;
-            replyMethodId = Impl.ConnectionCloseOk.MethodId;
+            replyClassId = ConnectionCloseOk.ClassId;
+            replyMethodId = ConnectionCloseOk.MethodId;
         }
 
         public abstract ContentHeaderBase DecodeContentHeaderFrom(NetworkBinaryReader reader);

@@ -1,3 +1,4 @@
+using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Client.Framing.Impl;
 using RabbitMQ.Util;
 
@@ -10,7 +11,6 @@ namespace RabbitMQ.Client.Impl
         ExpectingContentBody,
         Complete
     }
-
 
     public class CommandAssembler
     {

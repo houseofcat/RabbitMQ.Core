@@ -291,7 +291,7 @@ namespace RabbitMQ.Client
             foreach (IAuthMechanismFactory factory in AuthMechanisms)
             {
                 var factoryName = factory.Name;
-                if (mechanismNames.Any<string>(x => string.Equals(x, factoryName, StringComparison.OrdinalIgnoreCase)))
+                if (mechanismNames.Any(x => string.Equals(x, factoryName, StringComparison.OrdinalIgnoreCase)))
                 {
                     return factory;
                 }
@@ -532,7 +532,7 @@ namespace RabbitMQ.Client
         /// </summary>
         private static string UriDecode(string uri)
         {
-            return System.Uri.UnescapeDataString(uri.Replace("+", "%2B"));
+            return Uri.UnescapeDataString(uri.Replace("+", "%2B"));
         }
 
         private List<AmqpTcpEndpoint> LocalEndpoints()

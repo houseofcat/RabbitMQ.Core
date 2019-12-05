@@ -25,7 +25,7 @@ namespace RabbitMQ.Client.Impl
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(obj, null))
+            if (obj is null)
             {
                 return false;
             }
@@ -45,7 +45,7 @@ namespace RabbitMQ.Client.Impl
             return Source.GetHashCode() ^
                    Destination.GetHashCode() ^
                    RoutingKey.GetHashCode() ^
-                   (Arguments != null ? Arguments.GetHashCode() : 0);
+                   (Arguments?.GetHashCode() ?? 0);
         }
 
         public virtual void Recover()

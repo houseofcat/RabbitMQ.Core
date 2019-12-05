@@ -166,7 +166,7 @@ namespace RabbitMQ.Client
         /// <summary>
         /// Retrieve an individual message, if
         /// one is available; returns null if the server answers that
-        /// no messages are currently available. See also <see cref="IModel.BasicAck"/>.
+        /// no messages are currently available. See also <see cref="BasicAck"/>.
         /// </summary>
         [AmqpMethodDoNotImplement(null)]
         BasicGetResult BasicGet(string queue, bool autoAck);

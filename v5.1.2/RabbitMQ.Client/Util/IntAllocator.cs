@@ -7,12 +7,11 @@ namespace RabbitMQ.Util
    * A class for allocating integer IDs in a given range.
    */
 
-
     public class IntAllocator
     {
         private readonly int[] unsorted;
         private IntervalList Base;
-        private int unsortedCount = 0;
+        private int unsortedCount;
 
         /**
      * A class representing a list of inclusive intervals
@@ -136,7 +135,6 @@ namespace RabbitMQ.Util
                 unsortedCount = 0;
             }
         }
-
 
         public class IntervalList
         {

@@ -9,10 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
-#if (NETFX_CORE)
-using Trace = System.Diagnostics.Debug;
-#endif
-
 namespace RabbitMQ.Client.Impl
 {
     public abstract class ModelBase : IFullModel, IRecoverable
@@ -21,16 +17,11 @@ namespace RabbitMQ.Client.Impl
 
         ///<summary>Only used to kick-start a connection open
         ///sequence. See <see cref="Connection.Open"/> </summary>
-        public BlockingCell m_connectionStartCell = null;
-
-        private TimeSpan m_handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
-        private TimeSpan m_continuationTimeout = TimeSpan.FromSeconds(20);
-
+        public BlockingCell m_connectionStartCell;
         private readonly RpcContinuationQueue m_continuationQueue = new RpcContinuationQueue();
         private readonly ManualResetEvent m_flowControlBlock = new ManualResetEvent(true);
 
         private readonly object m_eventLock = new object();
-        private readonly object m_flowSendLock = new object();
         private readonly object m_shutdownLock = new object();
         private readonly object _rpcLock = new object();
 
@@ -56,8 +47,7 @@ namespace RabbitMQ.Client.Impl
 
         protected ModelBase(ISession session, ConsumerWorkService workService)
         {
-            var asyncConsumerWorkService = workService as AsyncConsumerWorkService;
-            if (asyncConsumerWorkService != null)
+            if (workService is AsyncConsumerWorkService asyncConsumerWorkService)
             {
                 ConsumerDispatcher = new AsyncConsumerDispatcher(this, asyncConsumerWorkService);
             }
@@ -78,17 +68,9 @@ namespace RabbitMQ.Client.Impl
             Session.SessionShutdown += OnSessionShutdown;
         }
 
-        public TimeSpan HandshakeContinuationTimeout
-        {
-            get { return m_handshakeContinuationTimeout; }
-            set { m_handshakeContinuationTimeout = value; }
-        }
+        public TimeSpan HandshakeContinuationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        public TimeSpan ContinuationTimeout
-        {
-            get { return m_continuationTimeout; }
-            set { m_continuationTimeout = value; }
-        }
+        public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
         public event EventHandler<BasicAckEventArgs> BasicAcks
         {
@@ -291,26 +273,14 @@ namespace RabbitMQ.Client.Impl
                 k.Wait(TimeSpan.FromMilliseconds(10000));
                 ConsumerDispatcher.Shutdown(this);
             }
-            catch (AlreadyClosedException)
+            catch (AlreadyClosedException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (IOException)
+            catch (IOException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (Exception)
+            catch (Exception) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
         }
 
@@ -471,7 +441,7 @@ namespace RabbitMQ.Client.Impl
                 }
             }
 
-            handleAckNack(args.DeliveryTag, args.Multiple, false);
+            HandleAckNack(args.DeliveryTag, args.Multiple, false);
         }
 
         public virtual void OnBasicNack(BasicNackEventArgs args)
@@ -496,7 +466,7 @@ namespace RabbitMQ.Client.Impl
                 }
             }
 
-            handleAckNack(args.DeliveryTag, args.Multiple, true);
+            HandleAckNack(args.DeliveryTag, args.Multiple, true);
         }
 
         public virtual void OnBasicRecoverOk(EventArgs args)
@@ -835,7 +805,7 @@ namespace RabbitMQ.Client.Impl
         public void HandleBasicRecoverOk()
         {
             var k = (SimpleBlockingRpcContinuation)m_continuationQueue.Next();
-            OnBasicRecoverOk(new EventArgs());
+            OnBasicRecoverOk(EventArgs.Empty);
             k.HandleCommand(null);
         }
 
@@ -1154,8 +1124,7 @@ namespace RabbitMQ.Client.Impl
             IBasicConsumer consumer)
         {
             // TODO: Replace with flag
-            var asyncDispatcher = ConsumerDispatcher as AsyncConsumerDispatcher;
-            if (asyncDispatcher != null)
+            if (ConsumerDispatcher is AsyncConsumerDispatcher)
             {
                 if (!(consumer is IAsyncBasicConsumer))
                 {
@@ -1520,7 +1489,7 @@ namespace RabbitMQ.Client.Impl
             Session.Transmit(commands);
         }
 
-        protected virtual void handleAckNack(ulong deliveryTag, bool multiple, bool isNack)
+        protected virtual void HandleAckNack(ulong deliveryTag, bool multiple, bool isNack)
         {
             lock (m_unconfirmedSet.SyncRoot)
             {

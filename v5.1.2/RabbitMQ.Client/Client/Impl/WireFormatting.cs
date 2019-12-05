@@ -13,7 +13,7 @@ namespace RabbitMQ.Client.Impl
         {
             if (scale > 28)
             {
-                throw new SyntaxError("Unrepresentable AMQP decimal table field: " +
+                throw new SyntaxException("Unrepresentable AMQP decimal table field: " +
                                       "scale=" + scale);
             }
 
@@ -75,64 +75,27 @@ namespace RabbitMQ.Client.Impl
 
         public static object ReadFieldValue(NetworkBinaryReader reader)
         {
-            object value = null;
             byte discriminator = reader.ReadByte();
-            switch ((char)discriminator)
+            return ((char)discriminator) switch
             {
-                case 'S':
-                    value = ReadLongstr(reader);
-                    break;
-                case 'I':
-                    value = reader.ReadInt32();
-                    break;
-                case 'i':
-                    value = reader.ReadUInt32();
-                    break;
-                case 'D':
-                    value = ReadDecimal(reader);
-                    break;
-                case 'T':
-                    value = ReadTimestamp(reader);
-                    break;
-                case 'F':
-                    value = ReadTable(reader);
-                    break;
-                case 'A':
-                    value = ReadArray(reader);
-                    break;
-                case 'B':
-                    value = reader.ReadByte();
-                    break;
-                case 'b':
-                    value = reader.ReadSByte();
-                    break;
-                case 'd':
-                    value = reader.ReadDouble();
-                    break;
-                case 'f':
-                    value = reader.ReadSingle();
-                    break;
-                case 'l':
-                    value = reader.ReadInt64();
-                    break;
-                case 's':
-                    value = reader.ReadInt16();
-                    break;
-                case 't':
-                    value = (ReadOctet(reader) != 0);
-                    break;
-                case 'x':
-                    value = new BinaryTableValue(ReadLongstr(reader));
-                    break;
-                case 'V':
-                    value = null;
-                    break;
-
-                default:
-                    throw new SyntaxError("Unrecognised type in table: " +
-                                          (char)discriminator);
-            }
-            return value;
+                'S' => ReadLongstr(reader),
+                'I' => reader.ReadInt32(),
+                'i' => reader.ReadUInt32(),
+                'D' => ReadDecimal(reader),
+                'T' => ReadTimestamp(reader),
+                'F' => ReadTable(reader),
+                'A' => ReadArray(reader),
+                'B' => reader.ReadByte(),
+                'b' => reader.ReadSByte(),
+                'd' => reader.ReadDouble(),
+                'f' => reader.ReadSingle(),
+                'l' => reader.ReadInt64(),
+                's' => reader.ReadInt16(),
+                't' => (ReadOctet(reader) != 0),
+                'x' => new BinaryTableValue(ReadLongstr(reader)),
+                'V' => null,
+                _ => throw new SyntaxException("Unrecognised type in table: " + (char)discriminator),
+            };
         }
 
         public static uint ReadLong(NetworkBinaryReader reader)
@@ -150,7 +113,7 @@ namespace RabbitMQ.Client.Impl
             uint byteCount = reader.ReadUInt32();
             if (byteCount > int.MaxValue)
             {
-                throw new SyntaxError("Long string too long; " +
+                throw new SyntaxException("Long string too long; " +
                                       "byte length=" + byteCount + ", max=" + int.MaxValue);
             }
             return reader.ReadBytes((int)byteCount);
@@ -179,7 +142,7 @@ namespace RabbitMQ.Client.Impl
         /// and F, as well as the QPid-0-8 specific b, d, f, l, s, t,
         /// x and V types and the AMQP 0-9-1 A type.
         ///</remarks>
-        /// <returns>A <seealso cref="System.Collections.Generic.IDictionary{TKey,TValue}"/>.</returns>
+        /// <returns>A <seealso cref="IDictionary{TKey,TValue}"/>.</returns>
         public static IDictionary<string, object> ReadTable(NetworkBinaryReader reader)
         {
             IDictionary<string, object> table = new Dictionary<string, object>();

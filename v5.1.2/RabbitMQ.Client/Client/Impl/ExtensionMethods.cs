@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -14,14 +13,13 @@ namespace RabbitMQ.Client.Impl
         /// <returns></returns>
         public static T RandomItem<T>(this IList<T> list)
         {
-            var n = list.Count;
-            if (n == 0)
+            if (list.Count == 0)
             {
-                return default(T);
+                return default;
             }
 
             var hashCode = Math.Abs(Guid.NewGuid().GetHashCode());
-            return list.ElementAt<T>(hashCode % n);
+            return list[hashCode % list.Count];
         }
     }
 }

@@ -1,15 +1,10 @@
+using RabbitMQ.Client.Exceptions;
+using RabbitMQ.Client.Framing;
+using RabbitMQ.Client.Framing.Impl;
+using RabbitMQ.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-
-#if NETFX_CORE
-using System.Threading.Tasks;
-#endif
-
-using RabbitMQ.Client.Exceptions;
-using RabbitMQ.Client.Framing.Impl;
-using RabbitMQ.Util;
-using RabbitMQ.Client.Framing;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -19,7 +14,7 @@ namespace RabbitMQ.Client.Impl
         private readonly IntAllocator Ints;
         private readonly Connection m_connection;
         private readonly IDictionary<int, ISession> m_sessionMap = new Dictionary<int, ISession>();
-        private bool m_autoClose = false;
+        private bool m_autoClose;
 
         public SessionManager(Connection connection, ushort channelMax)
         {
@@ -77,11 +72,7 @@ namespace RabbitMQ.Client.Impl
                         // deadlock as the connection thread would be
                         // blocking waiting for its own mainloop to
                         // reply to it.
-#if NETFX_CORE
-                        Task.Factory.StartNew(AutoCloseConnection, TaskCreationOptions.LongRunning);
-#else
                         new Thread(AutoCloseConnection).Start();
-#endif
                     }
                 }
             }

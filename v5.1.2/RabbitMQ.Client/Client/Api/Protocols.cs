@@ -10,7 +10,7 @@ namespace RabbitMQ.Client
         ///</summary>
         public static IProtocol AMQP_0_9_1
         {
-            get { return (IProtocol)new RabbitMQ.Client.Framing.Protocol(); }
+            get { return (IProtocol)new Framing.Protocol(); }
         }
 
         ///<summary>

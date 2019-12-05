@@ -327,7 +327,7 @@ namespace RabbitMQ.Client.MessagePatterns
         public virtual void ProcessRequest(BasicDeliverEventArgs evt)
         {
             IBasicProperties properties = evt.BasicProperties;
-            if (properties.ReplyTo != null && properties.ReplyTo != "")
+            if (!string.IsNullOrEmpty(properties.ReplyTo))
             {
                 // It's a request.
 

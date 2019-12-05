@@ -1,5 +1,4 @@
-﻿#if !NETFX_CORE
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -15,12 +14,7 @@ namespace RabbitMQ.Client
 
         public TcpClientAdapter(Socket socket)
         {
-            if (socket == null)
-            {
-                throw new InvalidOperationException("socket must not be null");
-            }
-
-            sock = socket;
+            sock = socket ?? throw new InvalidOperationException("socket must not be null");
         }
 
         public virtual async Task ConnectAsync(string host, int port)
@@ -32,11 +26,8 @@ namespace RabbitMQ.Client
             {
                 throw new ArgumentException("No ip address could be resolved for " + host);
             }
-#if CORECLR
+
             await sock.ConnectAsync(ep, port).ConfigureAwait(false);
-#else
-            sock.Connect(ep, port);
-#endif
         }
 
         public virtual void Close()
@@ -100,4 +91,3 @@ namespace RabbitMQ.Client
         }
     }
 }
-#endif

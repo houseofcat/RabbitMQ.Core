@@ -1,3 +1,4 @@
+using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Util;
 using System.Collections.Generic;
 

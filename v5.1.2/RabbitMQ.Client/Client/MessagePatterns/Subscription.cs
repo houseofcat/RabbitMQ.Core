@@ -41,10 +41,6 @@ namespace RabbitMQ.Client.MessagePatterns
 
         private readonly CancellationTokenSource m_queueCts = new CancellationTokenSource();
 
-#if NETFX_CORE || NET4
-        private ConcurrentQueue<TaskCompletionSource<BasicDeliverEventArgs>> m_waiting = 
-            new ConcurrentQueue<TaskCompletionSource<BasicDeliverEventArgs>>();
-#endif
         ///<summary>Creates a new Subscription in "autoAck" mode,
         ///consuming from a named queue.</summary>
         public Subscription(IModel model, string queueName)
@@ -60,11 +56,9 @@ namespace RabbitMQ.Client.MessagePatterns
             QueueName = queueName;
             AutoAck = autoAck;
             m_consumer = new EventingBasicConsumer(Model);
-#if NETFX_CORE || NET4
-            m_consumer.Received += (sender, args) => QueueAdd(args); 
-#else
+
             m_consumer.Received += (sender, args) => m_queue.Add(args);
-#endif
+
             ConsumerTag = Model.BasicConsume(QueueName, AutoAck, m_consumer);
             m_consumer.ConsumerCancelled += HandleConsumerCancelled;
             LatestEvent = null;
@@ -208,13 +202,6 @@ namespace RabbitMQ.Client.MessagePatterns
                     m_queue.Dispose();
                     m_queue = null;
                 }
-#if NETFX_CORE || NET4
-                var exn = new EndOfStreamException("Subscription closed");
-                foreach (var tsc in m_waiting)
-                {
-                    tsc.TrySetException(exn);
-                }
-#endif
             }
             catch (OperationInterruptedException)
             {
@@ -307,53 +294,6 @@ namespace RabbitMQ.Client.MessagePatterns
             }
             return LatestEvent;
         }
-
-#if NETFX_CORE || NET4
-        public Task<BasicDeliverEventArgs> NextAsync() 
-        {
-            try 
-            {
-                // Alias the pointer as otherwise it may change out
-                // from under us by the operation of Close() from
-                // another thread.
-                var queue = m_queue;
-                if (queue == null || Model.IsClosed) 
-                {
-                    // Closed!
-                    MutateLatestEvent(null);
-                }
-                else 
-                {
-                    BasicDeliverEventArgs evt = null;
-                    if(queue.TryTake(out evt))
-                    {
-                        MutateLatestEvent(evt);
-                    }
-                    else
-                    {
-                        var tcs = new TaskCompletionSource<BasicDeliverEventArgs>();
-                        m_waiting.Enqueue(tcs);
-                        return tcs.Task;
-                    }
-                }
-            }
-            catch (AggregateException ex) 
-            {
-                // since tasks wrap exceptions as AggregateException, 
-                // reach in and check if the EndOfStream exception is what happened
-                if (ex.InnerException is EndOfStreamException) 
-                {
-                    MutateLatestEvent(null);
-                }
-            }
-            catch (EndOfStreamException) 
-            {
-                MutateLatestEvent(null);
-            }
-
-            return Task.FromResult(LatestEvent);
-        }
-#endif
 
         ///<summary>Retrieves the next incoming delivery in our
         ///subscription queue, or times out after a specified number
@@ -487,22 +427,5 @@ namespace RabbitMQ.Client.MessagePatterns
                 MutateLatestEvent(null);
             }
         }
-
-#if NETFX_CORE || NET4
-        private void QueueAdd(BasicDeliverEventArgs args)
-        {
-            //NB: as long as there are async awaiters sync callers will never be served
-            //this is not ideal but consistent with how SharedQueue behaves
-            TaskCompletionSource<BasicDeliverEventArgs> tsc;
-            if(m_waiting.TryDequeue(out tsc) && tsc.TrySetResult(args))
-            {
-                return;
-            }
-            else
-            {
-                m_queue.Add(args);
-            }
-        }
-#endif
     }
 }

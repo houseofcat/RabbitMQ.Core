@@ -17,8 +17,8 @@ namespace RabbitMQ.Client.Impl
     ///types, and parameters, to customise the details of the
     ///autogeneration process.</remarks>
     ///
-    ///<see cref="RabbitMQ.Client.Impl.ModelBase"/>
-    ///<see cref="RabbitMQ.Client.Framing.Impl.Model"/>
+    ///<see cref="ModelBase"/>
+    ///<see cref="Framing.Impl.Model"/>
     public interface IFullModel : IModel
     {
         ///<summary>Sends a Connection.TuneOk. Used during connection

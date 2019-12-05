@@ -13,7 +13,7 @@ namespace RabbitMQ.Client.Impl
     ///</remarks>
     public class RpcContinuationQueue
     {
-        public IRpcContinuation m_outstandingRpc = null;
+        public IRpcContinuation m_outstandingRpc;
         private readonly object m_outstandingRpcLock = new object();
 
         ///<summary>Enqueue a continuation, marking a pending RPC.</summary>
