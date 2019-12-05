@@ -4,7 +4,7 @@
 ### What version is it based on?  
 v5.1.2
 
-Specifically branch 5.x from 12/4/2019.
+Specifically branch 5.x from 12/4/2019.  
 Commit: https://github.com/rabbitmq/rabbitmq-dotnet-client/commit/ddbea177be2cbb5834df35992f6abbcd9263571d
 
 ### Why this version?
