@@ -26,9 +26,12 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
  * Deleted [Obsolete] or [Deprecated] where it made sense.   
  
  ### How To Build  
+ * Open Solution/Folder build.
+ 
+ **Alternatively Run CodeGen**  
  * Before opening solution/project/folder, try running build first for your system.  
  * Run the specific ***.bat*** file for your version.  
- * You should be good to go after than.  
+ * You should be good to go after than with a clean AMQP API generation.  
  
  ### Linux Support?
  ***Shrugs*** It should?  
