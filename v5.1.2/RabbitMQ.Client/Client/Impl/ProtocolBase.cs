@@ -14,7 +14,7 @@ namespace RabbitMQ.Client.Framing.Impl
     {
         public IDictionary<string, bool> Capabilities = new Dictionary<string, bool>();
 
-        public ProtocolBase()
+        protected ProtocolBase()
         {
             Capabilities["publisher_confirms"] = true;
             Capabilities["exchange_exchange_bindings"] = true;
@@ -72,7 +72,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public override bool Equals(object obj)
         {
-            return (GetType() == obj.GetType());
+            return GetType() == obj.GetType();
         }
 
         public override int GetHashCode()
@@ -91,7 +91,6 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             return new Connection(factory, insist, frameHandler, null);
         }
-
 
         public IConnection CreateConnection(IConnectionFactory factory,
             bool insist,
@@ -119,7 +118,6 @@ namespace RabbitMQ.Client.Framing.Impl
             ac.Init();
             return ac;
         }
-
 
         public IModel CreateModel(ISession session)
         {

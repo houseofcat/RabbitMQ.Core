@@ -50,11 +50,11 @@ namespace RabbitMQ.Client.Impl
 
         public IConsumerDispatcher ConsumerDispatcher { get; }
 
-        public ModelBase(ISession session)
+        protected ModelBase(ISession session)
             : this(session, session.Connection.ConsumerWorkService)
         { }
 
-        public ModelBase(ISession session, ConsumerWorkService workService)
+        protected ModelBase(ISession session, ConsumerWorkService workService)
         {
             var asyncConsumerWorkService = workService as AsyncConsumerWorkService;
             if (asyncConsumerWorkService != null)
@@ -421,7 +421,9 @@ namespace RabbitMQ.Client.Impl
         public void HandleCommand(ISession session, Command cmd)
         {
             if (!DispatchAsynchronous(cmd))// Was asynchronous. Already processed. No need to process further.
+            {
                 m_continuationQueue.Next().HandleCommand(cmd);
+            }
         }
 
         public MethodBase ModelRpc(MethodBase method, ContentHeaderBase header, byte[] body)
@@ -628,7 +630,10 @@ namespace RabbitMQ.Client.Impl
                 }
             }
             lock (m_unconfirmedSet.SyncRoot)
+            {
                 Monitor.Pulse(m_unconfirmedSet.SyncRoot);
+            }
+
             m_flowControlBlock.Set();
         }
 
@@ -667,7 +672,9 @@ namespace RabbitMQ.Client.Impl
                 }
             }
             else
+            {
                 return false;
+            }
         }
 
         public override string ToString()
@@ -1288,7 +1295,6 @@ namespace RabbitMQ.Client.Impl
             return new BasicPublishBatch(this);
         }
 
-
         public void ExchangeBind(string destination,
             string source,
             string routingKey,
@@ -1487,8 +1493,7 @@ namespace RabbitMQ.Client.Impl
 
         public void WaitForConfirmsOrDie(TimeSpan timeout)
         {
-            bool timedOut;
-            bool onlyAcksReceived = WaitForConfirms(timeout, out timedOut);
+            bool onlyAcksReceived = WaitForConfirms(timeout, out bool timedOut);
             if (!onlyAcksReceived)
             {
                 Close(new ShutdownEventArgs(ShutdownInitiator.Application,
@@ -1555,7 +1560,6 @@ namespace RabbitMQ.Client.Impl
             }
             return k.m_result;
         }
-
 
         public class BasicConsumerRpcContinuation : SimpleBlockingRpcContinuation
         {

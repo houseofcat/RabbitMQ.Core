@@ -59,7 +59,7 @@ namespace RabbitMQ.Client.Unit
     {
         IConnection Connection;
         IModel Channel;
-        String Queue;
+        string Queue;
         int callbackCount;
 
         public int ModelNumber(IModel model)
@@ -77,27 +77,6 @@ namespace RabbitMQ.Client.Unit
         [TearDown] public void Disconnect()
         {
             Connection.Abort();
-        }
-
-        [Test]
-        public void TestRecoverAfterCancel_()
-        {
-            UTF8Encoding enc = new UTF8Encoding();
-            Channel.BasicPublish("", Queue, null, enc.GetBytes("message"));
-            QueueingBasicConsumer Consumer = new QueueingBasicConsumer(Channel);
-
-            String CTag = Channel.BasicConsume(Queue, false, Consumer);
-            BasicDeliverEventArgs Event = (BasicDeliverEventArgs) Consumer.Queue.Dequeue();
-            Channel.BasicCancel(CTag);
-            Channel.BasicRecover(true);
-
-            QueueingBasicConsumer Consumer2 = new QueueingBasicConsumer(Channel);
-            Channel.BasicConsume(Queue, false, Consumer2);
-            BasicDeliverEventArgs Event2 = (BasicDeliverEventArgs)Consumer2.Queue.Dequeue();
-
-            Assert.AreEqual(Event.Body, Event2.Body);
-            Assert.IsFalse(Event.Redelivered);
-            Assert.IsTrue(Event2.Redelivered);
         }
 
         [Test]

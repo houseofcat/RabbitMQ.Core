@@ -1,10 +1,5 @@
 using System;
-
-#if !NETFX_CORE
 using System.Net.Sockets;
-#else
-using Windows.Networking.Sockets;
-#endif
 
 using RabbitMQ.Client.Impl;
 
@@ -13,13 +8,13 @@ namespace RabbitMQ.Client.Framing.Impl
     public static class IProtocolExtensions
     {
         public static IFrameHandler CreateFrameHandler(
+#pragma warning disable RCS1175 // Unused this parameter.
+#pragma warning disable IDE0060 // Remove unused parameter
             this IProtocol protocol,
+#pragma warning restore IDE0060 // Remove unused parameter
+#pragma warning restore RCS1175 // Unused this parameter.
             AmqpTcpEndpoint endpoint,
-#if !NETFX_CORE
             Func<AddressFamily, ITcpClient> socketFactory,
-#else
-            Func<StreamSocket> socketFactory,
-#endif
             int connectionTimeout,
             int readTimeout,
             int writeTimeout)

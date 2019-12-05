@@ -50,10 +50,7 @@ namespace RabbitMQ.Client.Impl
         public void HandleModelShutdown(ShutdownEventArgs reason)
         {
             IRpcContinuation k = Next();
-            if (k != null)
-            {
-                k.HandleModelShutdown(reason);
-            }
+            k?.HandleModelShutdown(reason);
         }
 
         ///<summary>Retrieve the next waiting continuation.</summary>

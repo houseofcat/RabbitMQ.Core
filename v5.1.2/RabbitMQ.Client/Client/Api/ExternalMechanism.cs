@@ -1,6 +1,6 @@
 namespace RabbitMQ.Client
 {
-    public class ExternalMechanism : AuthMechanism
+    public class ExternalMechanism : IAuthMechanism
     {
         /// <summary>
         /// Handle one round of challenge-response.

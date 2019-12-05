@@ -6,12 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Authentication;
-
-#if !NETFX_CORE
-
 using System.Net.Security;
-
-#endif
 
 namespace RabbitMQ.Client
 {
@@ -117,13 +112,13 @@ namespace RabbitMQ.Client
         /// <summary>
         ///  Default SASL auth mechanisms to use.
         /// </summary>
-        public static readonly IList<AuthMechanismFactory> DefaultAuthMechanisms =
-            new List<AuthMechanismFactory>() { new PlainMechanismFactory() };
+        public static readonly IList<IAuthMechanismFactory> DefaultAuthMechanisms =
+            new List<IAuthMechanismFactory>() { new PlainMechanismFactory() };
 
         /// <summary>
         ///  SASL auth mechanisms to use.
         /// </summary>
-        public IList<AuthMechanismFactory> AuthMechanisms { get; set; } = DefaultAuthMechanisms;
+        public IList<IAuthMechanismFactory> AuthMechanisms { get; set; } = DefaultAuthMechanisms;
 
         /// <summary>
         /// Set to false to disable automatic connection recovery.
@@ -135,7 +130,7 @@ namespace RabbitMQ.Client
         /// Set to true will enable a asynchronous consumer dispatcher which is compatible with <see cref="IAsyncBasicConsumer"/>.
         /// Defaults to false.
         /// </summary>
-        public bool DispatchConsumersAsync { get; set; } = false;
+        public bool DispatchConsumersAsync { get; set; }
 
         /// <summary>The host to connect to.</summary>
         public string HostName { get; set; } = "localhost";
@@ -144,8 +139,6 @@ namespace RabbitMQ.Client
         /// Amount of time client will wait for before re-trying  to recover connection.
         /// </summary>
         public TimeSpan NetworkRecoveryInterval { get; set; } = TimeSpan.FromSeconds(5);
-        private TimeSpan m_handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
-        private TimeSpan m_continuationTimeout = TimeSpan.FromSeconds(20);
 
         // just here to hold the value that was set through the setter
         private Uri uri;
@@ -154,21 +147,13 @@ namespace RabbitMQ.Client
         /// Amount of time protocol handshake operations are allowed to take before
         /// timing out.
         /// </summary>
-        public TimeSpan HandshakeContinuationTimeout
-        {
-            get { return m_handshakeContinuationTimeout; }
-            set { m_handshakeContinuationTimeout = value; }
-        }
+        public TimeSpan HandshakeContinuationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
         /// <summary>
         /// Amount of time protocol  operations (e.g. <code>queue.declare</code>) are allowed to take before
         /// timing out.
         /// </summary>
-        public TimeSpan ContinuationTimeout
-        {
-            get { return m_continuationTimeout; }
-            set { m_continuationTimeout = value; }
-        }
+        public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
         /// <summary>
         /// Factory function for creating the <see cref="IEndpointResolver"/>
@@ -300,10 +285,10 @@ namespace RabbitMQ.Client
         /// Given a list of mechanism names supported by the server, select a preferred mechanism,
         ///  or null if we have none in common.
         /// </summary>
-        public AuthMechanismFactory AuthMechanismFactory(IList<string> mechanismNames)
+        public IAuthMechanismFactory AuthMechanismFactory(IList<string> mechanismNames)
         {
             // Our list is in order of preference, the server one is not.
-            foreach (AuthMechanismFactory factory in AuthMechanisms)
+            foreach (IAuthMechanismFactory factory in AuthMechanisms)
             {
                 var factoryName = factory.Name;
                 if (mechanismNames.Any<string>(x => string.Equals(x, factoryName, StringComparison.OrdinalIgnoreCase)))
@@ -341,7 +326,7 @@ namespace RabbitMQ.Client
         /// <exception cref="BrokerUnreachableException">
         /// When the configured hostname was not reachable.
         /// </exception>
-        public IConnection CreateConnection(String clientProvidedName)
+        public IConnection CreateConnection(string clientProvidedName)
         {
             return CreateConnection(EndpointResolverFactory(LocalEndpoints()), clientProvidedName);
         }
@@ -385,7 +370,7 @@ namespace RabbitMQ.Client
         /// <exception cref="BrokerUnreachableException">
         /// When no hostname was reachable.
         /// </exception>
-        public IConnection CreateConnection(IList<string> hostnames, String clientProvidedName)
+        public IConnection CreateConnection(IList<string> hostnames, string clientProvidedName)
         {
             var endpoints = hostnames.Select(h => new AmqpTcpEndpoint(h, Port, Ssl));
             return CreateConnection(new DefaultEndpointResolver(endpoints), clientProvidedName);
@@ -425,7 +410,7 @@ namespace RabbitMQ.Client
         /// <exception cref="BrokerUnreachableException">
         /// When no hostname was reachable.
         /// </exception>
-        public IConnection CreateConnection(IEndpointResolver endpointResolver, String clientProvidedName)
+        public IConnection CreateConnection(IEndpointResolver endpointResolver, string clientProvidedName)
         {
             IConnection conn;
             try
@@ -469,7 +454,6 @@ namespace RabbitMQ.Client
             return CreateFrameHandler(Endpoint.CloneWithHostname(hostname));
         }
 
-
         private IFrameHandler ConfigureFrameHandler(IFrameHandler fh)
         {
             // make sure socket timeouts are higher than heartbeat
@@ -491,9 +475,8 @@ namespace RabbitMQ.Client
             {
                 Ssl.Enabled = true;
                 Ssl.Version = AmqpUriSslProtocols;
-#if !(NETFX_CORE)
                 Ssl.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateNameMismatch;
-#endif
+
                 Port = AmqpTcpEndpoint.DefaultAmqpSslPort;
             }
             else
@@ -519,7 +502,7 @@ namespace RabbitMQ.Client
                 string[] userPass = userInfo.Split(':');
                 if (userPass.Length > 2)
                 {
-                    throw new ArgumentException("Bad user info in AMQP " + "URI: " + userInfo);
+                    throw new ArgumentException("Bad user info in AMQP URI: " + userInfo);
                 }
                 UserName = UriDecode(userPass[0]);
                 if (userPass.Length == 2)

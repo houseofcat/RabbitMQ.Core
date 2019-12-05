@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using TaskExtensions = RabbitMQ.Client.Impl.TaskExtensions;
 
 namespace RabbitMQ.Client.Events
 {
@@ -78,7 +77,7 @@ namespace RabbitMQ.Client.Events
             {
                 return handler(this, evt);
             }
-            return TaskExtensions.CompletedTask;
+            return Task.CompletedTask;
         }
     }
 }

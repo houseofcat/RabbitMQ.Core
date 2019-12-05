@@ -49,7 +49,7 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     internal class TestHeartbeats : IntegrationFixture
     {
-        private const UInt16 heartbeatTimeout = 2;
+        private const ushort heartbeatTimeout = 2;
 
         [Test, Category("LongRunning"), MaxTimeAttribute(35000)]
         public void TestThatHeartbeatWriterUsesConfigurableInterval()
@@ -151,7 +151,7 @@ namespace RabbitMQ.Client.Unit
             if (InitiatedByPeerOrLibrary(evt))
             {
                 Console.WriteLine(((Exception)evt.Cause).StackTrace);
-                var s = String.Format("Shutdown: {0}, initiated by: {1}",
+                var s = string.Format("Shutdown: {0}, initiated by: {1}",
                                       evt, evt.Initiator);
                 Console.WriteLine(s);
                 Assert.Fail(s);

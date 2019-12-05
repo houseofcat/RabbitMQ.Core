@@ -36,7 +36,6 @@ namespace RabbitMQ.Client
         {
         }
 
-
         /// <summary>
         /// Creates a new instance of the <see cref="BinaryTableValue"/>.
         /// </summary>

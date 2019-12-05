@@ -365,27 +365,6 @@ namespace RabbitMQ.Client.Unit
         }
 
         [Test]
-        public void TestConsumerRecoveryWithManyConsumers()
-        {
-            string q = Model.QueueDeclare(GenerateQueueName(), false, false, false, null).QueueName;
-            int n = 1024;
-
-            for (int i = 0; i < n; i++)
-            {
-                var cons = new QueueingBasicConsumer(Model);
-                Model.BasicConsume(q, true, cons);
-            }
-
-            var latch = new ManualResetEvent(false);
-            ((AutorecoveringConnection)Conn).ConsumerTagChangeAfterRecovery += (prev, current) => latch.Set();
-
-            CloseAndWaitForRecovery();
-            Wait(latch);
-            Assert.IsTrue(Model.IsOpen);
-            AssertConsumerCount(q, n);
-        }
-
-        [Test]
         public void TestCreateModelOnClosedAutorecoveringConnectionDoesNotHang()
         {
             // we don't want this to recover quickly in this test
@@ -474,21 +453,6 @@ namespace RabbitMQ.Client.Unit
                 Model.QueueUnbind(q, x, "", null);
             }
             AssertRecordedExchanges((AutorecoveringConnection)Conn, 0);
-        }
-
-        [Test]
-        public void TestDeclarationOfManyAutoDeleteQueuesWithTransientConsumer()
-        {
-            AssertRecordedQueues((AutorecoveringConnection)Conn, 0);
-            for (int i = 0; i < 1000; i++)
-            {
-                string q = Guid.NewGuid().ToString();
-                Model.QueueDeclare(q, false, false, true, null);
-                var dummy = new QueueingBasicConsumer(Model);
-                string tag = Model.BasicConsume(q, true, dummy);
-                Model.BasicCancel(tag);
-            }
-            AssertRecordedQueues((AutorecoveringConnection)Conn, 0);
         }
 
         [Test]
@@ -618,7 +582,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestRecoveryEventHandlersOnChannel()
         {
-            Int32 counter = 0;
+            int counter = 0;
             ((AutorecoveringModel)Model).Recovery += (source, ea) => Interlocked.Increment(ref counter);
 
             CloseAndWaitForRecovery();
@@ -631,7 +595,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestRecoveryEventHandlersOnConnection()
         {
-            Int32 counter = 0;
+            int counter = 0;
             ((AutorecoveringConnection)Conn).Recovery += (source, ea) => Interlocked.Increment(ref counter);
 
             CloseAndWaitForRecovery();
@@ -646,7 +610,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestRecoveryEventHandlersOnModel()
         {
-            Int32 counter = 0;
+            int counter = 0;
             ((AutorecoveringModel)Model).Recovery += (source, ea) => Interlocked.Increment(ref counter);
 
             CloseAndWaitForRecovery();
@@ -715,7 +679,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestShutdownEventHandlersRecoveryOnConnection()
         {
-            Int32 counter = 0;
+            int counter = 0;
             Conn.ConnectionShutdown += (c, args) => Interlocked.Increment(ref counter);
 
             Assert.IsTrue(Conn.IsOpen);
@@ -731,7 +695,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestShutdownEventHandlersRecoveryOnConnectionAfterDelayedServerRestart()
         {
-            Int32 counter = 0;
+            int counter = 0;
             Conn.ConnectionShutdown += (c, args) => Interlocked.Increment(ref counter);
             ManualResetEvent shutdownLatch = PrepareForShutdown(Conn);
             ManualResetEvent recoveryLatch = PrepareForRecovery(((AutorecoveringConnection)Conn));
@@ -751,7 +715,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestShutdownEventHandlersRecoveryOnModel()
         {
-            Int32 counter = 0;
+            int counter = 0;
             Model.ModelShutdown += (c, args) => Interlocked.Increment(ref counter);
 
             Assert.IsTrue(Model.IsOpen);
@@ -762,23 +726,6 @@ namespace RabbitMQ.Client.Unit
             Assert.IsTrue(Model.IsOpen);
 
             Assert.IsTrue(counter >= 3);
-        }
-
-        [Test]
-        public void TestThatCancelledConsumerDoesNotReappearOnRecovery()
-        {
-            string q = Model.QueueDeclare(GenerateQueueName(), false, false, false, null).QueueName;
-            int n = 1024;
-
-            for (int i = 0; i < n; i++)
-            {
-                var cons = new QueueingBasicConsumer(Model);
-                string tag = Model.BasicConsume(q, true, cons);
-                Model.BasicCancel(tag);
-            }
-            CloseAndWaitForRecovery();
-            Assert.IsTrue(Model.IsOpen);
-            AssertConsumerCount(q, 0);
         }
 
         [Test]

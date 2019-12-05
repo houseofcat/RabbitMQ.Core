@@ -7,7 +7,6 @@ namespace RabbitMQ.Util
         Right
     }
 
-
     ///<summary>Models the disjoint union of two alternatives, a
     ///"left" alternative and a "right" alternative.</summary>
     ///<remarks>Borrowed from ML, Haskell etc.</remarks>

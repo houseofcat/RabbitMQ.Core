@@ -338,7 +338,6 @@ namespace RabbitMQ.Client.Impl
             [AmqpNowaitArgument(null, "0xFFFFFFFF")] bool nowait);
     }
 
-
     ///<summary>Essential information from an incoming Connection.Tune
     ///method.</summary>
     public struct ConnectionTuneDetails
@@ -352,7 +351,6 @@ namespace RabbitMQ.Client.Impl
         ///<summary>The peer's suggested heartbeat parameter.</summary>
         public ushort m_heartbeat;
     }
-
 
     public class ConnectionSecureOrTune
     {
@@ -373,12 +371,11 @@ namespace RabbitMQ.Client.Apigen.Attributes
         ///versions.</summary>
         public string m_namespaceName;
 
-        public AmqpApigenAttribute(string namespaceName)
+        protected AmqpApigenAttribute(string namespaceName)
         {
             m_namespaceName = namespaceName;
         }
     }
-
 
     ///<summary>Causes the API generator to ignore the attributed method.</summary>
     ///
@@ -399,7 +396,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         }
     }
 
-
     ///<summary>Causes the API generator to generate asynchronous
     ///receive code for the attributed method.</summary>
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
@@ -410,7 +406,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         {
         }
     }
-
 
     ///<summary>Causes the API generator to generate
     ///exception-throwing code for, instead of simply ignoring, the
@@ -425,7 +420,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         {
         }
     }
-
 
     ///<summary>Informs the API generator which AMQP method field to
     ///use for either a parameter in a request, or for a simple result
@@ -442,7 +436,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
             m_fieldName = fieldName;
         }
     }
-
 
     ///<summary>Informs the API generator which AMQP method to use for
     ///either a request (if applied to an IModel method) or a reply
@@ -462,7 +455,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
             m_methodName = methodName;
         }
     }
-
 
     ///<summary>This attribute, if placed on a parameter in an IModel
     ///method, causes it to be interpreted as a "nowait" parameter for

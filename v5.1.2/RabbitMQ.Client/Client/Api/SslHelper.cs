@@ -11,7 +11,7 @@ namespace RabbitMQ.Client
     /// Represents an <see cref="SslHelper"/> which does the actual heavy lifting to set up an SSL connection,
     ///  using the config options in an <see cref="SslOption"/> to make things cleaner.
     /// </summary>
-    public class SslHelper
+    public sealed class SslHelper
     {
         private readonly SslOption _sslOption;
 
@@ -27,10 +27,8 @@ namespace RabbitMQ.Client
         {
             var helper = new SslHelper(sslOption);
 
-            RemoteCertificateValidationCallback remoteCertValidator =
-                sslOption.CertificateValidationCallback ?? helper.CertificateValidationCallback;
-            LocalCertificateSelectionCallback localCertSelector =
-                sslOption.CertificateSelectionCallback ?? helper.CertificateSelectionCallback;
+            var remoteCertValidator = sslOption.CertificateValidationCallback ?? helper.CertificateValidationCallback;
+            var localCertSelector = sslOption.CertificateSelectionCallback ?? helper.CertificateSelectionCallback;
 
             var sslStream = new SslStream(tcpStream, false, remoteCertValidator, localCertSelector);
 
@@ -42,8 +40,7 @@ namespace RabbitMQ.Client
         private X509Certificate CertificateSelectionCallback(object sender, string targetHost,
             X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
-            if (acceptableIssuers != null && acceptableIssuers.Length > 0 &&
-                localCertificates != null && localCertificates.Count > 0)
+            if (acceptableIssuers?.Length > 0 && localCertificates?.Count > 0)
             {
                 foreach (X509Certificate certificate in localCertificates)
                 {
@@ -53,7 +50,7 @@ namespace RabbitMQ.Client
                     }
                 }
             }
-            if (localCertificates != null && localCertificates.Count > 0)
+            if (localCertificates?.Count > 0)
             {
                 return localCertificates[0];
             }

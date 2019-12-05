@@ -16,7 +16,9 @@ namespace RabbitMQ.Client
         public TcpClientAdapter(Socket socket)
         {
             if (socket == null)
+            {
                 throw new InvalidOperationException("socket must not be null");
+            }
 
             sock = socket;
         }
@@ -44,10 +46,7 @@ namespace RabbitMQ.Client
 
         public virtual void Dispose()
         {
-            if (sock != null)
-            {
-                sock.Dispose();
-            }
+            sock?.Dispose();
             sock = null;
         }
 
@@ -69,7 +68,11 @@ namespace RabbitMQ.Client
         {
             get
             {
-                if (sock == null) return false;
+                if (sock == null)
+                {
+                    return false;
+                }
+
                 return sock.Connected;
             }
         }

@@ -10,7 +10,7 @@ namespace RabbitMQ.Client.Impl
         private readonly object _shutdownLock = new object();
         private EventHandler<ShutdownEventArgs> _sessionShutdown;
 
-        public SessionBase(Connection connection, int channelNumber)
+        protected SessionBase(Connection connection, int channelNumber)
         {
             CloseReason = null;
             Connection = connection;
@@ -68,10 +68,7 @@ namespace RabbitMQ.Client.Impl
 
         public virtual void OnCommandReceived(Command cmd)
         {
-            if (CommandReceived != null)
-            {
-                CommandReceived(this, cmd);
-            }
+            CommandReceived?.Invoke(this, cmd);
         }
 
         public virtual void OnConnectionShutdown(object conn, ShutdownEventArgs reason)
@@ -88,10 +85,7 @@ namespace RabbitMQ.Client.Impl
                 handler = _sessionShutdown;
                 _sessionShutdown = null;
             }
-            if (handler != null)
-            {
-                handler(this, reason);
-            }
+            handler?.Invoke(this, reason);
         }
 
         public override string ToString()

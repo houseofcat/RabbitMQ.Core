@@ -86,7 +86,7 @@ namespace RabbitMQ.Client
         {
             ConsumerTag = consumerTag;
             IsRunning = true;
-            return TaskExtensions.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -105,8 +105,7 @@ namespace RabbitMQ.Client
             IBasicProperties properties,
             byte[] body)
         {
-            // Nothing to do here.
-            return TaskExtensions.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>

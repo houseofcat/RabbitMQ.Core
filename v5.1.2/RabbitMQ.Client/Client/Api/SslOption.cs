@@ -1,11 +1,6 @@
-
-#if !NETFX_CORE
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-#else
-using Windows.Networking.Sockets;
-#endif
 
 namespace RabbitMQ.Client
 {
@@ -14,28 +9,22 @@ namespace RabbitMQ.Client
     /// </summary>
     public class SslOption
     {
-#if !NETFX_CORE
         private X509CertificateCollection _certificateCollection;
-#endif
 
         /// <summary>
         /// Constructs an SslOption specifying both the server cannonical name and the client's certificate path.
         /// </summary>
         public SslOption(string serverName, string certificatePath = "", bool enabled = false)
         {
-#if !NETFX_CORE
             Version = SslProtocols.Tls;
             AcceptablePolicyErrors = SslPolicyErrors.None;
-#endif
 
             ServerName = serverName;
             CertPath = certificatePath;
             Enabled = enabled;
 
-#if !NETFX_CORE
             CertificateValidationCallback = null;
             CertificateSelectionCallback = null;
-#endif
         }
 
         /// <summary>
@@ -46,12 +35,10 @@ namespace RabbitMQ.Client
         {
         }
 
-#if !NETFX_CORE
         /// <summary>
         /// Retrieve or set the set of ssl policy errors that are deemed acceptable.
         /// </summary>
         public SslPolicyErrors AcceptablePolicyErrors { get; set; }
-#endif
 
         /// <summary>
         /// Retrieve or set the path to client certificate.
@@ -63,7 +50,6 @@ namespace RabbitMQ.Client
         /// </summary>
         public string CertPath { get; set; }
 
-#if !NETFX_CORE
         /// <summary>
         /// An optional client specified SSL certificate selection callback.  If this is not specified,
         /// the first valid certificate found will be used.
@@ -101,7 +87,6 @@ namespace RabbitMQ.Client
             }
             set { _certificateCollection = value; }
         }
-#endif
 
         /// <summary>
         /// Flag specifying if Ssl should indeed be used.
@@ -114,11 +99,9 @@ namespace RabbitMQ.Client
         /// </summary>
         public string ServerName { get; set; }
 
-#if !NETFX_CORE
         /// <summary>
         /// Retrieve or set the Ssl protocol version.
         /// </summary>
         public SslProtocols Version { get; set; }
-#endif
     }
 }

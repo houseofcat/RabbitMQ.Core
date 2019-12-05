@@ -25,8 +25,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static bool ParseBool(string value)
         {
-            bool result;
-            if (bool.TryParse(value, out result))
+            if (bool.TryParse(value, out bool result))
             {
                 return result;
             }
@@ -39,8 +38,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static byte ParseByte(string value)
         {
-            byte result;
-            if (byte.TryParse(value, out result))
+            if (byte.TryParse(value, out byte result))
             {
                 return result;
             }
@@ -53,8 +51,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static double ParseDouble(string value)
         {
-            double result;
-            if (double.TryParse(value, out result))
+            if (double.TryParse(value, out double result))
             {
                 return result;
             }
@@ -67,8 +64,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static float ParseFloat(string value)
         {
-            float result;
-            if (float.TryParse(value, out result))
+            if (float.TryParse(value, out float result))
             {
                 return result;
             }
@@ -81,8 +77,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static int ParseInt(string value)
         {
-            int result;
-            if (int.TryParse(value, out result))
+            if (int.TryParse(value, out int result))
             {
                 return result;
             }
@@ -95,8 +90,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static long ParseLong(string value)
         {
-            long result;
-            if (long.TryParse(value, out result))
+            if (long.TryParse(value, out long result))
             {
                 return result;
             }
@@ -109,8 +103,7 @@ namespace RabbitMQ.Client.Content
         /// <exception cref="ProtocolViolationException" />
         public static short ParseShort(string value)
         {
-            short result;
-            if (short.TryParse(value, out result))
+            if (short.TryParse(value, out short result))
             {
                 return result;
             }

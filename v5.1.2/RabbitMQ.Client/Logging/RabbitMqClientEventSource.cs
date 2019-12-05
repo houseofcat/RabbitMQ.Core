@@ -25,21 +25,27 @@ namespace RabbitMQ.Client.Logging
         public void Info(string message)
         {
             if (IsEnabled())
+            {
                 WriteEvent(1, message);
+            }
         }
 
         [Event(2, Message = "WARN", Keywords = Keywords.Log, Level = EventLevel.Warning)]
         public void Warn(string message)
         {
             if (IsEnabled())
+            {
                 WriteEvent(2, message);
+            }
         }
 
         [Event(3, Message = "ERROR", Keywords = Keywords.Log, Level = EventLevel.Error)]
         public void Error(string message, RabbitMqExceptionDetail ex)
         {
             if (IsEnabled())
+            {
                 WriteEvent(3, message, ex);
+            }
         }
 
         [NonEvent]

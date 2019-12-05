@@ -1,4 +1,3 @@
-#if !NETFX_CORE
 using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Util;
 using System;
@@ -13,15 +12,15 @@ namespace RabbitMQ.Client.Impl
 {
     internal static class TaskExtensions
     {
-        public static Task CompletedTask = Task.FromResult(0);
-
         public static async Task TimeoutAfter(this Task task, int millisecondsTimeout)
         {
             if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout)).ConfigureAwait(false))
-                await task;
+            {
+                await task.ConfigureAwait(false);
+            }
             else
             {
-                var supressErrorTask = task.ContinueWith(t => t.Exception.Handle(e => true), TaskContinuationOptions.OnlyOnFaulted);
+                var supressErrorTask = task.ContinueWith(t => t.Exception.Handle(_ => true), TaskContinuationOptions.OnlyOnFaulted);
                 throw new TimeoutException();
             }
         }
@@ -30,7 +29,6 @@ namespace RabbitMQ.Client.Impl
     public class SocketFrameHandler : IFrameHandler
     {
         // Timeout in seconds to wait for a clean socket close.
-        private const int SOCKET_CLOSING_TIMEOUT = 1;
         // Socket poll timeout in ms. If the socket does not
         // become writeable in this amount of time, we throw
         // an exception.
@@ -166,13 +164,14 @@ namespace RabbitMQ.Client.Impl
         }
 
         private static readonly byte[] amqp = Encoding.ASCII.GetBytes("AMQP");
+        private const byte one = 1;
 
         public void SendHeader()
         {
             var ms = new MemoryStream();
             var nbw = new NetworkBinaryWriter(ms);
             nbw.Write(amqp);
-            byte one = (byte)1;
+
             if (Endpoint.Protocol.Revision != 0)
             {
                 nbw.Write((byte)0);
@@ -203,7 +202,11 @@ namespace RabbitMQ.Client.Impl
         {
             var ms = new MemoryStream();
             var nbw = new NetworkBinaryWriter(ms);
-            foreach (var f in frames) f.WriteTo(nbw);
+            foreach (var f in frames)
+            {
+                f.WriteTo(nbw);
+            }
+
             m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
             Write(ms.ToArray());
         }
@@ -225,7 +228,7 @@ namespace RabbitMQ.Client.Impl
 
         private bool ShouldTryIPv6(AmqpTcpEndpoint endpoint)
         {
-            return (Socket.OSSupportsIPv6 && endpoint.AddressFamily != AddressFamily.InterNetwork);
+            return Socket.OSSupportsIPv6 && endpoint.AddressFamily != AddressFamily.InterNetwork;
         }
 
         private ITcpClient ConnectUsingIPv6(AmqpTcpEndpoint endpoint,
@@ -289,4 +292,3 @@ namespace RabbitMQ.Client.Impl
         }
     }
 }
-#endif

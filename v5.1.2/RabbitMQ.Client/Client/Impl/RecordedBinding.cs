@@ -5,7 +5,7 @@ namespace RabbitMQ.Client.Impl
 {
     public abstract class RecordedBinding : RecordedEntity
     {
-        public RecordedBinding(AutorecoveringModel model) : base(model)
+        protected RecordedBinding(AutorecoveringModel model) : base(model)
         {
         }
 
@@ -54,7 +54,7 @@ namespace RabbitMQ.Client.Impl
 
         public override string ToString()
         {
-            return String.Format("{0}: source = '{1}', destination = '{2}', routingKey = '{3}', arguments = '{4}'",
+            return string.Format("{0}: source = '{1}', destination = '{2}', routingKey = '{3}', arguments = '{4}'",
                 GetType().Name, Source, Destination, RoutingKey, Arguments);
         }
 
@@ -83,7 +83,6 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-
     public class RecordedQueueBinding : RecordedBinding
     {
         public RecordedQueueBinding(AutorecoveringModel model) : base(model)
@@ -95,7 +94,6 @@ namespace RabbitMQ.Client.Impl
             ModelDelegate.QueueBind(Destination, Source, RoutingKey, Arguments);
         }
     }
-
 
     public class RecordedExchangeBinding : RecordedBinding
     {

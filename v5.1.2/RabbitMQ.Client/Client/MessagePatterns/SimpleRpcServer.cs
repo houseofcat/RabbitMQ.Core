@@ -339,11 +339,10 @@ namespace RabbitMQ.Client.MessagePatterns
                         properties.ReplyTo);
                 }
 
-                IBasicProperties replyProperties;
                 byte[] reply = HandleCall(evt.Redelivered,
                     properties,
                     evt.Body,
-                    out replyProperties);
+                    out IBasicProperties replyProperties);
                 if (replyProperties == null)
                 {
                     replyProperties = m_subscription.Model.CreateBasicProperties();

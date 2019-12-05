@@ -88,7 +88,7 @@ namespace RabbitMQ.Client.Framing.Impl
             m_frameHandler = frameHandler;
 
             var asyncConnectionFactory = factory as IAsyncConnectionFactory;
-            if (asyncConnectionFactory != null && asyncConnectionFactory.DispatchConsumersAsync)
+            if (asyncConnectionFactory?.DispatchConsumersAsync == true)
             {
                 ConsumerWorkService = new AsyncConsumerWorkService();
             }
@@ -463,10 +463,9 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public Command ConnectionCloseWrapper(ushort reasonCode, string reasonText)
         {
-            Command request;
             Protocol.CreateConnectionClose(reasonCode,
                 reasonText,
-                out request,
+                out Command request,
                 out _,
                 out _);
             return request;
@@ -576,7 +575,7 @@ namespace RabbitMQ.Client.Framing.Impl
             TerminateMainloop();
         }
 
-        public void LogCloseError(String error, Exception ex)
+        public void LogCloseError(string error, Exception ex)
         {
             ESLog.Error(error, ex);
             ShutdownReport.Add(new ShutdownReportEntry(error, ex));
@@ -848,7 +847,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public void Open(bool insist)
         {
             StartAndTune();
-            m_model0.ConnectionOpen(m_factory.VirtualHost, String.Empty, false);
+            m_model0.ConnectionOpen(m_factory.VirtualHost, string.Empty, false);
         }
 
         public void PrettyPrintShutdownReport()
@@ -1039,7 +1038,7 @@ entry.ToString());
                         // of the heartbeat setting in setHeartbeat above.
                         if (m_missedHeartbeats > 2 * 4)
                         {
-                            String description = String.Format("Heartbeat missing with heartbeat == {0} seconds", m_heartbeat);
+                            string description = string.Format("Heartbeat missing with heartbeat == {0} seconds", m_heartbeat);
                             var eose = new EndOfStreamException(description);
                             ESLog.Error(description, eose);
                             ShutdownReport.Add(new ShutdownReportEntry(description, eose));
@@ -1252,10 +1251,9 @@ entry.ToString());
 
         protected Command ChannelCloseWrapper(ushort reasonCode, string reasonText)
         {
-            Command request;
             Protocol.CreateChannelClose(reasonCode,
                 reasonText,
-                out request,
+                out Command request,
                 out _,
                 out _);
             return request;
@@ -1302,13 +1300,13 @@ entry.ToString());
             {
                 string mechanismsString = Encoding.UTF8.GetString(connectionStart.m_mechanisms, 0, connectionStart.m_mechanisms.Length);
                 string[] mechanisms = mechanismsString.Split(' ');
-                AuthMechanismFactory mechanismFactory = m_factory.AuthMechanismFactory(mechanisms);
+                IAuthMechanismFactory mechanismFactory = m_factory.AuthMechanismFactory(mechanisms);
                 if (mechanismFactory == null)
                 {
                     throw new IOException("No compatible authentication mechanism found - " +
                                           "server offered [" + mechanismsString + "]");
                 }
-                AuthMechanism mechanism = mechanismFactory.GetInstance();
+                IAuthMechanism mechanism = mechanismFactory.GetInstance();
                 byte[] challenge = null;
                 do
                 {
@@ -1340,7 +1338,7 @@ entry.ToString());
             }
             catch (OperationInterruptedException e)
             {
-                if (e.ShutdownReason != null && e.ShutdownReason.ReplyCode == Constants.AccessRefused)
+                if (e.ShutdownReason?.ReplyCode == Constants.AccessRefused)
                 {
                     throw new AuthenticationFailureException(e.ShutdownReason.ReplyText);
                 }

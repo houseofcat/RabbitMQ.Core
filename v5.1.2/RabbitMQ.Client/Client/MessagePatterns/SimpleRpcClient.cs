@@ -175,10 +175,9 @@ namespace RabbitMQ.Client.MessagePatterns
         {
             IStreamMessageBuilder builder = new StreamMessageBuilder(Model);
             builder.WriteObjects(args);
-            IBasicProperties replyProperties;
             byte[] replyBody = Call((IBasicProperties)builder.GetContentHeader(),
                 builder.GetContentBody(),
-                out replyProperties);
+                out IBasicProperties replyProperties);
             if (replyProperties == null)
             {
                 return null;
@@ -339,10 +338,7 @@ namespace RabbitMQ.Client.MessagePatterns
         ///</remarks>
         public virtual void OnDisconnected()
         {
-            if (Disconnected != null)
-            {
-                Disconnected(this, null);
-            }
+            Disconnected?.Invoke(this, null);
         }
 
         ///<summary>Signals that the configured timeout fired while
@@ -352,10 +348,7 @@ namespace RabbitMQ.Client.MessagePatterns
         ///</remarks>
         public virtual void OnTimedOut()
         {
-            if (TimedOut != null)
-            {
-                TimedOut(this, null);
-            }
+            TimedOut?.Invoke(this, null);
         }
 
         ///<summary>Implement the IDisposable interface, permitting
@@ -387,8 +380,7 @@ namespace RabbitMQ.Client.MessagePatterns
         ///</remarks>
         protected virtual BasicDeliverEventArgs RetrieveReply(string correlationId)
         {
-            BasicDeliverEventArgs reply;
-            if (!Subscription.Next(TimeoutMilliseconds, out reply))
+            if (!Subscription.Next(TimeoutMilliseconds, out BasicDeliverEventArgs reply))
             {
                 OnTimedOut();
                 return null;

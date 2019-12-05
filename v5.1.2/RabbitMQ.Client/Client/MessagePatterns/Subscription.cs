@@ -415,8 +415,7 @@ namespace RabbitMQ.Client.MessagePatterns
                 }
                 else
                 {
-                    BasicDeliverEventArgs qValue;
-                    if (!m_queue.TryTake(out qValue, millisecondsTimeout))
+                    if (!m_queue.TryTake(out BasicDeliverEventArgs qValue, millisecondsTimeout))
                     {
                         result = null;
                         return false;

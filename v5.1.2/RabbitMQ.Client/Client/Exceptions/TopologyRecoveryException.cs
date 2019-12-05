@@ -1,7 +1,6 @@
-using RabbitMQ.Client.Exceptions;
 using System;
 
-namespace RabbitMQ.Client
+namespace RabbitMQ.Client.Exceptions
 {
     public class TopologyRecoveryException : RabbitMQClientException
     {
