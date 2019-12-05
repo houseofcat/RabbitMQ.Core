@@ -34,7 +34,7 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
  **Alternatively Run CodeGen**  
  * Before opening solution/project/folder, try running build first for your system.  
  * Run the specific ***.bat*** file for your version.  
- * You should be good to go after than with a clean AMQP API generation.  
+ * You should be good to go after that (with a clean AMQP API generation file inside of RabbitMQ.Client folder).  
  
  ### Linux Support?
  ***Shrugs*** It should?  

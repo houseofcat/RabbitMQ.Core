@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RabbitMQ.Client": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
