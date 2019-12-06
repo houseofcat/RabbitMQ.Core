@@ -104,7 +104,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -148,7 +147,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -204,7 +202,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -272,7 +269,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -388,7 +384,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -432,7 +427,6 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
@@ -452,11 +446,9 @@ namespace RabbitMQ.Client.Framing
                                     result.ReadArgumentsFrom(new MethodArgumentReader(reader));
                                     return result;
                                 }
-                            default: break;
                         }
                         break;
                     }
-                default: break;
             }
             throw new UnknownClassOrMethodException(classId, methodId);
         }
@@ -465,12 +457,11 @@ namespace RabbitMQ.Client.Framing
         {
             ushort classId = reader.ReadUInt16();
 
-            switch (classId)
+            return classId switch
             {
-                case 60: return new BasicProperties();
-                default: break;
-            }
-            throw new UnknownClassOrMethodException(classId, 0);
+                60 => new BasicProperties(),
+                _ => throw new UnknownClassOrMethodException(classId, 0),
+            };
         }
     }
 

@@ -1,48 +1,8 @@
-// This source code is dual-licensed under the Apache License, version
-// 2.0, and the Mozilla Public License, version 1.1.
-//
-// The APL v2.0:
-//
-//---------------------------------------------------------------------------
-//   Copyright (c) 2007-2016 Pivotal Software, Inc.
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       https://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-//---------------------------------------------------------------------------
-//
-// The MPL v1.1:
-//
-//---------------------------------------------------------------------------
-//  The contents of this file are subject to the Mozilla Public License
-//  Version 1.1 (the "License"); you may not use this file except in
-//  compliance with the License. You may obtain a copy of the License
-//  at http://www.mozilla.org/MPL/
-//
-//  Software distributed under the License is distributed on an "AS IS"
-//  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-//  the License for the specific language governing rights and
-//  limitations under the License.
-//
-//  The Original Code is RabbitMQ.
-//
-//  The Initial Developer of the Original Code is Pivotal Software, Inc.
-//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
-//---------------------------------------------------------------------------
-
+using NUnit.Framework;
+using RabbitMQ.Util;
 using System;
 using System.IO;
 using System.Threading;
-using NUnit.Framework;
-using RabbitMQ.Util;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -122,14 +82,14 @@ namespace RabbitMQ.Client.Unit
 
         public int ElapsedMs()
         {
-            return (int) ((DateTime.Now - m_startTime).TotalMilliseconds);
+            return (int)((DateTime.Now - m_startTime).TotalMilliseconds);
         }
 
         [Test]
         public void TestBgLong()
         {
             var q = new SharedQueue();
-            EnqueueAfter(TimingInterval*2, q, 123);
+            EnqueueAfter(TimingInterval * 2, q, 123);
 
             ResetTimer();
             object v;
@@ -147,7 +107,7 @@ namespace RabbitMQ.Client.Unit
 
             ResetTimer();
             object v;
-            bool r = q.Dequeue(TimingInterval*2, out v);
+            bool r = q.Dequeue(TimingInterval * 2, out v);
             Assert.Less(TimingInterval - SafetyMargin, ElapsedMs());
             Assert.IsTrue(r);
             Assert.AreEqual(123, v);
@@ -238,21 +198,21 @@ namespace RabbitMQ.Client.Unit
         {
             var q = new SharedQueue();
             EnqueueAfter(TimingInterval, q, 123);
-            EnqueueAfter(TimingInterval*2, q, 234);
+            EnqueueAfter(TimingInterval * 2, q, 234);
 
             ResetTimer();
             object v;
             bool r;
 
-            r = q.Dequeue(TimingInterval*2, out v);
+            r = q.Dequeue(TimingInterval * 2, out v);
             Assert.Less(TimingInterval - SafetyMargin, ElapsedMs());
             Assert.Greater(TimingInterval + SafetyMargin, ElapsedMs());
             Assert.IsTrue(r);
             Assert.AreEqual(123, v);
 
-            r = q.Dequeue(TimingInterval*2, out v);
-            Assert.Less(TimingInterval*2 - SafetyMargin, ElapsedMs());
-            Assert.Greater(TimingInterval*2 + SafetyMargin, ElapsedMs());
+            r = q.Dequeue(TimingInterval * 2, out v);
+            Assert.Less(TimingInterval * 2 - SafetyMargin, ElapsedMs());
+            Assert.Greater(TimingInterval * 2 + SafetyMargin, ElapsedMs());
             Assert.IsTrue(r);
             Assert.AreEqual(234, v);
         }
@@ -261,7 +221,7 @@ namespace RabbitMQ.Client.Unit
         public void TestDoublePoll()
         {
             var q = new SharedQueue();
-            EnqueueAfter(TimingInterval*2, q, 123);
+            EnqueueAfter(TimingInterval * 2, q, 123);
 
             ResetTimer();
             object v;
@@ -273,9 +233,9 @@ namespace RabbitMQ.Client.Unit
             Assert.IsTrue(!r);
             Assert.AreEqual(null, v);
 
-            r = q.Dequeue(TimingInterval*2, out v);
-            Assert.Less(TimingInterval*2 - SafetyMargin, ElapsedMs());
-            Assert.Greater(TimingInterval*2 + SafetyMargin, ElapsedMs());
+            r = q.Dequeue(TimingInterval * 2, out v);
+            Assert.Less(TimingInterval * 2 - SafetyMargin, ElapsedMs());
+            Assert.Greater(TimingInterval * 2 + SafetyMargin, ElapsedMs());
             Assert.IsTrue(r);
             Assert.AreEqual(123, v);
         }

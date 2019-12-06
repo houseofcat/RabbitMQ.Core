@@ -1,43 +1,3 @@
-// This source code is dual-licensed under the Apache License, version
-// 2.0, and the Mozilla Public License, version 1.1.
-//
-// The APL v2.0:
-//
-//---------------------------------------------------------------------------
-//   Copyright (c) 2007-2016 Pivotal Software, Inc.
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       https://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-//---------------------------------------------------------------------------
-//
-// The MPL v1.1:
-//
-//---------------------------------------------------------------------------
-//  The contents of this file are subject to the Mozilla Public License
-//  Version 1.1 (the "License"); you may not use this file except in
-//  compliance with the License. You may obtain a copy of the License
-//  at http://www.mozilla.org/MPL/
-//
-//  Software distributed under the License is distributed on an "AS IS"
-//  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-//  the License for the specific language governing rights and
-//  limitations under the License.
-//
-//  The Original Code is RabbitMQ.
-//
-//  The Initial Developer of the Original Code is Pivotal Software, Inc.
-//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
-//---------------------------------------------------------------------------
-
 using NUnit.Framework;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
@@ -47,18 +7,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-#pragma warning disable 0618
-
 namespace RabbitMQ.Client.Unit
 {
-    class DisposableConnection : IDisposable
+    internal class DisposableConnection : IDisposable
     {
         public DisposableConnection(AutorecoveringConnection c)
         {
             this.Connection = c;
         }
 
-        public AutorecoveringConnection Connection {get; private set;}
+        public AutorecoveringConnection Connection { get; private set; }
 
         public void Dispose()
         {
@@ -106,7 +64,7 @@ namespace RabbitMQ.Client.Unit
             Model.QueueDeclare(q, false, false, false, null);
             // create an offset
             var bp = Model.CreateBasicProperties();
-            Model.BasicPublish("", q, bp, new byte [] {});
+            Model.BasicPublish("", q, bp, new byte[] { });
             Thread.Sleep(50);
             var g = Model.BasicGet(q, false);
             CloseAndWaitForRecovery();
@@ -145,7 +103,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithHostnameList()
         {
-            using(var c = CreateAutorecoveringConnection(new List<string> { "127.0.0.1", "localhost" }))
+            using (var c = CreateAutorecoveringConnection(new List<string> { "127.0.0.1", "localhost" }))
             {
                 Assert.IsTrue(c.IsOpen);
                 CloseAndWaitForRecovery(c);
@@ -156,7 +114,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithHostnameListAndUnreachableHosts()
         {
-            using(var c = CreateAutorecoveringConnection(new List<string> { "191.72.44.22", "127.0.0.1", "localhost" }))
+            using (var c = CreateAutorecoveringConnection(new List<string> { "191.72.44.22", "127.0.0.1", "localhost" }))
             {
                 Assert.IsTrue(c.IsOpen);
                 CloseAndWaitForRecovery(c);
@@ -167,17 +125,17 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithEndpointList()
         {
-            using(var c = CreateAutorecoveringConnection(
-                        new List<AmqpTcpEndpoint> 
+            using (var c = CreateAutorecoveringConnection(
+                        new List<AmqpTcpEndpoint>
                         {
-                            new AmqpTcpEndpoint("127.0.0.1"), 
-                            new AmqpTcpEndpoint("localhost") 
+                            new AmqpTcpEndpoint("127.0.0.1"),
+                            new AmqpTcpEndpoint("localhost")
                         }))
-                        {
-                            Assert.IsTrue(c.IsOpen);
-                            CloseAndWaitForRecovery(c);
-                            Assert.IsTrue(c.IsOpen);
-                        }
+            {
+                Assert.IsTrue(c.IsOpen);
+                CloseAndWaitForRecovery(c);
+                Assert.IsTrue(c.IsOpen);
+            }
         }
 
         [Test]
@@ -201,18 +159,18 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithEndpointListAndUnreachableHosts()
         {
-            using(var c = CreateAutorecoveringConnection(
-                        new List<AmqpTcpEndpoint> 
-                        { 
-                            new AmqpTcpEndpoint("191.72.44.22"), 
-                            new AmqpTcpEndpoint("127.0.0.1"), 
-                            new AmqpTcpEndpoint("localhost") 
-                        }))
+            using (var c = CreateAutorecoveringConnection(
+                        new List<AmqpTcpEndpoint>
                         {
-                            Assert.IsTrue(c.IsOpen);
-                            CloseAndWaitForRecovery(c);
-                            Assert.IsTrue(c.IsOpen);
-                        }
+                            new AmqpTcpEndpoint("191.72.44.22"),
+                            new AmqpTcpEndpoint("127.0.0.1"),
+                            new AmqpTcpEndpoint("localhost")
+                        }))
+            {
+                Assert.IsTrue(c.IsOpen);
+                CloseAndWaitForRecovery(c);
+                Assert.IsTrue(c.IsOpen);
+            }
         }
 
         [Test]
@@ -309,7 +267,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestConsumerWorkServiceRecovery()
         {
-            using(var c = CreateAutorecoveringConnection())
+            using (var c = CreateAutorecoveringConnection())
             {
                 IModel m = c.CreateModel();
                 string q = m.QueueDeclare("dotnet-client.recovery.consumer_work_pool1",
@@ -593,21 +551,6 @@ namespace RabbitMQ.Client.Unit
         }
 
         [Test]
-        public void TestRecoveryEventHandlersOnConnection()
-        {
-            int counter = 0;
-            ((AutorecoveringConnection)Conn).Recovery += (source, ea) => Interlocked.Increment(ref counter);
-
-            CloseAndWaitForRecovery();
-            CloseAndWaitForRecovery();
-            CloseAndWaitForRecovery();
-            CloseAndWaitForRecovery();
-            Assert.IsTrue(Conn.IsOpen);
-
-            Assert.IsTrue(counter >= 3);
-        }
-
-        [Test]
         public void TestRecoveryEventHandlersOnModel()
         {
             int counter = 0;
@@ -648,32 +591,6 @@ namespace RabbitMQ.Client.Unit
             {
                 conn.Abort();
             }
-        }
-
-        [Test]
-        public void TestServerNamedQueueRecovery()
-        {
-            string q = Model.QueueDeclare("", false, false, false, null).QueueName;
-            string x = "amq.fanout";
-            Model.QueueBind(q, x, "");
-
-            string nameBefore = q;
-            string nameAfter = null;
-
-            var latch = new ManualResetEvent(false);
-            var connection = ((AutorecoveringConnection)Conn);
-            connection.Recovery += (source, ea) => latch.Set();
-            connection.QueueNameChangeAfterRecovery += (source, ea) => { nameAfter = ea.NameAfter; };
-
-            CloseAndWaitForRecovery();
-            Wait(latch);
-
-            Assert.IsNotNull(nameAfter);
-            Assert.IsTrue(nameBefore.StartsWith("amq."));
-            Assert.IsTrue(nameAfter.StartsWith("amq."));
-            Assert.AreNotEqual(nameBefore, nameAfter);
-
-            Model.QueueDeclarePassive(nameAfter);
         }
 
         [Test]
@@ -914,14 +831,6 @@ namespace RabbitMQ.Client.Unit
             ManualResetEvent sl = PrepareForShutdown(conn);
             CloseConnection(conn);
             Wait(sl);
-        }
-
-        protected ManualResetEvent PrepareForRecovery(AutorecoveringConnection conn)
-        {
-            var latch = new ManualResetEvent(false);
-            conn.Recovery += (source, ea) => latch.Set();
-
-            return latch;
         }
 
         protected ManualResetEvent PrepareForShutdown(IConnection conn)

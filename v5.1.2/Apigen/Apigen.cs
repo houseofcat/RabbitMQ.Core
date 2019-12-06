@@ -322,7 +322,7 @@ namespace RabbitMQ.Client.Apigen
 
             using var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write);
             m_outputFile = new StreamWriter(stream);
-            EmitPrelude();
+            //EmitPrelude();
             EmitPublic();
             EmitPrivate();
             m_outputFile.Dispose();

@@ -1,4 +1,3 @@
-// This source code is dual-licensed under the Apache License, version
 using System.Xml;
 
 namespace RabbitMQ.Client.Apigen

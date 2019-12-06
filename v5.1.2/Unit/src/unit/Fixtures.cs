@@ -1,62 +1,15 @@
-// This source code is dual-licensed under the Apache License, version
-// 2.0, and the Mozilla Public License, version 1.1.
-//
-// The APL v2.0:
-//
-//---------------------------------------------------------------------------
-//   Copyright (c) 2007-2016 Pivotal Software, Inc.
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       https://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-//---------------------------------------------------------------------------
-//
-// The MPL v1.1:
-//
-//---------------------------------------------------------------------------
-//  The contents of this file are subject to the Mozilla Public License
-//  Version 1.1 (the "License"); you may not use this file except in
-//  compliance with the License. You may obtain a copy of the License
-//  at http://www.mozilla.org/MPL/
-//
-//  Software distributed under the License is distributed on an "AS IS"
-//  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-//  the License for the specific language governing rights and
-//  limitations under the License.
-//
-//  The Original Code is RabbitMQ.
-//
-//  The Initial Developer of the Original Code is Pivotal Software, Inc.
-//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
-//---------------------------------------------------------------------------
-
-#pragma warning disable 2002
-
 using NUnit.Framework;
-
+using RabbitMQ.Client.Framing;
+using RabbitMQ.Client.Framing.Impl;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Text;
-using System.Threading;
 using System.Diagnostics;
 using System.Linq;
-
-using RabbitMQ.Client.Framing.Impl;
-using RabbitMQ.Client.Exceptions;
-using RabbitMQ.Client.Framing;
+using System.Text;
+using System.Threading;
 
 namespace RabbitMQ.Client.Unit
 {
-
     public class IntegrationFixture
     {
         protected IConnection Conn;
@@ -76,11 +29,11 @@ namespace RabbitMQ.Client.Unit
         [TearDown]
         public void Dispose()
         {
-            if(Model.IsOpen)
+            if (Model.IsOpen)
             {
                 Model.Close();
             }
-            if(Conn.IsOpen)
+            if (Conn.IsOpen)
             {
                 Conn.Close();
             }
@@ -109,48 +62,58 @@ namespace RabbitMQ.Client.Unit
 
         protected AutorecoveringConnection CreateAutorecoveringConnection(TimeSpan interval)
         {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            cf.NetworkRecoveryInterval = interval;
+            var cf = new ConnectionFactory
+            {
+                AutomaticRecoveryEnabled = true,
+                NetworkRecoveryInterval = interval
+            };
             return (AutorecoveringConnection)cf.CreateConnection();
         }
 
         protected AutorecoveringConnection CreateAutorecoveringConnection(TimeSpan interval, IList<string> hostnames)
         {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            // tests that use this helper will likely list unreachable hosts,
-            // make sure we time out quickly on those
-            cf.RequestedConnectionTimeout = 1000;
-            cf.NetworkRecoveryInterval = interval;
+            var cf = new ConnectionFactory
+            {
+                AutomaticRecoveryEnabled = true,
+                // tests that use this helper will likely list unreachable hosts,
+                // make sure we time out quickly on those
+                RequestedConnectionTimeout = 1000,
+                NetworkRecoveryInterval = interval
+            };
             return (AutorecoveringConnection)cf.CreateConnection(hostnames);
         }
 
         protected AutorecoveringConnection CreateAutorecoveringConnection(IList<AmqpTcpEndpoint> endpoints)
         {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            // tests that use this helper will likely list unreachable hosts,
-            // make sure we time out quickly on those
-            cf.RequestedConnectionTimeout = 1000;
-            cf.NetworkRecoveryInterval = RECOVERY_INTERVAL;
+            var cf = new ConnectionFactory
+            {
+                AutomaticRecoveryEnabled = true,
+                // tests that use this helper will likely list unreachable hosts,
+                // make sure we time out quickly on those
+                RequestedConnectionTimeout = 1000,
+                NetworkRecoveryInterval = RECOVERY_INTERVAL
+            };
             return (AutorecoveringConnection)cf.CreateConnection(endpoints);
         }
 
         protected AutorecoveringConnection CreateAutorecoveringConnectionWithTopologyRecoveryDisabled()
         {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            cf.TopologyRecoveryEnabled = false;
-            cf.NetworkRecoveryInterval = RECOVERY_INTERVAL;
+            var cf = new ConnectionFactory
+            {
+                AutomaticRecoveryEnabled = true,
+                TopologyRecoveryEnabled = false,
+                NetworkRecoveryInterval = RECOVERY_INTERVAL
+            };
             return (AutorecoveringConnection)cf.CreateConnection();
         }
 
         protected IConnection CreateNonRecoveringConnection()
         {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = false;
-            cf.TopologyRecoveryEnabled = false;
+            var cf = new ConnectionFactory
+            {
+                AutomaticRecoveryEnabled = false,
+                TopologyRecoveryEnabled = false
+            };
             return cf.CreateConnection();
         }
 
@@ -283,7 +246,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclare(queue, false, true, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(x => x.QueueDelete(queue));
             }
@@ -295,7 +259,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclare(queue, false, false, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(tm => tm.QueueDelete(queue));
             }
@@ -307,7 +272,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclareNoWait(queue, false, true, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(x => x.QueueDelete(queue));
             }
@@ -348,7 +314,8 @@ namespace RabbitMQ.Client.Unit
 
         protected void AssertMessageCount(string q, int count)
         {
-            WithTemporaryModel((m) => {
+            WithTemporaryModel((m) =>
+            {
                 QueueDeclareOk ok = m.QueueDeclarePassive(q);
                 Assert.AreEqual(count, ok.MessageCount);
             });
@@ -356,7 +323,8 @@ namespace RabbitMQ.Client.Unit
 
         protected void AssertConsumerCount(string q, int count)
         {
-            WithTemporaryModel((m) => {
+            WithTemporaryModel((m) =>
+            {
                 QueueDeclareOk ok = m.QueueDeclarePassive(q);
                 Assert.AreEqual(count, ok.ConsumerCount);
             });
@@ -384,7 +352,7 @@ namespace RabbitMQ.Client.Unit
 
         protected bool InitiatedByPeerOrLibrary(ShutdownEventArgs evt)
         {
-            return !(evt.Initiator == ShutdownInitiator.Application);
+            return evt.Initiator != ShutdownInitiator.Application;
         }
 
         //
@@ -393,7 +361,7 @@ namespace RabbitMQ.Client.Unit
 
         protected void WaitOn(object o)
         {
-            lock(o)
+            lock (o)
             {
                 Monitor.Wait(o, TimingFixture.TestTimeout);
             }
@@ -445,35 +413,39 @@ namespace RabbitMQ.Client.Unit
                     UseShellExecute = false
                 }
             };
-            if(changeDirTo != null)
+            if (changeDirTo != null)
             {
                 proc.StartInfo.WorkingDirectory = changeDirTo;
             }
 
             string cmd;
-            if(IsRunningOnMonoOrDotNetCore()) {
-                cmd  = ctl;
-            } else {
-                cmd  = "cmd.exe";
+            if (IsRunningOnMonoOrDotNetCore())
+            {
+                cmd = ctl;
+            }
+            else
+            {
+                cmd = "cmd.exe";
                 args = "/c \"\"" + ctl + "\" " + args + "\"";
             }
 
-            try {
-              proc.StartInfo.FileName = cmd;
-              proc.StartInfo.Arguments = args;
-              proc.StartInfo.RedirectStandardError = true;
-              proc.StartInfo.RedirectStandardOutput = true;
+            try
+            {
+                proc.StartInfo.FileName = cmd;
+                proc.StartInfo.Arguments = args;
+                proc.StartInfo.RedirectStandardError = true;
+                proc.StartInfo.RedirectStandardOutput = true;
 
-              proc.Start();
+                proc.Start();
                 string stderr = proc.StandardError.ReadToEnd();
-              proc.WaitForExit();
-              if (stderr.Length >  0 || proc.ExitCode > 0)
-              {
+                proc.WaitForExit();
+                if (stderr.Length > 0 || proc.ExitCode > 0)
+                {
                     string stdout = proc.StandardOutput.ReadToEnd();
-                  ReportExecFailure(cmd, args, stderr + "\n" + stdout);
-              }
+                    ReportExecFailure(cmd, args, stderr + "\n" + stdout);
+                }
 
-              return proc;
+                return proc;
             }
             catch (Exception e)
             {
@@ -545,14 +517,14 @@ namespace RabbitMQ.Client.Unit
 
         protected List<ConnectionInfo> ListConnections()
         {
-            Process proc  = ExecRabbitMQCtl("list_connections --silent pid peer_port");
+            Process proc = ExecRabbitMQCtl("list_connections --silent pid peer_port");
             string stdout = proc.StandardOutput.ReadToEnd();
 
             try
             {
                 // {Environment.NewLine} is not sufficient
                 string[] splitOn = new string[] { "\r\n", "\n" };
-                string[] lines   = stdout.Split(splitOn, StringSplitOptions.RemoveEmptyEntries);
+                string[] lines = stdout.Split(splitOn, StringSplitOptions.RemoveEmptyEntries);
                 // line: <rabbit@mercurio.1.11491.0>	58713
                 return lines.Select(s =>
                 {
@@ -578,7 +550,7 @@ namespace RabbitMQ.Client.Unit
         protected void CloseAllConnections()
         {
             var cs = ListConnections();
-            foreach(var c in cs)
+            foreach (var c in cs)
             {
                 CloseConnection(c.Pid);
             }

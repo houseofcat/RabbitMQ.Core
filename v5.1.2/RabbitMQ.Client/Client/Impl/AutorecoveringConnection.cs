@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    public class AutorecoveringConnection : IConnection, IRecoverable
+    public class AutorecoveringConnection : IConnection
     {
         public readonly object m_eventLock = new object();
 
@@ -233,33 +233,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        [Obsolete("Use RecoverySucceeded instead")]
-        public event EventHandler<EventArgs> Recovery
-        {
-            add
-            {
-                lock (m_eventLock)
-                {
-                    m_recovery += value;
-                }
-            }
-            remove
-            {
-                lock (m_eventLock)
-                {
-                    m_recovery -= value;
-                }
-            }
-        }
-
         public string ClientProvidedName { get; }
-
-        [Obsolete("Please explicitly close connections instead.")]
-        public bool AutoClose
-        {
-            get { return m_delegate.AutoClose; }
-            set { m_delegate.AutoClose = value; }
-        }
 
         public ushort ChannelMax
         {

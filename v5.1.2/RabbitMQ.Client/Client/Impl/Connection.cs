@@ -214,13 +214,6 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public string ClientProvidedName { get; }
 
-        [Obsolete("Please explicitly close connections instead.")]
-        public bool AutoClose
-        {
-            get { return m_sessionManager.AutoClose; }
-            set { m_sessionManager.AutoClose = value; }
-        }
-
         public ushort ChannelMax
         {
             get { return m_sessionManager.ChannelMax; }
@@ -362,13 +355,11 @@ namespace RabbitMQ.Client.Framing.Impl
                 catch (AlreadyClosedException) when (abort)
                 {
                 }
-#pragma warning disable 0168
                 catch (NotSupportedException)
                 {
                     // buffered stream had unread data in it and Flush()
                     // was called, ignore to not confuse the user
                 }
-#pragma warning restore 0168
                 catch (IOException ioe)
                 {
                     if (m_model0.CloseReason == null)
@@ -788,7 +779,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public void Open(bool insist)
         {
             StartAndTune();
-            m_model0.ConnectionOpen(m_factory.VirtualHost, string.Empty, false);
+            m_model0.ConnectionOpen(m_factory.VirtualHost, string.Empty, insist);
         }
 
         public void PrettyPrintShutdownReport()

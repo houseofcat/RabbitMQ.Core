@@ -2,7 +2,6 @@ using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Client.Framing;
 using RabbitMQ.Client.Framing.Impl;
 using RabbitMQ.Util;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -14,24 +13,12 @@ namespace RabbitMQ.Client.Impl
         private readonly IntAllocator Ints;
         private readonly Connection m_connection;
         private readonly IDictionary<int, ISession> m_sessionMap = new Dictionary<int, ISession>();
-        private bool m_autoClose;
 
         public SessionManager(Connection connection, ushort channelMax)
         {
             m_connection = connection;
             ChannelMax = (channelMax == 0) ? ushort.MaxValue : channelMax;
             Ints = new IntAllocator(1, ChannelMax);
-        }
-
-        [Obsolete("Please explicitly close connections instead.")]
-        public bool AutoClose
-        {
-            get { return m_autoClose; }
-            set
-            {
-                m_autoClose = value;
-                CheckAutoClose();
-            }
         }
 
         public int Count
@@ -50,32 +37,6 @@ namespace RabbitMQ.Client.Impl
         public void AutoCloseConnection()
         {
             m_connection.Abort(Constants.ReplySuccess, "AutoClose", ShutdownInitiator.Library, Timeout.Infinite);
-        }
-
-        ///<summary>If m_autoClose and there are no active sessions
-        ///remaining, Close()s the connection with reason code
-        ///200.</summary>
-        public void CheckAutoClose()
-        {
-            if (m_autoClose)
-            {
-                lock (m_sessionMap)
-                {
-                    if (m_sessionMap.Count == 0)
-                    {
-                        // Run this in a background thread, because
-                        // usually CheckAutoClose will be called from
-                        // HandleSessionShutdown above, which runs in
-                        // the thread of the connection. If we were to
-                        // attempt to close the connection from within
-                        // the connection's thread, we would suffer a
-                        // deadlock as the connection thread would be
-                        // blocking waiting for its own mainloop to
-                        // reply to it.
-                        new Thread(AutoCloseConnection).Start();
-                    }
-                }
-            }
         }
 
         public ISession Create()
@@ -121,7 +82,6 @@ namespace RabbitMQ.Client.Impl
                 var session = (ISession)sender;
                 m_sessionMap.Remove(session.ChannelNumber);
                 Ints.Free(session.ChannelNumber);
-                CheckAutoClose();
             }
         }
 
