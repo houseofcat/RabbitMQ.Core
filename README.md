@@ -89,3 +89,7 @@ The goal is to modernize, modernize, modernize, while trying to use that same na
 ### Pivotal's Repo
 
 https://github.com/rabbitmq/rabbitmq-dotnet-client  
+
+
+### Prototype Client
+Was a total rewrite conduced by Github user `bording` and the PrototypeClient is based of Angora repo is located [here](https://github.com/bording/Angora).
