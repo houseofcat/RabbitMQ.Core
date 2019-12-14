@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core", "CookedRabbit.Core.csproj", "{5808360B-AB56-4019-953B-185362B2D2AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core", "CookedRabbit.Core\CookedRabbit.Core.csproj", "{5808360B-AB56-4019-953B-185362B2D2AE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Benchmark", "..\CookedRabbit.Core.Benchmark\CookedRabbit.Core.Benchmark.csproj", "{7438CBE2-FDB9-43DF-A799-5858757BAF4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Benchmark", "CookedRabbit.Core.Benchmark\CookedRabbit.Core.Benchmark.csproj", "{7438CBE2-FDB9-43DF-A799-5858757BAF4C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Tests", "..\CookedRabbit.Core.Tests\CookedRabbit.Core.Tests.csproj", "{C2B794EB-A8E4-4258-8B43-0D179C5D8A3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Tests", "CookedRabbit.Core.Tests\CookedRabbit.Core.Tests.csproj", "{C2B794EB-A8E4-4258-8B43-0D179C5D8A3E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
