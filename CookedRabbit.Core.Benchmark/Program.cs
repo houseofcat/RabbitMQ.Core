@@ -6,7 +6,7 @@ namespace Nuno.Rabbit.Benchmark
     {
         public static void Main(string[] args)
         {
-            _ = BenchmarkRunner.Run<ConnectionPoolBenchmark>();
+            //_ = BenchmarkRunner.Run<ConnectionPoolBenchmark>();
             _ = BenchmarkRunner.Run<ChannelPoolBenchmark>();
         }
     }

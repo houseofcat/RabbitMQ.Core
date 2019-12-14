@@ -18,7 +18,7 @@ namespace Nuno.Rabbit.Benchmark
         {
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
-            config.PoolSettings.MaxConnections = 25;
+            config.PoolSettings.MaxConnections = 5;
 
             ConnectionPool = new ConnectionPool(config);
 
@@ -35,10 +35,27 @@ namespace Nuno.Rabbit.Benchmark
                 .ConfigureAwait(false);
         }
 
+        [Benchmark(Baseline = true)]
+        [Arguments(100)]
+        [Arguments(500)]
+        public void CreateConnections(int x)
+        {
+            for (int i = 0; i < x; i++)
+            {
+                var connection = ConnectionPool
+                    .ConnectionFactory
+                    .CreateConnection();
+
+                connection.Close();
+            }
+        }
+
         [Benchmark]
+        [Arguments(100)]
+        [Arguments(500)]
         [Arguments(5_000)]
         [Arguments(500_000)]
-        public async Task OverLoopThroughConnectionPoolAsync(int x)
+        public async Task GetConnectionFromConnectionPoolAsync(int x)
         {
             for (int i = 0; i < x; i++)
             {
@@ -49,8 +66,12 @@ namespace Nuno.Rabbit.Benchmark
         }
 
         [Benchmark]
+        [Arguments(100)]
+        [Arguments(500)]
+        [Arguments(5_000)]
+        [Arguments(500_000)]
         [Arguments(1_000_000)]
-        public async Task ConcurrentOverLoopThroughConnectionPoolAsync(int x)
+        public async Task ConcurrentGetConnectionFromConnectionPoolAsync(int x)
         {
             var t1 = Task.Run(async () =>
             {

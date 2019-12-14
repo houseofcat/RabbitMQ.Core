@@ -11,6 +11,7 @@ namespace Nuno.Rabbit.Benchmark
     [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp31)]
     public class ChannelPoolBenchmark
     {
+        public ConnectionPool ConnectionPool;
         public ChannelPool ChannelPool;
 
         [GlobalSetup]
@@ -22,8 +23,13 @@ namespace Nuno.Rabbit.Benchmark
             config.PoolSettings.MaxChannels = 50;
 
             ChannelPool = new ChannelPool(config);
+            ConnectionPool = new ConnectionPool(config);
 
             await ChannelPool
+                .InitializeAsync()
+                .ConfigureAwait(false);
+
+            await ConnectionPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
         }
@@ -34,12 +40,54 @@ namespace Nuno.Rabbit.Benchmark
             await ChannelPool
                 .ShutdownAsync()
                 .ConfigureAwait(false);
+
+            await ConnectionPool
+                .ShutdownAsync()
+                .ConfigureAwait(false);
+        }
+
+        [Benchmark(Baseline = true)]
+        [Arguments(100)]
+        [Arguments(500)]
+        public void CreateConnectionsAndChannels(int x)
+        {
+            for (int i = 0; i < x; i++)
+            {
+                var connection = ConnectionPool
+                    .ConnectionFactory
+                    .CreateConnection();
+
+                var channel = connection
+                    .CreateModel();
+
+                channel.Close();
+                connection.Close();
+            }
         }
 
         [Benchmark]
+        [Arguments(100)]
+        [Arguments(500)]
+        public async Task CreateChannelsWithConnectionFromConnectionPoolAsync(int x)
+        {
+            for (int i = 0; i < x; i++)
+            {
+                var connHost = await ConnectionPool
+                    .GetConnectionAsync()
+                    .ConfigureAwait(false);
+
+                var channel = connHost.Connection.CreateModel();
+                channel.Close();
+            }
+        }
+
+        [Benchmark]
+        [Arguments(100)]
+        [Arguments(500)]
         [Arguments(5_000)]
         [Arguments(500_000)]
-        public async Task OverLoopThroughChannelPoolAsync(int x)
+        [Arguments(1_000_000)]
+        public async Task GetChannelFromChannelPoolAsync(int x)
         {
             for (int i = 0; i < x; i++)
             {
@@ -54,8 +102,12 @@ namespace Nuno.Rabbit.Benchmark
         }
 
         [Benchmark]
+        [Arguments(100)]
+        [Arguments(500)]
+        [Arguments(5_000)]
+        [Arguments(500_000)]
         [Arguments(1_000_000)]
-        public async Task ConcurrentOverLoopThroughChannelPoolAsync(int x)
+        public async Task ConcurrentGetChannelFromChannelPoolAsync(int x)
         {
             var t1 = Task.Run(async () =>
             {
