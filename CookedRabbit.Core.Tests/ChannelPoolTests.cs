@@ -6,7 +6,7 @@ using CookedRabbit.Core.Pools;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Nuno.Rabbit.Tests
+namespace CookedRabbit.Core.Tests
 {
     public class ChannelPoolTests
     {

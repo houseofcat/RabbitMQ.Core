@@ -5,8 +5,9 @@ using BenchmarkDotNet.Jobs;
 using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
-namespace Nuno.Rabbit.Benchmark
+namespace CookedRabbit.Core.Benchmark
 {
+    [MarkdownExporterAttribute.GitHub]
     [MemoryDiagnoser, ThreadingDiagnoser]
     [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp31)]
     public class ChannelPoolBenchmark

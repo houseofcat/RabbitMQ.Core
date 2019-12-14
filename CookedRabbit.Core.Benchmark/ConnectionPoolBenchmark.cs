@@ -5,8 +5,9 @@ using BenchmarkDotNet.Jobs;
 using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
-namespace Nuno.Rabbit.Benchmark
+namespace CookedRabbit.Core.Benchmark
 {
+    [MarkdownExporterAttribute.GitHub]
     [MemoryDiagnoser, ThreadingDiagnoser]
     [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp31)]
     public class ConnectionPoolBenchmark
@@ -55,6 +56,7 @@ namespace Nuno.Rabbit.Benchmark
         [Arguments(500)]
         [Arguments(5_000)]
         [Arguments(500_000)]
+        [Arguments(1_000_000)]
         public async Task GetConnectionFromConnectionPoolAsync(int x)
         {
             for (int i = 0; i < x; i++)
