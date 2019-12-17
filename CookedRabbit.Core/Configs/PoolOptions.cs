@@ -1,8 +1,5 @@
 namespace CookedRabbit.Core.Configs
 {
-    /// <summary>
-    /// Class to fully season RabbitServices to your taste!
-    /// </summary>
     public class PoolOptions
     {
         /// <summary>

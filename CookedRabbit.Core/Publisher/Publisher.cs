@@ -1,8 +1,6 @@
 using System;
-using System.Runtime.CompilerServices;
-#if CORE3
 using System.Collections.Generic;
-#endif
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Configs;
@@ -12,7 +10,7 @@ namespace CookedRabbit.Core.Publisher
 {
     public class Publisher
     {
-        private Config Config { get; }
+        public Config Config { get; }
         private ChannelPool ChannelPool { get; }
 
         private Channel<PublishReceipt> ReceiptBuffer { get; }
@@ -22,16 +20,24 @@ namespace CookedRabbit.Core.Publisher
         public Publisher(Config config)
         {
             Config = config;
+            ChannelPool = new ChannelPool(Config);
+            ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
 
         public Publisher(ChannelPool channelPool)
         {
-            ChannelPool = channelPool;
             Config = ChannelPool.Config;
+            ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
 
-        public async ValueTask PublishAsync(Letter letter)
+        /// <summary>
+        /// Acquires a channel from the channel pool, then publishes message based on the letter/envelope parameters.
+        /// <para>Only throws exception when failing to acquire channel or when creating a receipt after the ReceiptBuffer is closed.</para>
+        /// </summary>
+        /// <param name="letter"></param>
+        /// <param name="createReceipt"></param>
+        public async Task PublishAsync(Letter letter, bool createReceipt)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -53,10 +59,56 @@ namespace CookedRabbit.Core.Publisher
                     letter.Body);
             }
             catch
+            { error = true; }
+            finally
             {
-                error = true;
-                throw;
+                if (createReceipt)
+                {
+                    await CreateReceiptAsync(letter.LetterId, error)
+                        .ConfigureAwait(false);
+                }
+
+                await ChannelPool
+                    .ReturnChannelAsync(chanHost, error);
             }
+        }
+
+        /// <summary>
+        /// Use this method to sequentially publish all messages in a list in the order received.
+        /// </summary>
+        /// <param name="letters"></param>
+        /// <param name="createReceipt"></param>
+        public async Task PublisManyAsync(IList<Letter> letters, bool createReceipt)
+        {
+            var error = false;
+            var chanHost = await ChannelPool
+                .GetChannelAsync()
+                .ConfigureAwait(false);
+
+            try
+            {
+                for (int i = 0; i < letters.Count; i++)
+                {
+                    var props = chanHost.Channel.CreateBasicProperties();
+                    props.DeliveryMode = letters[i].Envelope.RoutingOptions.DeliveryMode;
+                    props.ContentType = letters[i].Envelope.RoutingOptions.MessageType;
+                    props.Priority = letters[i].Envelope.RoutingOptions.PriorityLevel;
+
+                    chanHost.Channel.BasicPublish(
+                        letters[i].Envelope.Exchange,
+                        letters[i].Envelope.RoutingKey,
+                        letters[i].Envelope.RoutingOptions.Mandatory,
+                        props,
+                        letters[i].Body);
+
+                    if (createReceipt)
+                    {
+                        await CreateReceiptAsync(letters[i].LetterId, error).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch
+            { error = true; }
             finally
             {
                 await ChannelPool
@@ -64,22 +116,97 @@ namespace CookedRabbit.Core.Publisher
             }
         }
 
-        public async ValueTask PublishWithReceiptAsync(Letter letter)
+#if CORE3
+        /// <summary>
+        /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
+        /// </summary>
+        /// <param name="letters"></param>
+        /// <param name="createReceipt"></param>
+        public async Task PublisAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
         {
-            ChannelHost chanHost;
             var error = false;
+            var chanHost = await ChannelPool
+                .GetChannelAsync()
+                .ConfigureAwait(false);
+
             try
             {
-                chanHost = await ChannelPool
-                    .GetChannelAsync()
-                    .ConfigureAwait(false);
+                await foreach (var letter in letters)
+                {
+                    var props = chanHost.Channel.CreateBasicProperties();
+                    props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
+                    props.ContentType = letter.Envelope.RoutingOptions.MessageType;
+                    props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
+
+                    chanHost.Channel.BasicPublish(
+                        letter.Envelope.Exchange,
+                        letter.Envelope.RoutingKey,
+                        letter.Envelope.RoutingOptions.Mandatory,
+                        props,
+                        letter.Body);
+
+                    if (createReceipt)
+                    {
+                        await CreateReceiptAsync(letter.LetterId, error).ConfigureAwait(false);
+                    }
+                }
             }
             catch
             { error = true; }
-
-            if (error)
+            finally
             {
-                await CreateReceiptAsync(letter.LetterId, error);
+                await ChannelPool
+                    .ReturnChannelAsync(chanHost, error);
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Use this method when a group of letters who have the same properties (deliverymode, messagetype, priority).
+        /// <para>Receipt with no error indicates that we successfully handed off to internal library, not necessarily published.</para>
+        /// </summary>
+        /// <param name="letters"></param>
+        /// <param name="createReceipt"></param>
+        public async Task PublisManyAsGroupAsync(IList<Letter> letters, bool createReceipt)
+        {
+            var error = false;
+            var chanHost = await ChannelPool
+                .GetChannelAsync()
+                .ConfigureAwait(false);
+
+            try
+            {
+                var props = chanHost.Channel.CreateBasicProperties();
+                props.DeliveryMode = letters[0].Envelope.RoutingOptions.DeliveryMode;
+                props.ContentType = letters[0].Envelope.RoutingOptions.MessageType;
+                props.Priority = letters[0].Envelope.RoutingOptions.PriorityLevel;
+
+                var publishBatch = chanHost.Channel.CreateBasicPublishBatch();
+                for (int i = 0; i < letters.Count; i++)
+                {
+                    publishBatch.Add(
+                        letters[i].Envelope.Exchange,
+                        letters[i].Envelope.RoutingKey,
+                        letters[i].Envelope.RoutingOptions.Mandatory,
+                        props,
+                        letters[i].Body);
+
+                    if (createReceipt)
+                    {
+                        await CreateReceiptAsync(letters[i].LetterId, error).ConfigureAwait(false);
+                    }
+                }
+
+                publishBatch.Publish();
+            }
+            catch
+            {
+                error = true;
+            }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(chanHost, error);
             }
         }
 
@@ -100,7 +227,7 @@ namespace CookedRabbit.Core.Publisher
                 .ConfigureAwait(false);
         }
 
-        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptsReader()
+        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReader()
         {
             if (!await ReceiptBuffer
                 .Reader
@@ -123,7 +250,10 @@ namespace CookedRabbit.Core.Publisher
                 throw new InvalidOperationException(ChannelError);
             }
 
-            return await ReceiptBuffer.Reader.ReadAsync().ConfigureAwait(false);
+            return await ReceiptBuffer
+                .Reader
+                .ReadAsync()
+                .ConfigureAwait(false);
         }
 
 #if CORE3

@@ -8,6 +8,8 @@ namespace CookedRabbit.Core
         public LetterMetadata LetterMetadata { get; set; }
         public byte[] Body { get; set; }
 
+        public Letter() { }
+
         public Letter(string exchange, string routingKey, byte[] data, LetterMetadata metadata = null, RoutingOptions routingOptions = null)
         {
             Envelope = new Envelope

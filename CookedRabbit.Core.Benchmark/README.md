@@ -489,3 +489,40 @@ Skewness = -0.1, Kurtosis = 1.35, MValue = 2
 
 </p>
 </details>
+
+<details><summary>Click here to Utils.XorShift Results!</summary>
+<p>
+
+// * Summary *
+
+BenchmarkDotNet=v0.12.0, OS=Windows 10.0.17763.914 (1809/October2018Update/Redstone5)
+Intel Core i7-8700K CPU 3.70GHz (Coffee Lake), 1 CPU, 12 logical and 6 physical cores
+.NET Core SDK=3.1.100
+  [Host]     : .NET Core 3.1.0 (CoreCLR 4.700.19.56402, CoreFX 4.700.19.56404), X64 RyuJIT
+  Job-MUNGBO : .NET Core 3.1.0 (CoreCLR 4.700.19.56402, CoreFX 4.700.19.56404), X64 RyuJIT
+
+Runtime=.NET Core 3.1
+
+|                         Method |      x |          Mean |        Error |       StdDev | Ratio |   Gen 0 |   Gen 1 |   Gen 2 | Allocated | Completed Work Items | Lock Contentions |
+|------------------------------- |------- |--------------:|-------------:|-------------:|------:|--------:|--------:|--------:|----------:|---------------------:|-----------------:|
+|          CreateRandomByteArray |    100 |   1,934.62 ns |     7.628 ns |     6.370 ns |  1.00 |  0.0648 |       - |       - |     408 B |               0.0000 |                - |
+|       CreateXorRandomByteArray |    100 |      78.82 ns |     1.576 ns |     1.475 ns |  0.04 |  0.0204 |       - |       - |     128 B |               0.0000 |                - |
+| CreateUnsafeXorRandomByteArray |    100 |      31.75 ns |     0.347 ns |     0.325 ns |  0.02 |  0.0204 |       - |       - |     128 B |               0.0000 |                - |
+|                                |        |               |              |              |       |         |         |         |           |                      |                  |
+|          CreateRandomByteArray |    500 |   4,302.83 ns |    41.711 ns |    34.831 ns |  1.00 |  0.1221 |       - |       - |     808 B |               0.0000 |                - |
+|       CreateXorRandomByteArray |    500 |     393.81 ns |     7.621 ns |     7.485 ns |  0.09 |  0.0839 |       - |       - |     528 B |               0.0000 |                - |
+| CreateUnsafeXorRandomByteArray |    500 |     137.54 ns |     2.087 ns |     1.952 ns |  0.03 |  0.0842 |       - |       - |     528 B |               0.0000 |                - |
+|                                |        |               |              |              |       |         |         |         |           |                      |                  |
+|          CreateRandomByteArray |   1000 |   7,308.81 ns |    64.291 ns |    60.138 ns |  1.00 |  0.2060 |       - |       - |    1304 B |               0.0000 |                - |
+|          CreateRandomByteArray |   1000 |   7,264.11 ns |    83.620 ns |    78.218 ns |  0.99 |  0.2060 |       - |       - |    1304 B |               0.0000 |                - |
+|       CreateXorRandomByteArray |   1000 |     791.60 ns |    15.847 ns |    27.755 ns |  0.11 |  0.1631 |       - |       - |    1024 B |               0.0000 |                - |
+|       CreateXorRandomByteArray |   1000 |     774.75 ns |    13.572 ns |    12.695 ns |  0.11 |  0.1631 |       - |       - |    1024 B |               0.0000 |                - |
+| CreateUnsafeXorRandomByteArray |   1000 |     276.47 ns |     5.035 ns |     4.710 ns |  0.04 |  0.1631 |       - |       - |    1024 B |               0.0000 |                - |
+| CreateUnsafeXorRandomByteArray |   1000 |     275.98 ns |     3.834 ns |     3.586 ns |  0.04 |  0.1631 |       - |       - |    1024 B |               0.0000 |                - |
+|                                |        |               |              |              |       |         |         |         |           |                      |                  |
+|          CreateRandomByteArray | 100000 | 590,970.86 ns | 1,959.599 ns | 1,636.354 ns |  1.00 | 30.2734 | 30.2734 | 30.2734 |  100305 B |               0.0020 |                - |
+|       CreateXorRandomByteArray | 100000 |  91,365.62 ns |   930.069 ns |   824.482 ns |  0.15 | 31.1279 | 31.1279 | 31.1279 |  100024 B |               0.0002 |                - |
+| CreateUnsafeXorRandomByteArray | 100000 |  42,577.86 ns |   614.341 ns |   574.655 ns |  0.07 | 31.1890 | 31.1890 | 31.1890 |  100025 B |               0.0001 |                - |
+
+</p>
+</details>

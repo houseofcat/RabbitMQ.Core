@@ -1,34 +1,25 @@
 namespace CookedRabbit.Core.Configs
 {
-    /// <summary>
-    /// Class to fully season RabbitServices to your taste!
-    /// </summary>
     public class Config
     {
         /// <summary>
-        /// RabbitMQ global consumer parameters.
-        /// </summary>
-        public ushort QosPrefetchSize { get; set; } = 0;
-
-        /// <summary>
-        /// RabbitMQ consumer parameters.
-        /// <para>To fine tune, check consumer utilization located in RabbitMQ HTTP API management.</para>
-        /// </summary>
-        public ushort QosPrefetchCount { get; set; } = 120;
-
-        /// <summary>
-        /// Class to hold settings for ChannelFactory (RabbitMQ) settings.
+        /// Class to hold settings for ConnectionFactory (RabbitMQ) options.
         /// </summary>
         public FactoryOptions FactorySettings { get; set; } = new FactoryOptions();
 
         /// <summary>
-        /// Class to hold settings for Channel/Connection pools.
+        /// Class to hold settings for Channel/ConnectionPool options.
         /// </summary>
         public PoolOptions PoolSettings { get; set; } = new PoolOptions();
 
         /// <summary>
-        /// Class to hold settings for ChannelFactory/SSL (RabbitMQ) settings.
+        /// Class to hold settings for Publisher/AutoPublisher options.
         /// </summary>
-        public SslOptions SslSettings { get; set; } = new SslOptions();
+        public PublisherOptions PublisherSettings { get; set; } = new PublisherOptions();
+
+        /// <summary>
+        /// Class to hold settings for Consumer options.
+        /// </summary>
+        public ConsumerOptions ConsumerSettings { get; set; } = new ConsumerOptions();
     }
 }

@@ -2,9 +2,6 @@ using System;
 
 namespace CookedRabbit.Core.Configs
 {
-    /// <summary>
-    /// Class to fully season RabbitServices to your taste!
-    /// </summary>
     public class FactoryOptions
     {
         /// <summary>
@@ -53,5 +50,10 @@ namespace CookedRabbit.Core.Configs
         /// <para>Becareful with this - it might have unintended side effects.</para>
         /// </summary>
         public bool UseBackgroundThreadsForIO { get; set; }
+
+        /// <summary>
+        /// Class to hold settings for ChannelFactory/SSL (RabbitMQ) settings.
+        /// </summary>
+        public SslOptions SslSettings { get; set; } = new SslOptions();
     }
 }

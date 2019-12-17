@@ -19,6 +19,7 @@
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core/CookedRabbit.Core</RepositoryUrl>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
     <PackageReleaseNotes>Rewrite of the NetCore CookedRabbit client.</PackageReleaseNotes>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(IsWindows)'=='true'">

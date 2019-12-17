@@ -3,9 +3,6 @@ using System.Security.Authentication;
 
 namespace CookedRabbit.Core.Configs
 {
-    /// <summary>
-    /// Class to fully season RabbitServices to your taste!
-    /// </summary>
     public class SslOptions
     {
         /// <summary>
@@ -41,8 +38,8 @@ namespace CookedRabbit.Core.Configs
         /// </summary>
         #if CORE2
         public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12;
-        #elif CORE3
-        public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls13;
-        #endif
+#elif CORE3
+        public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;
+#endif
     }
 }

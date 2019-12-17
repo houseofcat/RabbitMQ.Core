@@ -46,16 +46,16 @@ namespace CookedRabbit.Core.Pools
                 UseBackgroundThreadsForIO = Config.FactorySettings.UseBackgroundThreadsForIO,
             };
 
-            if (Config.SslSettings.EnableSsl)
+            if (Config.FactorySettings.SslSettings.EnableSsl)
             {
                 cf.Ssl = new SslOption
                 {
-                    Enabled = Config.SslSettings.EnableSsl,
-                    AcceptablePolicyErrors = Config.SslSettings.AcceptedPolicyErrors,
-                    ServerName = Config.SslSettings.CertServerName,
-                    CertPath = Config.SslSettings.LocalCertPath,
-                    CertPassphrase = Config.SslSettings.LocalCertPassword,
-                    Version = Config.SslSettings.ProtocolVersions
+                    Enabled = Config.FactorySettings.SslSettings.EnableSsl,
+                    AcceptablePolicyErrors = Config.FactorySettings.SslSettings.AcceptedPolicyErrors,
+                    ServerName = Config.FactorySettings.SslSettings.CertServerName,
+                    CertPath = Config.FactorySettings.SslSettings.LocalCertPath,
+                    CertPassphrase = Config.FactorySettings.SslSettings.LocalCertPassword,
+                    Version = Config.FactorySettings.SslSettings.ProtocolVersions
                 };
             }
 

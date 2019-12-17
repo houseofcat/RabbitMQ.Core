@@ -8,6 +8,7 @@ namespace CookedRabbit.Core.Benchmark
         {
             _ = BenchmarkRunner.Run<ConnectionPoolBenchmark>();
             _ = BenchmarkRunner.Run<ChannelPoolBenchmark>();
+            _ = BenchmarkRunner.Run<UtilsBenchmark>();
         }
     }
 }
