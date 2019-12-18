@@ -24,6 +24,10 @@ namespace CookedRabbit.Core.Consumer
             ChannelPool = channelPool;
         }
 
+        /// <summary>
+        /// Simple retrieve message (byte[]) from queue. Null if nothing was available or on error. Exception possibly on retrieving Channel.
+        /// </summary>
+        /// <param name="queueName"></param>
         public async Task<byte[]> GetAsync(string queueName)
         {
             var chanHost = await ChannelPool
@@ -47,6 +51,10 @@ namespace CookedRabbit.Core.Consumer
             return result?.Body;
         }
 
+        /// <summary>
+        /// Simple retrieve message (byte[]) from queue and convert to <see cref="{T}" /> efficiently. Default (assumed null) if nothing was available (or on transmission error). Exception possibly on retrieving Channel.
+        /// </summary>
+        /// <param name="queueName"></param>
         public async Task<T> GetAsync<T>(string queueName)
         {
             var chanHost = await ChannelPool
