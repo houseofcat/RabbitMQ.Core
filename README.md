@@ -12,7 +12,7 @@ v1.1.x - Future development based on v6.0.0 official client.
  
  * RabbitMQ.Core.Client [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/v5.1.2)  
  
-### NetCore (2.2, 3.0, 3.1)
+### CookedRabbit.Core NetCore (2.2, 3.0, 3.1)
 [![NuGet](https://img.shields.io/nuget/dt/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)   
 [![NuGet](https://img.shields.io/nuget/v/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)  
 
