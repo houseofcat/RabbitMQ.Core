@@ -5,6 +5,9 @@ namespace CookedRabbit.Core
     public class LetterMetadata
     {
         public string Id { get; set; }
-        public Dictionary<string, string> Data = new Dictionary<string, string>();
+        public bool Encrypted { get; set; }
+        public bool Compressed { get; set; }
+
+        public Dictionary<string, string> CustomFields = new Dictionary<string, string>();
     }
 }

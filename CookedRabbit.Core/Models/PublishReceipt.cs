@@ -1,6 +1,6 @@
 namespace CookedRabbit.Core
 {
-    public class PublishReceipt
+    public struct PublishReceipt
     {
         public bool IsError { get; set; }
         public ulong LetterId { get; set; }

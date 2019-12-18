@@ -198,7 +198,6 @@ namespace CookedRabbit.Core
         /// Extension method of getting the Description value to string.
         /// </summary>
         /// <param name="value"></param>
-        /// <returns></returns>
         public static string Description(this Enum value)
         {
             var field = value.GetType().GetField(value.ToString());
