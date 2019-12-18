@@ -162,6 +162,26 @@ namespace CookedRabbit.Core.Utils
             return buffer;
         }
 
+        public void FillBuffer(byte[] buffer)
+        {
+            uint offset = 0, offsetEnd = (uint)buffer.Length;
+            while (offset < offsetEnd)
+            {
+                uint t = X ^ (X << 11);
+                X = Y; Y = Z; Z = W;
+                W = W ^ (W >> 19) ^ (t ^ (t >> 8));
+
+                if (offset < offsetEnd)
+                {
+                    buffer[offset++] = (byte)(W & Mask);
+                    buffer[offset++] = (byte)((W >> 8) & Mask);
+                    buffer[offset++] = (byte)((W >> 16) & Mask);
+                    buffer[offset++] = (byte)((W >> 24) & Mask);
+                }
+                else { break; }
+            }
+        }
+
         public void FillBuffer(byte[] buffer, int offset, int offsetEnd)
         {
             while (offset < offsetEnd)
