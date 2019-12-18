@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CookedRabbit.Core.Configs
 {
     public class Config
@@ -18,8 +20,8 @@ namespace CookedRabbit.Core.Configs
         public PublisherOptions PublisherSettings { get; set; } = new PublisherOptions();
 
         /// <summary>
-        /// Class to hold settings for Consumer options.
+        /// Dictionary to hold all the ConsumerSettings using the ConsumerOption class.
         /// </summary>
-        public ConsumerOptions ConsumerSettings { get; set; } = new ConsumerOptions();
+        public IDictionary<string, ConsumerOptions> ConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
     }
 }

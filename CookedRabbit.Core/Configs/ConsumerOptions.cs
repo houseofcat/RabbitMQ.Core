@@ -1,16 +1,16 @@
+using System.Threading.Channels;
+
 namespace CookedRabbit.Core.Configs
 {
     public class ConsumerOptions
     {
-        /// <summary>
-        /// RabbitMQ global consumer parameters.
-        /// </summary>
-        public ushort QosPrefetchSize { get; set; } = 0;
+        public string QueueName { get; set; }
+        public string ConsumerName { get; set; }
+        public bool NoLocal { get; set; }
+        public bool Exclusive { get; set; }
+        public ushort QosPrefetchCount { get; set; } = 5;
 
-        /// <summary>
-        /// RabbitMQ consumer parameters.
-        /// <para>To fine tune, check consumer utilization located in RabbitMQ HTTP API management.</para>
-        /// </summary>
-        public ushort QosPrefetchCount { get; set; } = 120;
+        public int RabbitMessageBufferSize { get; set; } = 100;
+        public BoundedChannelFullMode BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
     }
 }

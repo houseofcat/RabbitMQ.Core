@@ -17,7 +17,8 @@ namespace CookedRabbit.Core.Pools
         private Channel<ChannelHost> AckChannels { get; set; }
         private ConcurrentDictionary<ulong, bool> FlaggedChannels { get; set; }
 
-        public ulong CurrentChannelId { get; private set; }
+        // A 0 indicates TransientChannels.
+        public ulong CurrentChannelId { get; private set; } = 1;
 
         public bool Shutdown { get; private set; }
 
@@ -152,6 +153,16 @@ namespace CookedRabbit.Core.Pools
             return chanHost;
         }
 
+        /// <summary>
+        /// A Transient RabbitMQ Channel is simply a channel not managed by this library. Closing and disposing is the responsiblity of the end user.
+        /// </summary>
+        /// <param name="ackable"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async ValueTask<ChannelHost> GetTransientChannelAsync(bool ackable)
+        {
+            return await CreateChannelAsync(0, ackable).ConfigureAwait(false);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task<ChannelHost> CreateChannelAsync(ulong channelId, bool ackable = false)
         {
@@ -184,6 +195,12 @@ namespace CookedRabbit.Core.Pools
 
                 if (sleep)
                 {
+#if DEBUG
+                    await Console
+                        .Out
+                        .WriteLineAsync($"Connectivity appears lost, sleeping for {Config.PoolSettings.SleepOnErrorInterval} ms...")
+                        .ConfigureAwait(false);
+#endif
                     await Task
                         .Delay(Config.PoolSettings.SleepOnErrorInterval)
                         .ConfigureAwait(false);
