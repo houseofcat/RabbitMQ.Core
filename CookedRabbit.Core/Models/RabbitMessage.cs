@@ -4,7 +4,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
 
-namespace CookedRabbit.Core.Models
+namespace CookedRabbit.Core
 {
     public class RabbitMessage
     {

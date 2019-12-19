@@ -6,7 +6,7 @@ namespace CookedRabbit.Core
 {
     public class RoutingOptions
     {
-        [Range(0, 2, ErrorMessage = RangeErrorMessage)]
+        [Range(1, 2, ErrorMessage = RangeErrorMessage)]
         public byte DeliveryMode { get; set; } = 2;
 
         public bool Mandatory { get; set; }

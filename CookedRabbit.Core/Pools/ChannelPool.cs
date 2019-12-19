@@ -22,7 +22,7 @@ namespace CookedRabbit.Core.Pools
 
         public bool Shutdown { get; private set; }
 
-        private bool Initialized { get; set; }
+        public bool Initialized { get; private set; }
         private readonly SemaphoreSlim poolLock = new SemaphoreSlim(1, 1);
 
         private const string ValidationMessage = "ChannelPool is not initialized or is shutdown.";
@@ -158,10 +158,7 @@ namespace CookedRabbit.Core.Pools
         /// </summary>
         /// <param name="ackable"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask<ChannelHost> GetTransientChannelAsync(bool ackable)
-        {
-            return await CreateChannelAsync(0, ackable).ConfigureAwait(false);
-        }
+        public async ValueTask<ChannelHost> GetTransientChannelAsync(bool ackable) => await CreateChannelAsync(0, ackable).ConfigureAwait(false);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task<ChannelHost> CreateChannelAsync(ulong channelId, bool ackable = false)

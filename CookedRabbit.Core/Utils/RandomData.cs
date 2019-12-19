@@ -12,53 +12,53 @@ namespace CookedRabbit.Core.Utils
         private static readonly Random Rand = new Random();
         private static readonly XorShift XorShift = new XorShift(true);
 
-        /// <summary>
-        /// Used for testing purposes of creating random data filled Envelopes.
-        /// </summary>
-        /// <param name="queueNames"></param>
-        /// <param name="payloadCount"></param>
-        /// <param name="payloadSizeInBytes"></param>
-        public static List<Letter> CreateRandomLetters(List<string> queueNames, int payloadCount, int payloadSizeInBytes = 1000)
+        public static Letter CreateSimpleRandomLetter(string queueName, int bodySize = 1000)
+        {
+            var payload = new byte[bodySize];
+            XorShift.FillBuffer(payload, 0, bodySize);
+
+            return new Letter
+            {
+                LetterId = 0,
+                LetterMetadata = null,
+                Envelope = new Envelope
+                {
+                    Exchange = string.Empty,
+                    RoutingKey = queueName,
+                    RoutingOptions = new RoutingOptions
+                    {
+                        DeliveryMode = 1,
+                        PriorityLevel = 0
+                    }
+                },
+                Body = payload
+            };
+        }
+
+        public static IList<Letter> CreateManySimpleRandomLetters(List<string> queueNames, int letterCount, int bodySize = 1000)
         {
             var random = new Random();
             var letters = new List<Letter>();
-            var payloads = CreatePayloads(payloadCount, payloadSizeInBytes);
 
             var queueCount = queueNames.Count;
-            for (int i = 0; i < payloads.Count; i++)
+            for (int i = 0; i < letterCount; i++)
             {
-                letters.Add(
-                    new Letter
-                    {
-                        Envelope = new Envelope
-                        {
-                            RoutingKey = queueNames[random.Next(0, queueCount)]
-                        },
-                        Body = payloads[i]
-                    });
+                letters.Add(CreateSimpleRandomLetter(queueNames[random.Next(0, queueCount)], bodySize));
             }
 
             return letters;
         }
 
-        /// <summary>
-        /// Create a list of byte[] (default random data of 1KB each).
-        /// </summary>
-        /// <param name="payloadCount">The number of byte[]s to create.</param>
-        /// <param name="payloadSizeInBytes">The size of random bytes per byte[].</param>
-        /// <returns>List of byte[] random bytes.</returns>
-        public static List<byte[]> CreatePayloads(int payloadCount, int payloadSizeInBytes = 1000)
+        public static IList<Letter> CreateManySimpleRandomLetters(string queueName, int letterCount, int bodySize = 1000)
         {
-            if (payloadSizeInBytes < 100) throw new ArgumentException($"Argument {nameof(payloadSizeInBytes)} can't be less than 100 bytes.");
+            var letters = new List<Letter>();
 
-            var byteList = new List<byte[]>();
-
-            for (int i = 0; i < payloadCount; i++)
+            for (int i = 0; i < letterCount; i++)
             {
-                byteList.Add(XorShift.UnsafeGetRandomBytes(payloadSizeInBytes));
+                letters.Add(CreateSimpleRandomLetter(queueName, bodySize));
             }
 
-            return byteList;
+            return letters;
         }
 
         private const string AllowedChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_-+=";
@@ -109,7 +109,7 @@ namespace CookedRabbit.Core.Utils
 
     public class XorShift
     {
-        private Random Rand { get; set; } = new Random();
+        private Random Rand { get; } = new Random();
 
         private uint X { get; set; }
         private uint Y { get; set; }

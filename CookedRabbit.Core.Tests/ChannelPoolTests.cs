@@ -82,7 +82,7 @@ namespace CookedRabbit.Core.Tests
             config.PoolSettings.MaxConnections = 5;
             config.PoolSettings.MaxChannels = 25;
             var successCount = 0;
-            var loopCount = 100_000;
+            const int loopCount = 100_000;
             var chanPool = new ChannelPool(config);
 
             await chanPool
@@ -125,7 +125,6 @@ namespace CookedRabbit.Core.Tests
             output.WriteLine($"OverLoop Iteration Time: {sw.ElapsedMilliseconds} ms");
 
             Assert.True(successCount == 2*loopCount);
-
         }
     }
 }

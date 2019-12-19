@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
-namespace CookedRabbit.Core.Publisher
+namespace CookedRabbit.Core
 {
     public class AutoPublisher
     {
@@ -120,7 +120,7 @@ namespace CookedRabbit.Core.Publisher
             while (await channelReader.WaitToReadAsync().ConfigureAwait(false))
             {
                 await Publisher
-                    .PublisAsyncEnumerableAsync(channelReader.ReadAllAsync(), true)
+                    .PublishAsyncEnumerableAsync(channelReader.ReadAllAsync(), true)
                     .ConfigureAwait(false);
             }
         }

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
-namespace CookedRabbit.Core.Publisher
+namespace CookedRabbit.Core
 {
     public class Publisher
     {
         public Config Config { get; }
-        private ChannelPool ChannelPool { get; }
+        public ChannelPool ChannelPool { get; }
 
         private Channel<PublishReceipt> ReceiptBuffer { get; }
 
@@ -24,7 +24,7 @@ namespace CookedRabbit.Core.Publisher
 
         public Publisher(ChannelPool channelPool)
         {
-            Config = ChannelPool.Config;
+            Config = channelPool.Config;
             ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
@@ -45,19 +45,18 @@ namespace CookedRabbit.Core.Publisher
             try
             {
                 var props = chanHost.Channel.CreateBasicProperties();
-                props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
-                props.ContentType = letter.Envelope.RoutingOptions.MessageType;
-                props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
+                props.DeliveryMode = letter.Envelope.RoutingOptions?.DeliveryMode ?? 0;
+                props.ContentType = letter.Envelope.RoutingOptions?.MessageType ?? string.Empty;
+                props.Priority = letter.Envelope.RoutingOptions?.PriorityLevel ?? 0;
 
                 chanHost.Channel.BasicPublish(
                     letter.Envelope.Exchange,
                     letter.Envelope.RoutingKey,
-                    letter.Envelope.RoutingOptions.Mandatory,
+                    letter.Envelope.RoutingOptions?.Mandatory ?? false,
                     props,
                     letter.Body);
             }
-            catch
-            { error = true; }
+            catch { error = true; }
             finally
             {
                 if (createReceipt)
@@ -76,7 +75,7 @@ namespace CookedRabbit.Core.Publisher
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublisManyAsync(IList<Letter> letters, bool createReceipt)
+        public async Task PublishManyAsync(IList<Letter> letters, bool createReceipt)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -120,7 +119,7 @@ namespace CookedRabbit.Core.Publisher
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublisAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
+        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -165,7 +164,7 @@ namespace CookedRabbit.Core.Publisher
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublisManyAsGroupAsync(IList<Letter> letters, bool createReceipt)
+        public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -216,7 +215,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             await ReceiptBuffer
@@ -232,7 +231,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             return ReceiptBuffer.Reader;
@@ -245,7 +244,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             return await ReceiptBuffer
@@ -262,7 +261,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())

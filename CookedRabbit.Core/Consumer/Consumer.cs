@@ -6,13 +6,12 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Configs;
-using CookedRabbit.Core.Models;
 using CookedRabbit.Core.Pools;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
 
-namespace CookedRabbit.Core.Consumer
+namespace CookedRabbit.Core
 {
     public class Consumer
     {
@@ -57,11 +56,9 @@ namespace CookedRabbit.Core.Consumer
             ChannelPool = channelPool;
         }
 
-        private const string NoConsumerSettingsMessage = "Consumer {0} not found in ConsumerSettings dictionary.";
-
         private ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(NoConsumerSettingsMessage, consumerName));
+            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(StringMessages.NoConsumerSettingsMessage, consumerName));
             return Config.ConsumerSettings[consumerName];
         }
 
@@ -320,7 +317,7 @@ namespace CookedRabbit.Core.Consumer
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             return RabbitMessageBuffer.Reader;
@@ -333,7 +330,7 @@ namespace CookedRabbit.Core.Consumer
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             return await RabbitMessageBuffer
@@ -350,7 +347,7 @@ namespace CookedRabbit.Core.Consumer
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadError);
+                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in RabbitMessageBuffer.Reader.ReadAllAsync())

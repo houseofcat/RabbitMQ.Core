@@ -22,10 +22,6 @@ namespace CookedRabbit.Core.Pools
 
         public Config Config { get; }
 
-        private const string ValidationMessage = "ConnectionPool is not initialized or is shutdown.";
-        private const string ShutdownValidationMessage = "ConnectionPool is not initialized. Can't be Shutdown.";
-        private const string GetConnectionError = "Threading.Channel used for reading RabbitMQ connections has been closed.";
-
         public ConnectionPool(Config config)
         {
             Config = config;
@@ -114,13 +110,13 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<ConnectionHost> GetConnectionAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(StringMessages.ValidationMessage);
             if (!await Connections
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(GetConnectionError);
+                throw new InvalidOperationException(StringMessages.GetConnectionErrorMessage);
             }
 
             var connHost = await Connections
@@ -138,7 +134,7 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(ShutdownValidationMessage);
+            if (!Initialized) throw new InvalidOperationException(StringMessages.ShutdownValidationMessage);
 
             await poolLock
                 .WaitAsync()
