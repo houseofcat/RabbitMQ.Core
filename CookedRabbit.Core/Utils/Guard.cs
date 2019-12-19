@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CookedRabbit.Core.Utils
 {
@@ -48,7 +49,7 @@ namespace CookedRabbit.Core.Utils
         /// <param name="argumentName"></param>
         public static void AgainstNullOrEmpty<T>(IEnumerable<T> argumentValue, string argumentName)
         {
-            if (argumentValue is null || !argumentValue.Any()) throw new ArgumentException($"{argumentName} can't be null or empty.");
+            if (argumentValue?.Any() != true) throw new ArgumentException($"{argumentName} can't be null or empty.");
         }
 
         /// <summary>

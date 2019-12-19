@@ -1,11 +1,13 @@
 using System;
+#if CORE3
+using System.Collections.Generic;
+#endif
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Models;
 using CookedRabbit.Core.Pools;
-using CookedRabbit.Core.Utils;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
@@ -17,10 +19,9 @@ namespace CookedRabbit.Core.Consumer
         public Config Config { get; }
 
         private ChannelPool ChannelPool { get; }
-        private Channel<RabbitMessage> RabbitMessageBuffer;
+        private Channel<RabbitMessage> RabbitMessageBuffer { get; set;  }
 
         private ChannelHost ConsumingChannelHost { get; set; }
-        private Task ConsumingTask { get; set; }
 
         public string ConsumerName { get; }
         public string QueueName { get; }
@@ -28,21 +29,20 @@ namespace CookedRabbit.Core.Consumer
         public bool Exclusive { get; }
         public ushort QosPrefetchCount { get; }
 
+        public bool Consuming { get; private set; }
         public bool Shutdown { get; private set; }
+
+        private bool AutoAck { get; set; }
+        private bool UseTransientChannel { get; set; }
+        private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
 
         public Consumer(Config config, string consumerName)
         {
             Config = config;
-            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException($"Consumer {consumerName} not found in ConsumerSettings dictionary.");
-            var conSettings = Config.ConsumerSettings[consumerName];
-
             ChannelPool = new ChannelPool(Config);
 
-            RabbitMessageBuffer = Channel.CreateBounded<RabbitMessage>(
-                new BoundedChannelOptions(conSettings.RabbitMessageBufferSize)
-                {
-                    FullMode = conSettings.BehaviorWhenFull
-                });
+            ConsumerName = consumerName;
+            var conSettings = GetConsumerSettings(consumerName);
 
             ConsumerName = conSettings.ConsumerName;
             QueueName = conSettings.QueueName;
@@ -57,82 +57,104 @@ namespace CookedRabbit.Core.Consumer
             ChannelPool = channelPool;
         }
 
-        public async Task StartConsumeAsync(bool useTransientChannel)
+        private const string NoConsumerSettingsMessage = "Consumer {0} not found in ConsumerSettings dictionary.";
+
+        private ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (ConsumingTask == null)
+            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(NoConsumerSettingsMessage, consumerName));
+            return Config.ConsumerSettings[consumerName];
+        }
+
+        public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
+        {
+            await conLock
+                .WaitAsync()
+                .ConfigureAwait(false);
+
+            if (!Consuming)
             {
+                AutoAck = autoAck;
+                UseTransientChannel = useTransientChannel;
+                var conSettings = GetConsumerSettings(ConsumerName);
+
+                RabbitMessageBuffer = Channel.CreateBounded<RabbitMessage>(
+                new BoundedChannelOptions(conSettings.RabbitMessageBufferSize)
+                {
+                    FullMode = conSettings.BehaviorWhenFull
+                });
+
                 await RabbitMessageBuffer
                     .Writer
                     .WaitToWriteAsync()
                     .ConfigureAwait(false);
 
-                ConsumingTask = ConsumeAsync(useTransientChannel);
+                bool success;
+                do { success = await StartConsumingAsync().ConfigureAwait(false); }
+                while (!success);
+
+                Consuming = true;
+                Shutdown = false;
             }
+
+            conLock.Release();
         }
 
-        public async Task ConsumeAsync(bool autoAck, bool useTransientChannel = true)
+        private async Task<bool> StartConsumingAsync()
         {
-            // Get Channel
-            // Create Consumer
-            // Start Consumer
-            // Retry at Get Channel
-            // Retry
+            await SetChannelHostAsync()
+                .ConfigureAwait(false);
 
-            async Task GetChannelHostAsync()
+            if (ConsumingChannelHost == null) { return false; }
+
+            if (Config.FactorySettings.EnableDispatchConsumersAsync)
             {
-                try
-                {
-                    if (useTransientChannel)
-                    {
-                        ConsumingChannelHost = await ChannelPool
-                            .GetTransientChannelAsync(!autoAck)
-                            .ConfigureAwait(false);
-                    }
-                    else if (autoAck)
-                    {
-                        ConsumingChannelHost = await ChannelPool
-                            .GetChannelAsync()
-                            .ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        ConsumingChannelHost = await ChannelPool
-                            .GetAckChannelAsync()
-                            .ConfigureAwait(false);
-                    }
-                }
-                catch { ConsumingChannelHost = null; }
+                var consumer = CreateAsyncConsumer();
+                if (consumer == null) { return false; }
+
+                ConsumingChannelHost
+                    .Channel
+                    .BasicConsume(QueueName, AutoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
+            }
+            else
+            {
+                var consumer = CreateConsumer();
+                if (consumer == null) { return false; }
+
+                ConsumingChannelHost
+                    .Channel
+                    .BasicConsume(QueueName, AutoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
             }
 
-            async Task ConsumeLoopAsync()
-            {
-                while (true)
-                {
-                    if (Shutdown) { return; }
-
-                    await GetChannelHostAsync().ConfigureAwait(false);
-                    if (ConsumingChannelHost == null) { continue; }
-
-                    if (Config.FactorySettings.EnableDispatchConsumersAsync)
-                    {
-                        var consumer = CreateAsyncConsumer(!autoAck);
-                        if (consumer == null) { continue; }
-
-                        ConsumingChannelHost.Channel.BasicConsume(QueueName, autoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
-                    }
-                    else
-                    {
-                        var consumer = CreateConsumer(!autoAck);
-                        if (consumer == null) { continue; }
-
-                        ConsumingChannelHost.Channel.BasicConsume(QueueName, autoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
-                    }
-                }
-            };
-            await ConsumeLoopAsync().ConfigureAwait(false);
+            return true;
         }
 
-        private EventingBasicConsumer CreateConsumer(bool ackable)
+        private async Task SetChannelHostAsync()
+        {
+            try
+            {
+                if (UseTransientChannel)
+                {
+                    ConsumingChannelHost = await ChannelPool
+                        .GetTransientChannelAsync(!AutoAck)
+                        .ConfigureAwait(false);
+                }
+                else if (AutoAck)
+                {
+                    ConsumingChannelHost = await ChannelPool
+                        .GetChannelAsync()
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    ConsumingChannelHost = await ChannelPool
+                        .GetAckChannelAsync()
+                        .ConfigureAwait(false);
+                }
+            }
+            catch { ConsumingChannelHost = null; }
+        }
+
+        private EventingBasicConsumer CreateConsumer()
         {
             EventingBasicConsumer consumer = null;
 
@@ -142,25 +164,38 @@ namespace CookedRabbit.Core.Consumer
                 consumer = new EventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandler;
-                async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
-                {
-                    var rabbitMessage = new RabbitMessage(ConsumingChannelHost.Channel, bdea, ackable);
-
-                    if (await RabbitMessageBuffer
-                        .Writer
-                        .WaitToWriteAsync()
-                        .ConfigureAwait(false))
-                    {
-                        await RabbitMessageBuffer.Writer.WriteAsync(rabbitMessage);
-                    }
-                }
+                consumer.Shutdown += ConsumerShutdown;
             }
-            catch {  }
+            catch { }
 
             return consumer;
         }
 
-        private AsyncEventingBasicConsumer CreateAsyncConsumer(bool ackable)
+#pragma warning disable RCS1163 // Unused parameter.
+        private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
+#pragma warning restore RCS1163 // Unused parameter.
+        {
+            var rabbitMessage = new RabbitMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
+
+            if (await RabbitMessageBuffer
+                    .Writer
+                    .WaitToWriteAsync()
+                    .ConfigureAwait(false))
+            {
+                await RabbitMessageBuffer
+                    .Writer
+                    .WriteAsync(rabbitMessage);
+            }
+        }
+
+        private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
+        {
+            bool success;
+            do { success = await StartConsumingAsync().ConfigureAwait(false); }
+            while (!success);
+        }
+
+        private AsyncEventingBasicConsumer CreateAsyncConsumer()
         {
             AsyncEventingBasicConsumer consumer = null;
 
@@ -170,30 +205,61 @@ namespace CookedRabbit.Core.Consumer
                 consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandlerAsync;
-                async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
-                {
-                    var rabbitMessage = new RabbitMessage(ConsumingChannelHost.Channel, bdea, ackable);
-
-                    if (await RabbitMessageBuffer.Writer.WaitToWriteAsync().ConfigureAwait(false))
-                    {
-                        await RabbitMessageBuffer
-                            .Writer
-                            .WriteAsync(rabbitMessage);
-                    }
-                }
+                consumer.Shutdown += ConsumerShutdownAsync;
             }
             catch { }
 
             return consumer;
         }
 
-        public async Task StopConsumingAsync(bool immediate)
+#pragma warning disable RCS1163 // Unused parameter.
+        public async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
+#pragma warning restore RCS1163 // Unused parameter.
         {
+            var rabbitMessage = new RabbitMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
+            if (await RabbitMessageBuffer
+                .Writer
+                .WaitToWriteAsync()
+                .ConfigureAwait(false))
+            {
+                await RabbitMessageBuffer
+                    .Writer
+                    .WriteAsync(rabbitMessage);
+            }
+        }
+
+        private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
+        {
+            bool success;
+            do { success = await StartConsumingAsync().ConfigureAwait(false); }
+            while (!success);
+        }
+
+        public async Task StopConsumingAsync(bool immediate = false)
+        {
+            await conLock
+                .WaitAsync()
+                .ConfigureAwait(false);
+
+            RabbitMessageBuffer.Writer.Complete();
+
+            if (!immediate)
+            {
+                await RabbitMessageBuffer
+                    .Reader
+                    .Completion
+                    .ConfigureAwait(false);
+            }
+
+            Shutdown = true;
+
+            conLock.Release();
         }
 
         /// <summary>
-        /// Simple retrieve message (byte[]) from queue. Null if nothing was available or on error. Exception possibly on retrieving Channel.
+        /// Simple retrieve message (byte[]) from queue. Null if nothing was available or on error. Exception possible when retrieving Channel.
+        /// <para>AutoAcks message.</para>
         /// </summary>
         /// <param name="queueName"></param>
         public async Task<byte[]> GetAsync(string queueName)
@@ -220,7 +286,8 @@ namespace CookedRabbit.Core.Consumer
         }
 
         /// <summary>
-        /// Simple retrieve message (byte[]) from queue and convert to <see cref="{T}" /> efficiently. Default (assumed null) if nothing was available (or on transmission error). Exception possibly on retrieving Channel.
+        /// Simple retrieve message (byte[]) from queue and convert to <see cref="{T}" /> efficiently. Default (assumed null) if nothing was available (or on transmission error). Exception possible when retrieving Channel.
+        /// <para>AutoAcks message.</para>
         /// </summary>
         /// <param name="queueName"></param>
         public async Task<T> GetAsync<T>(string queueName)
@@ -245,5 +312,52 @@ namespace CookedRabbit.Core.Consumer
 
             return result != null ? JsonSerializer.Deserialize<T>(result.Body) : default;
         }
+
+        public async ValueTask<ChannelReader<RabbitMessage>> GetConsumerRabbitMessageBufferAsync()
+        {
+            if (!await RabbitMessageBuffer
+                .Reader
+                .WaitToReadAsync()
+                .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
+            }
+
+            return RabbitMessageBuffer.Reader;
+        }
+
+        public async ValueTask<RabbitMessage> ReadRabbitMessageAsync()
+        {
+            if (!await RabbitMessageBuffer
+                .Reader
+                .WaitToReadAsync()
+                .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
+            }
+
+            return await RabbitMessageBuffer
+                .Reader
+                .ReadAsync()
+                .ConfigureAwait(false);
+        }
+
+#if CORE3
+        public async IAsyncEnumerable<RabbitMessage> ReadAllRabbitMessagesAsync()
+        {
+            if (!await RabbitMessageBuffer
+                .Reader
+                .WaitToReadAsync()
+                .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
+            }
+
+            await foreach (var receipt in RabbitMessageBuffer.Reader.ReadAllAsync())
+            {
+                yield return receipt;
+            }
+        }
+#endif
     }
 }

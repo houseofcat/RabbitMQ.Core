@@ -15,8 +15,6 @@ namespace CookedRabbit.Core.Publisher
 
         private Channel<PublishReceipt> ReceiptBuffer { get; }
 
-        private const string ChannelError = "Can't use reader on a closed Threading.Channel.";
-
         public Publisher(Config config)
         {
             Config = config;
@@ -218,7 +216,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(ChannelError);
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
             }
 
             await ReceiptBuffer
@@ -227,14 +225,14 @@ namespace CookedRabbit.Core.Publisher
                 .ConfigureAwait(false);
         }
 
-        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReader()
+        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync()
         {
             if (!await ReceiptBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(ChannelError);
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
             }
 
             return ReceiptBuffer.Reader;
@@ -247,7 +245,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(ChannelError);
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
             }
 
             return await ReceiptBuffer
@@ -264,7 +262,7 @@ namespace CookedRabbit.Core.Publisher
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(ChannelError);
+                throw new InvalidOperationException(StringMessages.ChannelReadError);
             }
 
             await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())
