@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
 namespace CookedRabbit.Core

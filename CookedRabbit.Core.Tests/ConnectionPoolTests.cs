@@ -1,8 +1,7 @@
+using CookedRabbit.Core.Pools;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Configs;
-using CookedRabbit.Core.Pools;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -72,7 +71,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
             config.PoolSettings.MaxConnections = 5;
             var successCount = 0;
-            var loopCount = 100_000;
+            const int loopCount = 100_000;
             var connPool = new ConnectionPool(config);
 
             await connPool.InitializeAsync().ConfigureAwait(false);

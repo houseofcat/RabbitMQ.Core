@@ -1,7 +1,7 @@
 using System.Net.Security;
 using System.Security.Authentication;
 
-namespace CookedRabbit.Core.Configs
+namespace CookedRabbit.Core
 {
     public class SslOptions
     {

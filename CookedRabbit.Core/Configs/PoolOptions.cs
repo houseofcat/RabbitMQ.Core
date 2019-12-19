@@ -1,4 +1,4 @@
-namespace CookedRabbit.Core.Configs
+namespace CookedRabbit.Core
 {
     public class PoolOptions
     {

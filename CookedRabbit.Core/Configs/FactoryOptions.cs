@@ -1,6 +1,6 @@
 using System;
 
-namespace CookedRabbit.Core.Configs
+namespace CookedRabbit.Core
 {
     public class FactoryOptions
     {

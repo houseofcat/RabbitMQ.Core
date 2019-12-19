@@ -1,9 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
+using System;
+using System.Threading.Tasks;
 
 namespace CookedRabbit.Core.Benchmark
 {

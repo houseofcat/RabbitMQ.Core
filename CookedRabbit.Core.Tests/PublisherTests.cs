@@ -1,4 +1,3 @@
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using System;
@@ -122,7 +121,7 @@ namespace CookedRabbit.Core.Tests
                 .ConfigureAwait(false);
             sw.Stop();
 
-            var kiloByteCount = byteCount / 1000.0;
+            const double kiloByteCount = byteCount / 1000.0;
             output.WriteLine($"Published {letterCount} letters, {kiloByteCount} KB each, in {sw.ElapsedMilliseconds} ms.");
 
             var rate = letterCount / (sw.ElapsedMilliseconds / 1000.0);

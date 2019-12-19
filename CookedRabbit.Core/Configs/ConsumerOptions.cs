@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 
-namespace CookedRabbit.Core.Configs
+namespace CookedRabbit.Core
 {
     public class ConsumerOptions
     {

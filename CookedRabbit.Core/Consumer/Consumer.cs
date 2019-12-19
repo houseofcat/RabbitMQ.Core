@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -18,7 +17,7 @@ namespace CookedRabbit.Core
         public Config Config { get; }
 
         private ChannelPool ChannelPool { get; }
-        private Channel<RabbitMessage> RabbitMessageBuffer { get; set;  }
+        private Channel<RabbitMessage> RabbitMessageBuffer { get; set; }
 
         private ChannelHost ConsumingChannelHost { get; set; }
 

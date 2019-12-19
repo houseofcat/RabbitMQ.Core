@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CookedRabbit.Core.Configs
+namespace CookedRabbit.Core
 {
     public class Config
     {

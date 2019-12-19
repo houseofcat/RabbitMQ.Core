@@ -1,8 +1,7 @@
+using CookedRabbit.Core.Pools;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Configs;
-using CookedRabbit.Core.Pools;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -124,7 +123,7 @@ namespace CookedRabbit.Core.Tests
             sw.Stop();
             output.WriteLine($"OverLoop Iteration Time: {sw.ElapsedMilliseconds} ms");
 
-            Assert.True(successCount == 2*loopCount);
+            Assert.True(successCount == 2 * loopCount);
         }
     }
 }

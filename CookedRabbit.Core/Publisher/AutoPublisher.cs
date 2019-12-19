@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 
 namespace CookedRabbit.Core
