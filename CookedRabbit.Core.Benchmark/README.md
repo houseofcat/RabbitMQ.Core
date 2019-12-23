@@ -1,6 +1,8 @@
 
 ### Benchmark Results
 
+A collection of all the microbenchmarks ran for CookedRabbit.
+
 <details><summary>Click here to see CookedRabbit.Core ConnectionPool results!</summary>
 <p>
 
@@ -493,6 +495,7 @@ Skewness = -0.1, Kurtosis = 1.35, MValue = 2
 <details><summary>Click here to Utils.XorShift Results!</summary>
 <p>
 
+```ini
 // * Summary *
 
 BenchmarkDotNet=v0.12.0, OS=Windows 10.0.17763.914 (1809/October2018Update/Redstone5)
@@ -523,6 +526,7 @@ Runtime=.NET Core 3.1
 |          CreateRandomByteArray | 100000 | 590,970.86 ns | 1,959.599 ns | 1,636.354 ns |  1.00 | 30.2734 | 30.2734 | 30.2734 |  100305 B |               0.0020 |                - |
 |       CreateXorRandomByteArray | 100000 |  91,365.62 ns |   930.069 ns |   824.482 ns |  0.15 | 31.1279 | 31.1279 | 31.1279 |  100024 B |               0.0002 |                - |
 | CreateUnsafeXorRandomByteArray | 100000 |  42,577.86 ns |   614.341 ns |   574.655 ns |  0.07 | 31.1890 | 31.1890 | 31.1890 |  100025 B |               0.0001 |                - |
+```
 
 </p>
 </details>
