@@ -109,13 +109,13 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<ConnectionHost> GetConnectionAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(StringMessages.ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ValidationMessage);
             if (!await Connections
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.GetConnectionErrorMessage);
+                throw new InvalidOperationException(Strings.GetConnectionErrorMessage);
             }
 
             var connHost = await Connections
@@ -133,7 +133,7 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(StringMessages.ShutdownValidationMessage);
+            if (!Initialized) throw new InvalidOperationException(Strings.ShutdownValidationMessage);
 
             await poolLock
                 .WaitAsync()

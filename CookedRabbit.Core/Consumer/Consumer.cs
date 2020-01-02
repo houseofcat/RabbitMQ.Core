@@ -57,7 +57,7 @@ namespace CookedRabbit.Core
 
         private ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(StringMessages.NoConsumerSettingsMessage, consumerName));
+            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(Strings.NoConsumerSettingsMessage, consumerName));
             return Config.ConsumerSettings[consumerName];
         }
 
@@ -316,7 +316,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             return RabbitMessageBuffer.Reader;
@@ -329,7 +329,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             return await RabbitMessageBuffer
@@ -346,7 +346,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in RabbitMessageBuffer.Reader.ReadAllAsync())

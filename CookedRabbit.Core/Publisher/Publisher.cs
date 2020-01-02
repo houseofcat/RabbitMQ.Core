@@ -106,10 +106,7 @@ namespace CookedRabbit.Core
             catch
             { error = true; }
             finally
-            {
-                await ChannelPool
-                    .ReturnChannelAsync(chanHost, error);
-            }
+            { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
 
 #if CORE3
@@ -200,10 +197,7 @@ namespace CookedRabbit.Core
                 error = true;
             }
             finally
-            {
-                await ChannelPool
-                    .ReturnChannelAsync(chanHost, error);
-            }
+            { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -214,7 +208,7 @@ namespace CookedRabbit.Core
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             await ReceiptBuffer
@@ -230,7 +224,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             return ReceiptBuffer.Reader;
@@ -243,7 +237,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             return await ReceiptBuffer
@@ -260,7 +254,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(StringMessages.ChannelReadErrorMessage);
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())

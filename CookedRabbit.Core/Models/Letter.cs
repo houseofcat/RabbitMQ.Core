@@ -61,5 +61,24 @@ namespace CookedRabbit.Core
                 PriorityLevel = priority
             };
         }
+
+        public Letter Clone()
+        {
+            return new Letter
+            {
+                Envelope = new Envelope
+                {
+                    Exchange = Envelope.Exchange,
+                    RoutingKey = Envelope.RoutingKey,
+                    RoutingOptions = new RoutingOptions
+                    {
+                        DeliveryMode = Envelope.RoutingOptions?.DeliveryMode ?? 2,
+                        Mandatory = Envelope.RoutingOptions?.Mandatory ?? false,
+                        PriorityLevel = Envelope.RoutingOptions?.PriorityLevel ?? 0,
+                    }
+                },
+                LetterMetadata = LetterMetadata
+            };
+        }
     }
 }

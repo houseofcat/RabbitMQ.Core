@@ -91,8 +91,8 @@ namespace CookedRabbit.Core
                     FullMode = Config.PublisherSettings.BehaviorWhenFull
                 });
 
-            PublishingTask = Task.Run(async () => await ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
-            PublishingPriorityTask = Task.Run(async () => await ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
+            PublishingTask = Task.Run(() => ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
+            PublishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
 
             Initialized = true;
             Shutdown = false;

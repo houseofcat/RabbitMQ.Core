@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using static CookedRabbit.Core.Enums;
-using static CookedRabbit.Core.StringMessages;
+using static CookedRabbit.Core.Strings;
 
 namespace CookedRabbit.Core
 {
