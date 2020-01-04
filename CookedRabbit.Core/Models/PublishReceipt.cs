@@ -4,5 +4,6 @@ namespace CookedRabbit.Core
     {
         public bool IsError { get; set; }
         public ulong LetterId { get; set; }
+        public Letter OriginalLetter { get; set; }
     }
 }

@@ -80,6 +80,8 @@ namespace CookedRabbit.Core
         {
             await pubLock.WaitAsync().ConfigureAwait(false);
 
+            await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
+
             LetterQueue = Channel.CreateBounded<Letter>(
                 new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)
                 {
@@ -159,5 +161,7 @@ namespace CookedRabbit.Core
 
             pubLock.Release();
         }
+
+        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync() => await Publisher.GetReceiptBufferReaderAsync().ConfigureAwait(false);
     }
 }

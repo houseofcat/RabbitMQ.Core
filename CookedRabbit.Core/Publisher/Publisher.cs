@@ -60,7 +60,7 @@ namespace CookedRabbit.Core
             {
                 if (createReceipt)
                 {
-                    await CreateReceiptAsync(letter.LetterId, error)
+                    await CreateReceiptAsync(letter, error)
                         .ConfigureAwait(false);
                 }
 
@@ -81,9 +81,9 @@ namespace CookedRabbit.Core
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
-            try
+            for (int i = 0; i < letters.Count; i++)
             {
-                for (int i = 0; i < letters.Count; i++)
+                try
                 {
                     var props = chanHost.Channel.CreateBasicProperties();
                     props.DeliveryMode = letters[i].Envelope.RoutingOptions.DeliveryMode;
@@ -96,17 +96,17 @@ namespace CookedRabbit.Core
                         letters[i].Envelope.RoutingOptions.Mandatory,
                         props,
                         letters[i].Body);
-
-                    if (createReceipt)
-                    {
-                        await CreateReceiptAsync(letters[i].LetterId, error).ConfigureAwait(false);
-                    }
                 }
+                catch
+                { error = true; }
+
+                if (createReceipt)
+                { await CreateReceiptAsync(letters[i], error).ConfigureAwait(false); }
+
+                if (error) { break; }
             }
-            catch
-            { error = true; }
-            finally
-            { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+
+            await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
         }
 
 #if CORE3
@@ -122,9 +122,9 @@ namespace CookedRabbit.Core
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
-            try
+            await foreach (var letter in letters)
             {
-                await foreach (var letter in letters)
+                try
                 {
                     var props = chanHost.Channel.CreateBasicProperties();
                     props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
@@ -137,20 +137,16 @@ namespace CookedRabbit.Core
                         letter.Envelope.RoutingOptions.Mandatory,
                         props,
                         letter.Body);
-
-                    if (createReceipt)
-                    {
-                        await CreateReceiptAsync(letter.LetterId, error).ConfigureAwait(false);
-                    }
                 }
+                catch
+                { error = true; }
+
+                if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
+
+                if (error) { break; }
             }
-            catch
-            { error = true; }
-            finally
-            {
-                await ChannelPool
-                    .ReturnChannelAsync(chanHost, error);
-            }
+
+            await ChannelPool.ReturnChannelAsync(chanHost, error);
         }
 #endif
 
@@ -186,22 +182,20 @@ namespace CookedRabbit.Core
 
                     if (createReceipt)
                     {
-                        await CreateReceiptAsync(letters[i].LetterId, error).ConfigureAwait(false);
+                        await CreateReceiptAsync(letters[i], error).ConfigureAwait(false);
                     }
                 }
 
                 publishBatch.Publish();
             }
             catch
-            {
-                error = true;
-            }
+            { error = true; }
             finally
             { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async ValueTask CreateReceiptAsync(ulong letterId, bool error)
+        private async ValueTask CreateReceiptAsync(Letter letter, bool error)
         {
             if (!await ReceiptBuffer
                 .Writer
@@ -213,7 +207,7 @@ namespace CookedRabbit.Core
 
             await ReceiptBuffer
                 .Writer
-                .WriteAsync(new PublishReceipt { LetterId = letterId, IsError = error })
+                .WriteAsync(new PublishReceipt { LetterId = letter.LetterId, IsError = error, OriginalLetter = error ? letter : null })
                 .ConfigureAwait(false);
         }
 

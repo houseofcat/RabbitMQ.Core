@@ -309,18 +309,7 @@ namespace CookedRabbit.Core
             return result != null ? JsonSerializer.Deserialize<T>(result.Body) : default;
         }
 
-        public async ValueTask<ChannelReader<RabbitMessage>> GetConsumerRabbitMessageBufferAsync()
-        {
-            if (!await RabbitMessageBuffer
-                .Reader
-                .WaitToReadAsync()
-                .ConfigureAwait(false))
-            {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
-            }
-
-            return RabbitMessageBuffer.Reader;
-        }
+        public ChannelReader<RabbitMessage> GetConsumerRabbitMessageBuffer() => RabbitMessageBuffer.Reader;
 
         public async ValueTask<RabbitMessage> ReadRabbitMessageAsync()
         {
