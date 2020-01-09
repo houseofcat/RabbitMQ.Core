@@ -63,18 +63,21 @@ namespace CookedRabbit.Core.Pools
                 .WaitAsync()
                 .ConfigureAwait(false);
 
-            if (!Initialized)
+            try
             {
-                ConfigurePool();
+                if (!Initialized)
+                {
+                    ConfigurePool();
 
-                await CreateConnectionsAsync()
-                    .ConfigureAwait(false);
+                    await CreateConnectionsAsync()
+                        .ConfigureAwait(false);
 
-                Initialized = true;
-                Shutdown = false;
+                    Initialized = true;
+                    Shutdown = false;
+                }
             }
-
-            poolLock.Release();
+            finally
+            { poolLock.Release(); }
         }
 
         public void ConfigurePool()
@@ -89,15 +92,15 @@ namespace CookedRabbit.Core.Pools
             {
                 try
                 {
+                    var connection = ConnectionFactory.CreateConnection($"{Config.PoolSettings.ConnectionPoolName}:{i}");
                     await Connections
                         .Writer
                         .WriteAsync(
-                            new ConnectionHost(
-                                CurrentConnectionId++,
-                                ConnectionFactory.CreateConnection($"{Config.PoolSettings.ConnectionPoolName}:{i}"))
+                            new ConnectionHost(CurrentConnectionId++, connection)
                          );
                 }
-                catch (BrokerUnreachableException)
+                catch (Exception)
+                //catch (Exception ex) when (ex is ArgumentException || ex is ConnectFailureException || ex is BrokerUnreachableException)
                 {
                     // TODO: Implement Logger
                     // RabbitMQ Server/Cluster is unreachable.

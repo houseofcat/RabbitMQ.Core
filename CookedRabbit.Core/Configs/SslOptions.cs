@@ -28,15 +28,15 @@ namespace CookedRabbit.Core
         public string LocalCertPassword { get; set; } = string.Empty;
 
         /// <summary>
-        /// RabbitMQ option to allow the following acceptable policy errors (if any).
+        /// RabbitMQ option to allow the following acceptable policy errors (if any). Not Readable by Json Config yet.
         /// </summary>
         public SslPolicyErrors AcceptedPolicyErrors { get; set; } = SslPolicyErrors.RemoteCertificateNotAvailable | SslPolicyErrors.RemoteCertificateNameMismatch;
 
         /// <summary>
-        /// RabbitMQ option to specify which secure SSL protocols to use/allow.
+        /// RabbitMQ option to specify which secure SSL protocols to use/allow. Not Readable by Json Config yet.
         /// <para>Recommend Tls12+ as the most recent/secure protocol.</para>
         /// </summary>
-        #if CORE2
+#if CORE2
         public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12;
 #elif CORE3
         public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;

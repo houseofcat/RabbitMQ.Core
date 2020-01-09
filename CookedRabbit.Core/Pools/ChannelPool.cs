@@ -46,22 +46,24 @@ namespace CookedRabbit.Core.Pools
                 .WaitAsync()
                 .ConfigureAwait(false);
 
-            if (!Initialized)
+            try
             {
-                ConfigurePool();
+                if (!Initialized)
+                {
+                    ConfigurePool();
 
-                await ConnectionPool
-                    .InitializeAsync()
-                    .ConfigureAwait(false);
+                    await ConnectionPool
+                        .InitializeAsync()
+                        .ConfigureAwait(false);
 
-                await CreateChannelsAsync()
-                    .ConfigureAwait(false);
+                    await CreateChannelsAsync()
+                        .ConfigureAwait(false);
 
-                Initialized = true;
-                Shutdown = false;
+                    Initialized = true;
+                    Shutdown = false;
+                }
             }
-
-            poolLock.Release();
+            finally { poolLock.Release(); }
         }
 
         private void ConfigurePool()

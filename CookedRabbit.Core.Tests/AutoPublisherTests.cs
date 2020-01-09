@@ -155,7 +155,7 @@ namespace CookedRabbit.Core.Tests
 
         private async Task<bool> ProcessReceiptsAsync(AutoPublisher apub, ulong count)
         {
-            var buffer = await apub.GetReceiptBufferReaderAsync().ConfigureAwait(false);
+            var buffer = apub.GetReceiptBufferReader();
             var receiptCount = 0ul;
             var error = false;
 

@@ -24,4 +24,10 @@
     <ProjectReference Include="..\CookedRabbit.Core\CookedRabbit.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestConfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

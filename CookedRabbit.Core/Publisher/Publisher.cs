@@ -12,7 +12,7 @@ namespace CookedRabbit.Core
         public Config Config { get; }
         public ChannelPool ChannelPool { get; }
 
-        private Channel<PublishReceipt> ReceiptBuffer { get; }
+        public Channel<PublishReceipt> ReceiptBuffer { get; private set; }
 
         public Publisher(Config config)
         {

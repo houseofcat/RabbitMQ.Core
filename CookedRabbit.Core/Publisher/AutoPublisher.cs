@@ -14,6 +14,7 @@ namespace CookedRabbit.Core
         private Channel<Letter> PriorityLetterQueue { get; set; }
         private Task PublishingTask { get; set; }
         private Task PublishingPriorityTask { get; set; }
+        private Task ProcessReceiptsAsync { get; set; }
 
         private readonly SemaphoreSlim pubLock = new SemaphoreSlim(1, 1);
         public bool Initialized { get; private set; }
@@ -32,12 +33,6 @@ namespace CookedRabbit.Core
         {
             Config = channelPool.Config;
             Publisher = new Publisher(channelPool);
-        }
-
-        public AutoPublisher(Publisher publisher)
-        {
-            Config = publisher.Config;
-            Publisher = publisher;
         }
 
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
@@ -120,10 +115,95 @@ namespace CookedRabbit.Core
         {
             while (await channelReader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await Publisher
-                    .PublishAsyncEnumerableAsync(channelReader.ReadAllAsync(), true)
-                    .ConfigureAwait(false);
+                while (channelReader.TryRead(out var letter))
+                {
+                    await Publisher
+                        .PublishAsync(letter, true)
+                        .ConfigureAwait(false);
+                }
             }
+            //while (await channelReader.WaitToReadAsync().ConfigureAwait(false))
+            //{
+            //    await Publisher
+            //        .PublishAsyncEnumerableAsync(channelReader.ReadAllAsync(), true)
+            //        .ConfigureAwait(false);
+            //}
+        }
+#endif
+
+#if CORE2
+        public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+
+            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            {
+                ProcessReceiptsAsync = Task.Run(async () =>
+                {
+                    while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
+                    {
+                        while (GetReceiptBufferReader().TryRead(out var receipt))
+                        {
+                            await processReceiptAsync(receipt).ConfigureAwait(false);
+                        }
+                    }
+                });
+            }
+
+            pubLock.Release();
+        }
+
+        public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+
+            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            {
+                ProcessReceiptsAsync = Task.Run(async () =>
+                {
+                    while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
+                    {
+                        while (GetReceiptBufferReader().TryRead(out var receipt))
+                        {
+                            await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
+                        }
+                    }
+                });
+            }
+
+            pubLock.Release();
+        }
+#elif CORE3
+        public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            {
+                ProcessReceiptsAsync = Task.Run(async () =>
+                {
+                    await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                    {
+                        await processReceiptAsync(receipt).ConfigureAwait(false);
+                    }
+                });
+            }
+            pubLock.Release();
+        }
+
+        public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            {
+                ProcessReceiptsAsync = Task.Run(async () =>
+                {
+                    await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                    {
+                        await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
+                    }
+                });
+            }
+            pubLock.Release();
         }
 #endif
 
@@ -133,6 +213,7 @@ namespace CookedRabbit.Core
 
             LetterQueue.Writer.Complete();
             PriorityLetterQueue.Writer.Complete();
+            Publisher.ReceiptBuffer.Writer.Complete();
 
             if (!immediately)
             {
@@ -162,6 +243,7 @@ namespace CookedRabbit.Core
             pubLock.Release();
         }
 
-        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync() => await Publisher.GetReceiptBufferReaderAsync().ConfigureAwait(false);
+        // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
+        public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer;
     }
 }

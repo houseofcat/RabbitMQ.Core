@@ -16,7 +16,7 @@ namespace CookedRabbit.Core
     {
         public Config Config { get; }
 
-        private ChannelPool ChannelPool { get; }
+        public ChannelPool ChannelPool { get; }
         private Channel<RabbitMessage> RabbitMessageBuffer { get; set; }
 
         private ChannelHost ConsumingChannelHost { get; set; }
@@ -49,10 +49,19 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public Consumer(ChannelPool channelPool)
+        public Consumer(ChannelPool channelPool, string consumerName)
         {
             Config = channelPool.Config;
             ChannelPool = channelPool;
+
+            ConsumerName = consumerName;
+            var conSettings = GetConsumerSettings(consumerName);
+
+            ConsumerName = conSettings.ConsumerName;
+            QueueName = conSettings.QueueName;
+            NoLocal = conSettings.NoLocal;
+            Exclusive = conSettings.Exclusive;
+            QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
         private ConsumerOptions GetConsumerSettings(string consumerName)
