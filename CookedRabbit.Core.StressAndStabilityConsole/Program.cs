@@ -20,13 +20,13 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         private static Consumer con3;
         private static Consumer con4;
 
-        private const ulong MessageCount = 12_500_000;
+        private const ulong MessageCount = 250_000;
         private const int MessageSize = 1_000;
 
         public static async Task Main()
         {
-            await Console.Out.WriteLineAsync("StressTest v1.00").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("StressTest setting everything up...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("CookedRabbit.Core StressTest v1.00").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("- StressTest setting everything up...").ConfigureAwait(false);
 
             var setupFailed = false;
             try
@@ -34,12 +34,12 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             catch (Exception ex)
             {
                 setupFailed = true;
-                await Console.Out.WriteLineAsync($"StressTest failed with exception {ex.Message}.").ConfigureAwait(false);
+                await Console.Out.WriteLineAsync($"- StressTest failed with exception {ex.Message}.").ConfigureAwait(false);
             }
 
             if (!setupFailed)
             {
-                await Console.Out.WriteLineAsync("StressTest starting!").ConfigureAwait(false);
+                await Console.Out.WriteLineAsync("- StressTest starting!").ConfigureAwait(false);
 
                 try
                 {
@@ -47,7 +47,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                         .ConfigureAwait(false);
                 }
                 catch (Exception ex)
-                { await Console.Out.WriteLineAsync($"StressTest failed with exception {ex.Message}.").ConfigureAwait(false); }
+                { await Console.Out.WriteLineAsync($"- StressTest failed with exception {ex.Message}.").ConfigureAwait(false); }
             }
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
@@ -69,7 +69,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             apub3 = new AutoPublisher(topologer.ChannelPool);
             apub4 = new AutoPublisher(topologer.ChannelPool);
 
-            await Console.Out.WriteLineAsync("Creating stress test queues!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("- Creating stress test queues!").ConfigureAwait(false);
 
             foreach (var kvp in config.ConsumerSettings)
             {
@@ -81,7 +81,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             foreach (var kvp in config.ConsumerSettings)
             {
                 await topologer
-                    .CreateQueueAsync(kvp.Value.QueueName, false)
+                    .CreateQueueAsync(kvp.Value.QueueName, true)
                     .ConfigureAwait(false);
             }
 
@@ -98,7 +98,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             await Console
                 .Out
-                .WriteLineAsync($"Setup has finished in {sw.ElapsedMilliseconds} ms.")
+                .WriteLineAsync($"- Setup has finished in {sw.ElapsedMilliseconds} ms.")
                 .ConfigureAwait(false);
         }
 
@@ -114,7 +114,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                 .WhenAll(pubSubTask1, pubSubTask2, pubSubTask3, pubSubTask4)
                 .ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync($"All tests finished in {sw.ElapsedMilliseconds / 1000.0} s!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"- All tests finished in {sw.ElapsedMilliseconds / 60_000.0} minutes!").ConfigureAwait(false);
         }
 
         private static async Task StartPubSubTestAsync(AutoPublisher autoPublisher, Consumer consumer)
@@ -148,11 +148,11 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
                     await apub.QueueLetterAsync(letter).ConfigureAwait(false);
 
-                    if (letter.LetterId % 100_000 == 0)
+                    if (letter.LetterId % 10_000 == 0)
                     {
                         await Console
                             .Out
-                            .WriteLineAsync($"QueueName ({queueName}) is publishing letter {letter.LetterId}")
+                            .WriteLineAsync($"- QueueName ({queueName}) is publishing letter {letter.LetterId}")
                             .ConfigureAwait(false);
                     }
                 }).ConfigureAwait(false);
@@ -161,7 +161,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             await Console
                 .Out
-                .WriteLineAsync($"Finished queueing all letters in {sw.ElapsedMilliseconds} ms.")
+                .WriteLineAsync($"- Finished queueing all letters in {sw.ElapsedMilliseconds / 60_000.0} minutes.")
                 .ConfigureAwait(false);
         }
 
@@ -188,7 +188,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             }
             sw.Stop();
 
-            await Console.Out.WriteLineAsync($"Finished getting receipts.\r\nReceiptCount: {receiptCount} in {sw.ElapsedMilliseconds} ms.\r\nErrorCount: {errorCount}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"- Finished getting receipts.\r\nReceiptCount: {receiptCount} in {sw.ElapsedMilliseconds / 60_000.0} minutes.\r\nErrorCount: {errorCount}").ConfigureAwait(false);
         }
 
         private static async Task ConsumeMessagesAsync(Consumer consumer, ulong count)
@@ -206,6 +206,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                 try
                 {
                     var message = await consumer.ReadRabbitMessageAsync().ConfigureAwait(false);
+
+                    if (message.Ackable)
+                    { message.AckMessage(); }
+
                     messageCount++;
 
                     //await Task.Delay(1).ConfigureAwait(false);
@@ -215,7 +219,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             }
             sw.Stop();
 
-            await Console.Out.WriteLineAsync($"Finished consuming messages.\r\nMessageCount: {messageCount} in {sw.ElapsedMilliseconds} ms.\r\nErrorCount: {errorCount}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"- Finished consuming messages.\r\nMessageCount: {messageCount} in {sw.ElapsedMilliseconds / 60_000.0} minutes.\r\nErrorCount: {errorCount}").ConfigureAwait(false);
         }
     }
 }

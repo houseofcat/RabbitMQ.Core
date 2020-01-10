@@ -1,7 +1,5 @@
 using System;
-#if CORE3
 using System.Collections.Generic;
-#endif
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -336,8 +334,45 @@ namespace CookedRabbit.Core
                 .ConfigureAwait(false);
         }
 
+        public async Task<IEnumerable<RabbitMessage>> ReadRabbitMessagesUntilEmptyAsync()
+        {
+            if (!await RabbitMessageBuffer
+                .Reader
+                .WaitToReadAsync()
+                .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+            }
+
+            var list = new List<RabbitMessage>();
+            await RabbitMessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (RabbitMessageBuffer.Reader.TryRead(out var message))
+            {
+                list.Add(message);
+            }
+
+            return list;
+        }
+
 #if CORE3
-        public async IAsyncEnumerable<RabbitMessage> ReadAllRabbitMessagesAsync()
+        public async IAsyncEnumerable<RabbitMessage> StreamOutRabbitMessagesUntilEmptyAsync()
+        {
+            if (!await RabbitMessageBuffer
+                .Reader
+                .WaitToReadAsync()
+                .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+            }
+
+            await RabbitMessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (RabbitMessageBuffer.Reader.TryRead(out var message))
+            {
+                yield return message;
+            }
+        }
+
+        public async IAsyncEnumerable<RabbitMessage> StreamOutRabbitMessagesTillClosedAsync()
         {
             if (!await RabbitMessageBuffer
                 .Reader
