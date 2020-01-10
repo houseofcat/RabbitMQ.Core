@@ -178,7 +178,9 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                 {
                     var receipt = await buffer.ReadAsync().ConfigureAwait(false);
                     if (receipt.IsError)
-                    { errorCount++; }
+                    {
+                        errorCount++;
+                    }
 
                     //await Task.Delay(1).ConfigureAwait(false);
                 }
@@ -197,26 +199,27 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             var errorCount = 0ul;
 
             await consumer
-                .StartConsumerAsync(true, true)
+                .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
             var sw = Stopwatch.StartNew();
-            while (messageCount + errorCount < count)
+            try
             {
-                try
+                while (messageCount + errorCount < count) // TODO: Possible Infinite loop on lost messages.
                 {
-                    var message = await consumer.ReadRabbitMessageAsync().ConfigureAwait(false);
+                    await foreach (var message in consumer.StreamOutRabbitMessagesUntilEmptyAsync())
+                    {
+                        if (message.Ackable)
+                        { message.AckMessage(); }
 
-                    if (message.Ackable)
-                    { message.AckMessage(); }
+                        //await Task.Delay(1).ConfigureAwait(false);
 
-                    messageCount++;
-
-                    //await Task.Delay(1).ConfigureAwait(false);
+                        messageCount++;
+                    }
                 }
-                catch
-                { errorCount++; break; }
             }
+            catch
+            { errorCount++; }
             sw.Stop();
 
             await Console.Out.WriteLineAsync($"- Finished consuming messages.\r\nMessageCount: {messageCount} in {sw.ElapsedMilliseconds / 60_000.0} minutes.\r\nErrorCount: {errorCount}").ConfigureAwait(false);

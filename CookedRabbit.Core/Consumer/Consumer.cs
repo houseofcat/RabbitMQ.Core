@@ -372,7 +372,7 @@ namespace CookedRabbit.Core
             }
         }
 
-        public async IAsyncEnumerable<RabbitMessage> StreamOutRabbitMessagesTillClosedAsync()
+        public async IAsyncEnumerable<RabbitMessage> StreamOutRabbitMessagesUntilClosedAsync()
         {
             if (!await RabbitMessageBuffer
                 .Reader
