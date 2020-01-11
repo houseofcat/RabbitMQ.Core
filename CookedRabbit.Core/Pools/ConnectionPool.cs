@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using CookedRabbit.Core.Utils;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 
@@ -23,6 +24,7 @@ namespace CookedRabbit.Core.Pools
 
         public ConnectionPool(Config config)
         {
+            Guard.AgainstNull(config, nameof(config));
             Config = config;
         }
 

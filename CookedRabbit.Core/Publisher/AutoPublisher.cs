@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core
 {
@@ -25,12 +26,16 @@ namespace CookedRabbit.Core
 
         public AutoPublisher(Config config)
         {
+            Guard.AgainstNull(config, nameof(config));
+
             Config = config;
             Publisher = new Publisher(Config);
         }
 
         public AutoPublisher(ChannelPool channelPool)
         {
+            Guard.AgainstNull(channelPool, nameof(channelPool));
+
             Config = channelPool.Config;
             Publisher = new Publisher(channelPool);
         }
@@ -136,42 +141,48 @@ namespace CookedRabbit.Core
         {
             await pubLock.WaitAsync().ConfigureAwait(false);
 
-            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            try
             {
-                ProcessReceiptsAsync = Task.Run(async () =>
+                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
+                    ProcessReceiptsAsync = Task.Run(async () =>
                     {
-                        while (GetReceiptBufferReader().TryRead(out var receipt))
+                        while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
                         {
-                            await processReceiptAsync(receipt).ConfigureAwait(false);
+                            while (GetReceiptBufferReader().TryRead(out var receipt))
+                            {
+                                await processReceiptAsync(receipt).ConfigureAwait(false);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-
-            pubLock.Release();
+            finally
+            { pubLock.Release(); }
         }
 
-        public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
+        public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject) where TIn : new()
         {
             await pubLock.WaitAsync().ConfigureAwait(false);
 
-            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+            try
             {
-                ProcessReceiptsAsync = Task.Run(async () =>
+                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
+                    ProcessReceiptsAsync = Task.Run(async () =>
                     {
-                        while (GetReceiptBufferReader().TryRead(out var receipt))
+                        while (await GetReceiptBufferReader().WaitToReadAsync().ConfigureAwait(false))
                         {
-                            await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
+                            while (GetReceiptBufferReader().TryRead(out var receipt))
+                            {
+                                await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-
-            pubLock.Release();
+            finally
+            { pubLock.Release(); }
         }
 #elif CORE3
         public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)

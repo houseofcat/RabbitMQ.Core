@@ -7,7 +7,7 @@
     "TopologyRecovery": true,
     "NetRecoveryTimeout": 10,
     "ContinuationTimeout": 10,
-    "EnableDispatchConsumersAsync": false,
+    "EnableDispatchConsumersAsync": true,
     "UseBackgroundThreadsForIO": true,
     "SslSettings": {
       "EnableSsl": false,

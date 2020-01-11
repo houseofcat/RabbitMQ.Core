@@ -225,3 +225,6 @@ csharp_preserve_single_line_statements                                   = true
 csharp_prefer_braces = true:none
 # Expressions
 csharp_prefer_simple_default_expression = true:suggestion
+
+# CA1031: Do not catch general exception types
+dotnet_diagnostic.CA1031.severity = silent

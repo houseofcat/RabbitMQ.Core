@@ -1,4 +1,5 @@
 using System.IO;
+using Utf8Json;
 
 namespace CookedRabbit.Core.Utils
 {
@@ -11,7 +12,7 @@ namespace CookedRabbit.Core.Utils
         {
             using var stream = new FileStream(fileNamePath, FileMode.Open);
 
-            return Utf8Json.JsonSerializer.Deserialize<Config>(stream);
+            return JsonSerializer.Deserialize<Config>(stream);
         }
     }
 }

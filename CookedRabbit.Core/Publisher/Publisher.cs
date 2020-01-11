@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core
 {
@@ -12,10 +13,12 @@ namespace CookedRabbit.Core
         public Config Config { get; }
         public ChannelPool ChannelPool { get; }
 
-        public Channel<PublishReceipt> ReceiptBuffer { get; private set; }
+        public Channel<PublishReceipt> ReceiptBuffer { get; }
 
         public Publisher(Config config)
         {
+            Guard.AgainstNull(config, nameof(config));
+
             Config = config;
             ChannelPool = new ChannelPool(Config);
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
@@ -23,6 +26,8 @@ namespace CookedRabbit.Core
 
         public Publisher(ChannelPool channelPool)
         {
+            Guard.AgainstNull(channelPool, nameof(channelPool));
+
             Config = channelPool.Config;
             ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();

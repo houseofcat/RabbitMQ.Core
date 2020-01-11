@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core.Pools
 {
@@ -30,12 +31,16 @@ namespace CookedRabbit.Core.Pools
 
         public ChannelPool(Config config)
         {
+            Guard.AgainstNull(config, nameof(config));
+
             ConnectionPool = new ConnectionPool(config);
             Config = config;
         }
 
         public ChannelPool(ConnectionPool connPool)
         {
+            Guard.AgainstNull(connPool, nameof(connPool));
+
             ConnectionPool = connPool;
             Config = connPool.Config;
         }

@@ -12,12 +12,16 @@ namespace CookedRabbit.Core
 
         public Topologer(Config config)
         {
+            Guard.AgainstNull(config, nameof(config));
+
             Config = config;
             ChannelPool = new ChannelPool(Config);
         }
 
         public Topologer(ChannelPool channelPool)
         {
+            Guard.AgainstNull(channelPool, nameof(channelPool));
+
             Config = channelPool.Config;
             ChannelPool = channelPool;
         }

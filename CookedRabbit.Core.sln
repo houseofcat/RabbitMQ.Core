@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Benchmark
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Tests", "CookedRabbit.Core.Tests\CookedRabbit.Core.Tests.csproj", "{C2B794EB-A8E4-4258-8B43-0D179C5D8A3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CookedRabbit.Core.StressAndStabilityConsole", "CookedRabbit.Core.StressAndStabilityConsole\CookedRabbit.Core.StressAndStabilityConsole.csproj", "{CB15603F-0431-46EB-89DA-56A289B6AA82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.StressAndStabilityConsole", "CookedRabbit.Core.StressAndStabilityConsole\CookedRabbit.Core.StressAndStabilityConsole.csproj", "{CB15603F-0431-46EB-89DA-56A289B6AA82}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
@@ -34,6 +36,9 @@ namespace CookedRabbit.Core
 
         public Consumer(Config config, string consumerName)
         {
+            Guard.AgainstNull(config, nameof(config));
+            Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
+
             Config = config;
             ChannelPool = new ChannelPool(Config);
 
@@ -49,6 +54,9 @@ namespace CookedRabbit.Core
 
         public Consumer(ChannelPool channelPool, string consumerName)
         {
+            Guard.AgainstNull(channelPool, nameof(channelPool));
+            Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
+
             Config = channelPool.Config;
             ChannelPool = channelPool;
 
@@ -64,7 +72,7 @@ namespace CookedRabbit.Core
 
         private ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(Strings.NoConsumerSettingsMessage, consumerName));
+            if (!Config.ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
             return Config.ConsumerSettings[consumerName];
         }
 
