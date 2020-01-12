@@ -418,6 +418,77 @@ namespace CookedRabbit.Core
             return list;
         }
 
+#if CORE2
+        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task> workAsync)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
+                    {
+                        try
+                        {
+                            await workAsync(receivedLetter)
+                                .ConfigureAwait(false);
+
+                            receivedLetter.AckMessage();
+                        }
+                        catch
+                        { receivedLetter.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
+                    {
+                        try
+                        {
+                            if (await workAsync(receivedLetter).ConfigureAwait(false))
+                            { receivedLetter.AckMessage(); }
+                            else
+                            { receivedLetter.NackMessage(true); }
+                        }
+                        catch
+                        { receivedLetter.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedLetter, TOptions, Task<bool>> workAsync, TOptions options)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
+                    {
+                        try
+                        {
+                            if (await workAsync(receivedLetter, options).ConfigureAwait(false))
+                            { receivedLetter.AckMessage(); }
+                            else
+                            { receivedLetter.NackMessage(true); }
+                        }
+                        catch
+                        { receivedLetter.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+#endif
+
 #if CORE3
         public async IAsyncEnumerable<ReceivedLetter> StreamOutLettersUntilEmptyAsync()
         {
@@ -447,11 +518,103 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await foreach (var receipt in LetterBuffer.Reader.ReadAllAsync())
+            await foreach (var message in LetterBuffer.Reader.ReadAllAsync())
             {
-                yield return receipt;
+                yield return message;
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task> workAsync)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedLetter in LetterBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        await workAsync(receivedLetter)
+                            .ConfigureAwait(false);
+
+                        receivedLetter.AckMessage();
+                    }
+                    catch
+                    { receivedLetter.NackMessage(true); }
+                }
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedLetter in LetterBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        if (await workAsync(receivedLetter).ConfigureAwait(false))
+                        { receivedLetter.AckMessage(); }
+                        else
+                        { receivedLetter.NackMessage(true); }
+                    }
+                    catch
+                    { receivedLetter.NackMessage(true); }
+                }
+            }
+        }
+
+        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedLetter, TOptions, Task<bool>> workAsync, TOptions options)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedLetter in LetterBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        if (await workAsync(receivedLetter, options).ConfigureAwait(false))
+                        { receivedLetter.AckMessage(); }
+                        else
+                        { receivedLetter.NackMessage(true); }
+                    }
+                    catch
+                    { receivedLetter.NackMessage(true); }
+                }
             }
         }
 #endif
+
+        public async Task ParallelExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync, int maxDoP = 4)
+        {
+            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    var parallelLock = new SemaphoreSlim(1, maxDoP);
+                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
+                    {
+                        if (receivedLetter != null)
+                        {
+                            await parallelLock.WaitAsync().ConfigureAwait(false);
+
+                            _ = Task.Run(ExecuteWorkAsync);
+
+                            async Task ExecuteWorkAsync()
+                            {
+                                try
+                                {
+                                    if (await workAsync(receivedLetter).ConfigureAwait(false))
+                                    { receivedLetter.AckMessage(); }
+                                    else
+                                    { receivedLetter.NackMessage(true); }
+                                }
+                                catch
+                                { receivedLetter.NackMessage(true); }
+                                finally { parallelLock.Release(); }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
     }
 }

@@ -373,6 +373,77 @@ namespace CookedRabbit.Core
             return list;
         }
 
+#if CORE2
+        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task> workAsync)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                    {
+                        try
+                        {
+                            await workAsync(receivedMessage)
+                                .ConfigureAwait(false);
+
+                            receivedMessage.AckMessage();
+                        }
+                        catch
+                        { receivedMessage.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                    {
+                        try
+                        {
+                            if (await workAsync(receivedMessage).ConfigureAwait(false))
+                            { receivedMessage.AckMessage(); }
+                            else
+                            { receivedMessage.NackMessage(true); }
+                        }
+                        catch
+                        { receivedMessage.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedMessage, TOptions, Task<bool>> workAsync, TOptions options)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                    {
+                        try
+                        {
+                            if (await workAsync(receivedMessage, options).ConfigureAwait(false))
+                            { receivedMessage.AckMessage(); }
+                            else
+                            { receivedMessage.NackMessage(true); }
+                        }
+                        catch
+                        { receivedMessage.NackMessage(true); }
+                    }
+                }
+                catch { }
+            }
+        }
+#endif
+
 #if CORE3
         public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilEmptyAsync()
         {
@@ -402,11 +473,103 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await foreach (var receipt in MessageBuffer.Reader.ReadAllAsync())
+            await foreach (var message in MessageBuffer.Reader.ReadAllAsync())
             {
-                yield return receipt;
+                yield return message;
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task> workAsync)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        await workAsync(receivedMessage)
+                            .ConfigureAwait(false);
+
+                        receivedMessage.AckMessage();
+                    }
+                    catch
+                    { receivedMessage.NackMessage(true); }
+                }
+            }
+        }
+
+        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        if (await workAsync(receivedMessage).ConfigureAwait(false))
+                        { receivedMessage.AckMessage(); }
+                        else
+                        { receivedMessage.NackMessage(true); }
+                    }
+                    catch
+                    { receivedMessage.NackMessage(true); }
+                }
+            }
+        }
+
+        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedMessage, TOptions, Task<bool>> workAsync, TOptions options)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                {
+                    try
+                    {
+                        if (await workAsync(receivedMessage, options).ConfigureAwait(false))
+                        { receivedMessage.AckMessage(); }
+                        else
+                        { receivedMessage.NackMessage(true); }
+                    }
+                    catch
+                    { receivedMessage.NackMessage(true); }
+                }
             }
         }
 #endif
+
+        public async Task ParallelExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync, int maxDoP = 4)
+        {
+            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                try
+                {
+                    var parallelLock = new SemaphoreSlim(1, maxDoP);
+                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                    {
+                        if (receivedMessage != null)
+                        {
+                            await parallelLock.WaitAsync().ConfigureAwait(false);
+
+                            _ = Task.Run(ExecuteWorkAsync);
+
+                            async Task ExecuteWorkAsync()
+                            {
+                                try
+                                {
+                                    if (await workAsync(receivedMessage).ConfigureAwait(false))
+                                    { receivedMessage.AckMessage(); }
+                                    else
+                                    { receivedMessage.NackMessage(true); }
+                                }
+                                catch
+                                { receivedMessage.NackMessage(true); }
+                                finally { parallelLock.Release(); }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
     }
 }

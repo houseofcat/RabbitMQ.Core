@@ -14,7 +14,7 @@ namespace CookedRabbit.Core.SimpleClient
 
         public static async Task Main()
         {
-            await RunSimpleClientWithEncryptionAsync()
+            await RunParallelExecutionEngineAsync()
                 .ConfigureAwait(false);
         }
 
@@ -68,6 +68,97 @@ namespace CookedRabbit.Core.SimpleClient
                 .ConfigureAwait(false);
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
+        }
+
+        private static async Task RunExecutionEngineAsync()
+        {
+            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+
+            var sentMessage = new TestMessage { Message = "Sensitive Message" };
+            var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.Serialize(sentMessage), new LetterMetadata());
+
+            var rabbitService = new RabbitService("Config.json");
+            await rabbitService
+                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .ConfigureAwait(false);
+
+            await rabbitService
+                .Topologer
+                .CreateQueueAsync("TestRabbitServiceQueue")
+                .ConfigureAwait(false);
+
+            // Queue the letter for delivery by the library.
+            await rabbitService
+                .AutoPublisher
+                .QueueLetterAsync(letter);
+
+            // Start Consumer
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            await consumer
+                .StartConsumerAsync(false, true)
+                .ConfigureAwait(false);
+
+            _ = Task.Run(() => consumer.ExecutionEngineAsync(ConsumerWorkerAsync));
+
+            await Console.In.ReadLineAsync().ConfigureAwait(false);
+        }
+
+        private static async Task RunParallelExecutionEngineAsync()
+        {
+            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+
+            var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
+            var rabbitService = new RabbitService("Config.json");
+            await rabbitService
+                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .ConfigureAwait(false);
+
+            await rabbitService
+                .Topologer
+                .CreateQueueAsync("TestRabbitServiceQueue")
+                .ConfigureAwait(false);
+
+            // Produce Messages
+            for (ulong i = 0; i < 100; i++)
+            {
+                var letter = letterTemplate.Clone();
+                letter.LetterId = i;
+                var sentMessage = new TestMessage { Message = "Sensitive Message" };
+                sentMessage.Message += $" {i.ToString()}";
+                letter.Body = JsonSerializer.Serialize(sentMessage);
+                await rabbitService
+                    .AutoPublisher
+                    .QueueLetterAsync(letter);
+            }
+
+            // Start Consumer As An Execution Engine
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            await consumer
+                .StartConsumerAsync(false, true)
+                .ConfigureAwait(false);
+
+            _ = Task.Run(() => consumer.ParallelExecutionEngineAsync(ConsumerWorkerAsync, 7));
+
+            await Console.In.ReadLineAsync().ConfigureAwait(false);
+        }
+
+        private static async Task<bool> ConsumerWorkerAsync(ReceivedLetter receivedLetter)
+        {
+            try
+            {
+                var decodedLetter = JsonSerializer.Deserialize<TestMessage>(receivedLetter.Letter.Body);
+
+                await Console.Out.WriteLineAsync($"LetterId: {receivedLetter.Letter.LetterId} Received: {decodedLetter.Message}").ConfigureAwait(false);
+
+                // Return true or false to ack / nack the message. Exceptions thrown automatically nack the message.
+                // Strategy would be that you control the retry / permanent error in this method and return true.
+                // Transient outage can be thrown and it will go back to it's place in the Rabbit queue.
+            }
+            catch (Exception ex)
+            {
+                await Console.Out.WriteLineAsync($"Message: {ex.Message}").ConfigureAwait(false);
+            }
+            return true;
         }
     }
 }
