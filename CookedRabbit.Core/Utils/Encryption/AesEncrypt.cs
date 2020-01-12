@@ -31,15 +31,13 @@ namespace CookedRabbit.Core.Utils
             var cipherText = new byte[cipher.GetOutputSize(data.Length)];
             cipher.DoFinal(cipherText, cipher.ProcessBytes(data.ToArray(), 0, data.Length, cipherText, 0));
 
-            using (var cs = new MemoryStream())
+            using var cs = new MemoryStream();
+            using (var bw = new BinaryWriter(cs))
             {
-                using (var bw = new BinaryWriter(cs))
-                {
-                    bw.Write(nonce);
-                    bw.Write(cipherText);
-                }
-                return cs.ToArray();
+                bw.Write(nonce);
+                bw.Write(cipherText);
             }
+            return cs.ToArray();
         }
 
         public static byte[] Decrypt(Span<byte> encryptedData, byte[] key)

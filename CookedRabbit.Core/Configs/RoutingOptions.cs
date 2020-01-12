@@ -11,7 +11,7 @@ namespace CookedRabbit.Core
 
         public bool Mandatory { get; set; }
 
-        // Max Priority letter level is 255, however, the max-queue priority though is 10, so > 10 is treated at 10.
+        // Max Priority letter level is 255, however, the max-queue priority though is 10, so > 10 is treated as 10.
         [Range(0, 10, ErrorMessage = RangeErrorMessage)]
         public byte PriorityLevel { get; set; } = 0;
 

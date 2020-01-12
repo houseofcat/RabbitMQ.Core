@@ -1,25 +1,25 @@
-using System.IO;
-using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class RabbitMessage
+    public class ReceivedLetter
     {
         public bool Ackable { get; }
         private IModel Channel { get; }
-        public byte[] Body { get; }
+        public Letter Letter { get; }
         public ulong DeliveryTag { get; }
         public long Timestamp { get; }
         public string MessageId { get; }
 
-        public RabbitMessage(IModel channel, BasicGetResult result, bool ackable)
+        public ReceivedLetter() { }
+
+        public ReceivedLetter(IModel channel, BasicGetResult result, bool ackable)
         {
             Ackable = ackable;
             Channel = channel;
-            Body = result.Body;
+            Letter = result.Body != null ? JsonSerializer.Deserialize<Letter>(result.Body) : null;
             DeliveryTag = result.DeliveryTag;
             MessageId = result.BasicProperties.MessageId;
 
@@ -29,11 +29,11 @@ namespace CookedRabbit.Core
             }
         }
 
-        public RabbitMessage(IModel channel, BasicDeliverEventArgs args, bool ackable)
+        public ReceivedLetter(IModel channel, BasicDeliverEventArgs args, bool ackable)
         {
             Ackable = ackable;
             Channel = channel;
-            Body = args.Body;
+            Letter = args.Body != null ? JsonSerializer.Deserialize<Letter>(args.Body) : null;
             DeliveryTag = args.DeliveryTag;
             MessageId = args.BasicProperties.MessageId;
 
@@ -81,33 +81,5 @@ namespace CookedRabbit.Core
 
             return success;
         }
-
-        /// <summary>
-        /// Convert internal Body to type <see cref="{T}" />.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Body);
-
-        /// <summary>
-        /// Convert internal Body to type <see cref="Letter" />.
-        /// </summary>
-        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Body);
-
-        /// <summary>
-        /// Convert internal Body as a Stream asynchronously to type <see cref="{T}" />.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public async Task<T> ConvertJsonBodyAsync<T>() =>
-            await JsonSerializer
-            .DeserializeAsync<T>(new MemoryStream(Body))
-            .ConfigureAwait(false);
-
-        /// <summary>
-        /// Convert internal Body as a Stream asynchronously to type <see cref="Letter" />.
-        /// </summary>
-        public async Task<Letter> ConvertJsonBodyToLetterAsync() =>
-            await JsonSerializer
-            .DeserializeAsync<Letter>(new MemoryStream(Body))
-            .ConfigureAwait(false);
     }
 }

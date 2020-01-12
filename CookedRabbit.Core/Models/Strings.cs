@@ -11,5 +11,9 @@ namespace CookedRabbit.Core
         public const string GetConnectionErrorMessage = "Threading.Channel used for reading RabbitMQ connections has been closed.";
 
         public const string ChannelPoolNotInitializedMessage = "ChannelPool is not usable until it has been initialized.";
+        public const string EncrypConfigErrorMessage = "Encryption can't be enabled without a HashKey (32-byte length).";
+
+        public const string InitializeError = "AutoPublisher is not initialized or is shutdown.";
+        public const string QueueChannelError = "Can't queue a letter to a closed Threading.Channel.";
     }
 }

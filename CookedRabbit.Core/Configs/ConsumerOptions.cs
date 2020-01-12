@@ -10,7 +10,7 @@ namespace CookedRabbit.Core
         public bool Exclusive { get; set; }
         public ushort QosPrefetchCount { get; set; } = 5;
 
-        public int RabbitMessageBufferSize { get; set; } = 100;
+        public int MessageBufferSize { get; set; } = 100;
         public BoundedChannelFullMode BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
     }
 }

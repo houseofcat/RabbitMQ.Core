@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace CookedRabbit.Core
 {
@@ -23,5 +25,11 @@ namespace CookedRabbit.Core
         /// Dictionary to hold all the ConsumerSettings using the ConsumerOption class.
         /// </summary>
         public IDictionary<string, ConsumerOptions> ConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
+
+        public ConsumerOptions GetConsumerSettings(string consumerName)
+        {
+            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return ConsumerSettings[consumerName];
+        }
     }
 }

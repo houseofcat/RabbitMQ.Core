@@ -14,5 +14,12 @@ namespace CookedRabbit.Core.Utils
 
             return JsonSerializer.Deserialize<Config>(stream);
         }
+
+        public static TopologyConfig TopologyConfigFileRead(string fileNamePath)
+        {
+            using var stream = new FileStream(fileNamePath, FileMode.Open);
+
+            return JsonSerializer.Deserialize<TopologyConfig>(stream);
+        }
     }
 }

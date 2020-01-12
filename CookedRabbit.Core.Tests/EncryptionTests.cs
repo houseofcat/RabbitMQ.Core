@@ -10,8 +10,8 @@ namespace CookedRabbit.Core.Tests
     public class EncryptionTests
     {
         private readonly ITestOutputHelper _output;
-        const string Passphrase = "SuperNintendoHadTheBestZelda";
-        const string Salt = "SegaGenesisIsTheBestConsole";
+        private const string Passphrase = "SuperNintendoHadTheBestZelda";
+        private const string Salt = "SegaGenesisIsTheBestConsole";
 
         public EncryptionTests(ITestOutputHelper output)
         {
@@ -31,7 +31,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task EncryptDecryptTest()
         {
-            var data = new byte[] { 0xFF, 0x00, 0xAA, 0xFF, 0x00 };
+            var data = new byte[] { 0xFF, 0x00, 0xAA, 0xFF, 0x00, 0x00, 0xFF, 0xAA, 0x00, 0xFF,0x00, 0xFF };
 
             var hashKey = await ArgonHash
                 .GetHashKeyAsync(Passphrase, Salt, 32)

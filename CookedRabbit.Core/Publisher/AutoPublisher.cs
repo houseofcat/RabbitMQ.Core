@@ -18,11 +18,14 @@ namespace CookedRabbit.Core
         private Task ProcessReceiptsAsync { get; set; }
 
         private readonly SemaphoreSlim pubLock = new SemaphoreSlim(1, 1);
+
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
 
-        private const string InitializeError = "AutoPublisher is not initialized or is shutdown.";
-        private const string QueueChannelError = "Can't queue a letter to a closed Threading.Channel.";
+        public bool Compress { get; private set; }
+        public bool Encrypt { get; private set; }
+        public bool CreatePublishReceipts { get; private set; }
+        private byte[] HashKey { get; set; }
 
         public AutoPublisher(Config config)
         {
@@ -40,9 +43,86 @@ namespace CookedRabbit.Core
             Publisher = new Publisher(channelPool);
         }
 
+        public async Task StartAsync(byte[] hashKey = null)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                CreatePublishReceipts = Config.PublisherSettings.CreatePublishReceipts;
+                Compress = Config.PublisherSettings.Compress;
+                Encrypt = Config.PublisherSettings.Encrypt;
+
+                if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(Strings.EncrypConfigErrorMessage);
+                HashKey = hashKey;
+
+                await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
+
+                LetterQueue = Channel.CreateBounded<Letter>(
+                    new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)
+                    {
+                        FullMode = Config.PublisherSettings.BehaviorWhenFull
+                    });
+                PriorityLetterQueue = Channel.CreateBounded<Letter>(
+                    new BoundedChannelOptions(Config.PublisherSettings.PriorityLetterQueueBufferSize)
+                    {
+                        FullMode = Config.PublisherSettings.BehaviorWhenFull
+                    });
+
+                PublishingTask = Task.Run(() => ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
+                PublishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
+
+                Initialized = true;
+                Shutdown = false;
+            }
+            finally { pubLock.Release(); }
+        }
+
+        public async Task StopAsync(bool immediately = false)
+        {
+            await pubLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                LetterQueue.Writer.Complete();
+                PriorityLetterQueue.Writer.Complete();
+                Publisher.ReceiptBuffer.Writer.Complete();
+
+                if (!immediately)
+                {
+                    await LetterQueue
+                        .Reader
+                        .Completion
+                        .ConfigureAwait(false);
+
+                    await PriorityLetterQueue
+                        .Reader
+                        .Completion
+                        .ConfigureAwait(false);
+
+                    while (!PublishingTask.IsCompleted)
+                    {
+                        await Task.Delay(10).ConfigureAwait(false);
+                    }
+
+                    while (!PublishingPriorityTask.IsCompleted)
+                    {
+                        await Task.Delay(10).ConfigureAwait(false);
+                    }
+                }
+
+                Shutdown = true;
+            }
+            finally
+            { pubLock.Release(); }
+        }
+
+        // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
+        public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer;
+
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(InitializeError);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.InitializeError);
 
             if (priority)
             {
@@ -51,7 +131,7 @@ namespace CookedRabbit.Core
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(QueueChannelError);
+                    throw new InvalidOperationException(Strings.QueueChannelError);
                 }
 
                 await PriorityLetterQueue
@@ -66,7 +146,7 @@ namespace CookedRabbit.Core
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(QueueChannelError);
+                    throw new InvalidOperationException(Strings.QueueChannelError);
                 }
 
                 await LetterQueue
@@ -76,32 +156,6 @@ namespace CookedRabbit.Core
             }
         }
 
-        public async Task StartAsync()
-        {
-            await pubLock.WaitAsync().ConfigureAwait(false);
-
-            await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
-
-            LetterQueue = Channel.CreateBounded<Letter>(
-                new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)
-                {
-                    FullMode = Config.PublisherSettings.BehaviorWhenFull
-                });
-            PriorityLetterQueue = Channel.CreateBounded<Letter>(
-                new BoundedChannelOptions(Config.PublisherSettings.PriorityLetterQueueBufferSize)
-                {
-                    FullMode = Config.PublisherSettings.BehaviorWhenFull
-                });
-
-            PublishingTask = Task.Run(() => ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
-            PublishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
-
-            Initialized = true;
-            Shutdown = false;
-
-            pubLock.Release();
-        }
-
 #if CORE2
         private async Task ProcessDeliveriesAsync(ChannelReader<Letter> channelReader)
         {
@@ -109,8 +163,20 @@ namespace CookedRabbit.Core
             {
                 while (channelReader.TryRead(out var letter))
                 {
+                    if (Compress)
+                    {
+                        letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
+                        letter.LetterMetadata.Compressed = Compress;
+                    }
+
+                    if (Encrypt && (HashKey != null || HashKey.Length == 0))
+                    {
+                        letter.Body = AesEncrypt.Encrypt(letter.Body, HashKey);
+                        letter.LetterMetadata.Encrypted = Encrypt;
+                    }
+
                     await Publisher
-                        .PublishAsync(letter, true)
+                        .PublishAsync(letter, CreatePublishReceipts)
                         .ConfigureAwait(false);
                 }
             }
@@ -122,8 +188,23 @@ namespace CookedRabbit.Core
             {
                 while (channelReader.TryRead(out var letter))
                 {
+                    if (letter == null)
+                    { break; }
+
+                    if (Compress)
+                    {
+                        letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
+                        letter.LetterMetadata.Compressed = Compress;
+                    }
+
+                    if (Encrypt && (HashKey != null || HashKey.Length == 0))
+                    {
+                        letter.Body = AesEncrypt.Encrypt(letter.Body, HashKey);
+                        letter.LetterMetadata.Encrypted = Encrypt;
+                    }
+
                     await Publisher
-                        .PublishAsync(letter, true)
+                        .PublishAsync(letter, CreatePublishReceipts)
                         .ConfigureAwait(false);
                 }
             }
@@ -188,73 +269,42 @@ namespace CookedRabbit.Core
         public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
         {
             await pubLock.WaitAsync().ConfigureAwait(false);
-            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+
+            try
             {
-                ProcessReceiptsAsync = Task.Run(async () =>
+                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                    ProcessReceiptsAsync = Task.Run(async () =>
                     {
-                        await processReceiptAsync(receipt).ConfigureAwait(false);
-                    }
-                });
+                        await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                        {
+                            await processReceiptAsync(receipt).ConfigureAwait(false);
+                        }
+                    });
+                }
             }
-            pubLock.Release();
+            finally { pubLock.Release(); }
         }
 
         public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
         {
             await pubLock.WaitAsync().ConfigureAwait(false);
-            if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+
+            try
             {
-                ProcessReceiptsAsync = Task.Run(async () =>
+                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                    ProcessReceiptsAsync = Task.Run(async () =>
                     {
-                        await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
-                    }
-                });
+                        await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                        {
+                            await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
+                        }
+                    });
+                }
             }
-            pubLock.Release();
+            finally { pubLock.Release(); }
         }
 #endif
-
-        public async Task StopAsync(bool immediately = false)
-        {
-            await pubLock.WaitAsync().ConfigureAwait(false);
-
-            LetterQueue.Writer.Complete();
-            PriorityLetterQueue.Writer.Complete();
-            Publisher.ReceiptBuffer.Writer.Complete();
-
-            if (!immediately)
-            {
-                await LetterQueue
-                    .Reader
-                    .Completion
-                    .ConfigureAwait(false);
-
-                await PriorityLetterQueue
-                    .Reader
-                    .Completion
-                    .ConfigureAwait(false);
-
-                while (!PublishingTask.IsCompleted)
-                {
-                    await Task.Delay(10).ConfigureAwait(false);
-                }
-
-                while (!PublishingPriorityTask.IsCompleted)
-                {
-                    await Task.Delay(10).ConfigureAwait(false);
-                }
-            }
-
-            Shutdown = true;
-
-            pubLock.Release();
-        }
-
-        // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
-        public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer;
     }
 }

@@ -114,7 +114,7 @@ namespace CookedRabbit.Core.Tests
             {
                 try
                 {
-                    var message = await consumer.ReadRabbitMessageAsync().ConfigureAwait(false);
+                    var message = await consumer.ReadMessageAsync().ConfigureAwait(false);
                     messageCount++;
                 }
                 catch

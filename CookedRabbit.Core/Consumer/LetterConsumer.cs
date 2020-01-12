@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -12,12 +11,12 @@ using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class Consumer
+    public class LetterConsumer
     {
         private Config Config { get; }
 
         public ChannelPool ChannelPool { get; }
-        private Channel<ReceivedMessage> MessageBuffer { get; set; }
+        private Channel<ReceivedLetter> LetterBuffer { get; set; }
 
         private ChannelHost ConsumingChannelHost { get; set; }
 
@@ -33,14 +32,16 @@ namespace CookedRabbit.Core
         private bool AutoAck { get; set; }
         private bool UseTransientChannel { get; set; }
         private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
+        private byte[] HashKey { get; set; }
 
-        public Consumer(Config config, string consumerName)
+        public LetterConsumer(Config config, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(config, nameof(config));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
+            HashKey = hashKey;
 
             var conSettings = Config.GetConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
@@ -50,13 +51,14 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public Consumer(ChannelPool channelPool, string consumerName)
+        public LetterConsumer(ChannelPool channelPool, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
+            HashKey = hashKey;
 
             var conSettings = Config.GetConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
@@ -66,13 +68,14 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public Consumer(ChannelPool channelPool, ConsumerOptions consumerSettings, string consumerName)
+        public LetterConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings, byte[] hashKey = null)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
-            Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
+            Guard.AgainstNull(consumerSettings, nameof(consumerSettings));
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
+            HashKey = hashKey;
 
             ConsumerName = consumerSettings.ConsumerName;
             QueueName = consumerSettings.QueueName;
@@ -96,13 +99,13 @@ namespace CookedRabbit.Core
 
                     var conSettings = Config.GetConsumerSettings(ConsumerName);
 
-                    MessageBuffer = Channel.CreateBounded<ReceivedMessage>(
-                    new BoundedChannelOptions(conSettings.MessageBufferSize)
-                    {
-                        FullMode = conSettings.BehaviorWhenFull
-                    });
+                    LetterBuffer = Channel.CreateBounded<ReceivedLetter>(
+                        new BoundedChannelOptions(conSettings.MessageBufferSize)
+                        {
+                            FullMode = conSettings.BehaviorWhenFull
+                        });
 
-                    await MessageBuffer
+                    await LetterBuffer
                         .Writer
                         .WaitToWriteAsync()
                         .ConfigureAwait(false);
@@ -126,11 +129,11 @@ namespace CookedRabbit.Core
 
             try
             {
-                MessageBuffer.Writer.Complete();
+                LetterBuffer.Writer.Complete();
 
                 if (!immediate)
                 {
-                    await MessageBuffer
+                    await LetterBuffer
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
@@ -217,16 +220,37 @@ namespace CookedRabbit.Core
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
 #pragma warning restore RCS1163 // Unused parameter.
         {
-            var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
+            var receivedLetter = new ReceivedLetter(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
-            if (await MessageBuffer
+            var decryptFailed = false;
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                }
+                catch { decryptFailed = true; }
+            }
+
+            if (!decryptFailed && receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                }
+                catch { }
+            }
+
+            if (await LetterBuffer
                     .Writer
                     .WaitToWriteAsync()
                     .ConfigureAwait(false))
             {
-                await MessageBuffer
+                await LetterBuffer
                     .Writer
-                    .WriteAsync(rabbitMessage);
+                    .WriteAsync(receivedLetter);
             }
         }
 
@@ -258,16 +282,37 @@ namespace CookedRabbit.Core
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
 #pragma warning restore RCS1163 // Unused parameter.
         {
-            var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
+            var receivedLetter = new ReceivedLetter(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
-            if (await MessageBuffer
+            var decryptFailed = false;
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                }
+                catch { decryptFailed = true; }
+            }
+
+            if (!decryptFailed && receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                }
+                catch { }
+            }
+
+            if (await LetterBuffer
                 .Writer
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                await MessageBuffer
+                await LetterBuffer
                     .Writer
-                    .WriteAsync(rabbitMessage);
+                    .WriteAsync(receivedLetter);
             }
         }
 
@@ -334,11 +379,11 @@ namespace CookedRabbit.Core
             return result != null ? JsonSerializer.Deserialize<T>(result.Body) : default;
         }
 
-        public ChannelReader<ReceivedMessage> GetConsumerMessageBuffer() => MessageBuffer.Reader;
+        public ChannelReader<ReceivedLetter> GetConsumerLetterBuffer() => LetterBuffer.Reader;
 
-        public async ValueTask<ReceivedMessage> ReadMessageAsync()
+        public async ValueTask<ReceivedLetter> ReadLetterAsync()
         {
-            if (!await MessageBuffer
+            if (!await LetterBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -346,15 +391,15 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            return await MessageBuffer
+            return await LetterBuffer
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<ReceivedMessage>> ReadMessagesUntilEmptyAsync()
+        public async Task<IEnumerable<ReceivedLetter>> ReadLettersUntilEmptyAsync()
         {
-            if (!await MessageBuffer
+            if (!await LetterBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -362,9 +407,9 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            var list = new List<ReceivedMessage>();
-            await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (MessageBuffer.Reader.TryRead(out var message))
+            var list = new List<ReceivedLetter>();
+            await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (LetterBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 list.Add(message);
@@ -374,9 +419,9 @@ namespace CookedRabbit.Core
         }
 
 #if CORE3
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilEmptyAsync()
+        public async IAsyncEnumerable<ReceivedLetter> StreamOutLettersUntilEmptyAsync()
         {
-            if (!await MessageBuffer
+            if (!await LetterBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -384,17 +429,17 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (MessageBuffer.Reader.TryRead(out var message))
+            await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (LetterBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 yield return message;
             }
         }
 
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilClosedAsync()
+        public async IAsyncEnumerable<ReceivedLetter> StreamOutLettersUntilClosedAsync()
         {
-            if (!await MessageBuffer
+            if (!await LetterBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -402,7 +447,7 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await foreach (var receipt in MessageBuffer.Reader.ReadAllAsync())
+            await foreach (var receipt in LetterBuffer.Reader.ReadAllAsync())
             {
                 yield return receipt;
             }

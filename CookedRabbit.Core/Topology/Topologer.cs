@@ -26,6 +26,65 @@ namespace CookedRabbit.Core
             ChannelPool = channelPool;
         }
 
+        public async Task CreateTopologyFromFileAsync(string fileNamePath)
+        {
+            var topologyConfig = ConfigReader.TopologyConfigFileRead(fileNamePath);
+
+            foreach(var exchange in topologyConfig.ExchangeConfigs)
+            {
+                try
+                {
+                    await CreateExchangeAsync(
+                        exchange.Name,
+                        exchange.Type,
+                        exchange.Durable,
+                        exchange.AutoDelete,
+                        exchange.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var queue in topologyConfig.QueueConfigs)
+            {
+                try
+                {
+                    await CreateQueueAsync(
+                        queue.Name,
+                        queue.Durable,
+                        queue.Exclusive,
+                        queue.AutoDelete,
+                        queue.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var binding in topologyConfig.ExchangeBindingConfigs)
+            {
+                try
+                {
+                    await BindExchangeToExchangeAsync(
+                        binding.ChildExchange,
+                        binding.ParentExchange,
+                        binding.RoutingKey,
+                        binding.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var binding in topologyConfig.QueueBindingConfigs)
+            {
+                try
+                {
+                    await BindQueueToExchangeAsync(
+                        binding.QueueName,
+                        binding.ExchangeName,
+                        binding.RoutingKey,
+                        binding.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+        }
+
         /// <summary>
         /// Create a queue asynchronously.
         /// <para>Returns success or failure.</para>

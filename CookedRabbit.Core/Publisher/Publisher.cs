@@ -5,12 +5,13 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Utf8Json;
 
 namespace CookedRabbit.Core
 {
     public class Publisher
     {
-        public Config Config { get; }
+        private Config Config { get; }
         public ChannelPool ChannelPool { get; }
 
         public Channel<PublishReceipt> ReceiptBuffer { get; }
@@ -58,7 +59,7 @@ namespace CookedRabbit.Core
                     letter.Envelope.RoutingKey,
                     letter.Envelope.RoutingOptions?.Mandatory ?? false,
                     props,
-                    letter.Body);
+                    JsonSerializer.Serialize(letter));
             }
             catch { error = true; }
             finally
@@ -100,7 +101,7 @@ namespace CookedRabbit.Core
                         letters[i].Envelope.RoutingKey,
                         letters[i].Envelope.RoutingOptions.Mandatory,
                         props,
-                        letters[i].Body);
+                        JsonSerializer.Serialize(letters[i]));
                 }
                 catch
                 { error = true; }
@@ -113,47 +114,6 @@ namespace CookedRabbit.Core
 
             await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
         }
-
-#if CORE3
-        /// <summary>
-        /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
-        /// </summary>
-        /// <param name="letters"></param>
-        /// <param name="createReceipt"></param>
-        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
-        {
-            var error = false;
-            var chanHost = await ChannelPool
-                .GetChannelAsync()
-                .ConfigureAwait(false);
-
-            await foreach (var letter in letters)
-            {
-                try
-                {
-                    var props = chanHost.Channel.CreateBasicProperties();
-                    props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
-                    props.ContentType = letter.Envelope.RoutingOptions.MessageType;
-                    props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
-
-                    chanHost.Channel.BasicPublish(
-                        letter.Envelope.Exchange,
-                        letter.Envelope.RoutingKey,
-                        letter.Envelope.RoutingOptions.Mandatory,
-                        props,
-                        letter.Body);
-                }
-                catch
-                { error = true; }
-
-                if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
-
-                if (error) { break; }
-            }
-
-            await ChannelPool.ReturnChannelAsync(chanHost, error);
-        }
-#endif
 
         /// <summary>
         /// Use this method when a group of letters who have the same properties (deliverymode, messagetype, priority).
@@ -183,7 +143,7 @@ namespace CookedRabbit.Core
                         letters[i].Envelope.RoutingKey,
                         letters[i].Envelope.RoutingOptions.Mandatory,
                         props,
-                        letters[i].Body);
+                        JsonSerializer.Serialize(letters[i]));
 
                     if (createReceipt)
                     {
@@ -246,6 +206,45 @@ namespace CookedRabbit.Core
         }
 
 #if CORE3
+        /// <summary>
+        /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
+        /// </summary>
+        /// <param name="letters"></param>
+        /// <param name="createReceipt"></param>
+        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
+        {
+            var error = false;
+            var chanHost = await ChannelPool
+                .GetChannelAsync()
+                .ConfigureAwait(false);
+
+            await foreach (var letter in letters)
+            {
+                try
+                {
+                    var props = chanHost.Channel.CreateBasicProperties();
+                    props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
+                    props.ContentType = letter.Envelope.RoutingOptions.MessageType;
+                    props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
+
+                    chanHost.Channel.BasicPublish(
+                        letter.Envelope.Exchange,
+                        letter.Envelope.RoutingKey,
+                        letter.Envelope.RoutingOptions.Mandatory,
+                        props,
+                        letter.Body);
+                }
+                catch
+                { error = true; }
+
+                if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
+
+                if (error) { break; }
+            }
+
+            await ChannelPool.ReturnChannelAsync(chanHost, error);
+        }
+
         public async IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync()
         {
             if (!await ReceiptBuffer

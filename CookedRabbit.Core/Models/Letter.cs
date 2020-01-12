@@ -10,7 +10,7 @@ namespace CookedRabbit.Core
 
         public Letter() { }
 
-        public Letter(string exchange, string routingKey, byte[] data, LetterMetadata metadata = null, RoutingOptions routingOptions = null)
+        public Letter(string exchange, string routingKey, byte[] data, LetterMetadata metadata, RoutingOptions routingOptions = null)
         {
             Envelope = new Envelope
             {
@@ -31,10 +31,10 @@ namespace CookedRabbit.Core
                 RoutingOptions = routingOptions ?? DefaultRoutingOptions()
             };
             Body = data;
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                LetterMetadata = new LetterMetadata { Id = id };
-            }
+            if (!string.IsNullOrWhiteSpace(id))
+            { LetterMetadata = new LetterMetadata { Id = id }; }
+            else
+            { LetterMetadata = new LetterMetadata(); }
         }
 
         public Letter(string exchange, string routingKey, byte[] data, string id, byte priority)
@@ -46,13 +46,13 @@ namespace CookedRabbit.Core
                 RoutingOptions = DefaultRoutingOptions(priority)
             };
             Body = data;
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                LetterMetadata = new LetterMetadata { Id = id };
-            }
+            if (!string.IsNullOrWhiteSpace(id))
+            { LetterMetadata = new LetterMetadata { Id = id }; }
+            else
+            { LetterMetadata = new LetterMetadata(); }
         }
 
-        public RoutingOptions DefaultRoutingOptions(byte priority = 0)
+        public static RoutingOptions DefaultRoutingOptions(byte priority = 0)
         {
             return new RoutingOptions
             {

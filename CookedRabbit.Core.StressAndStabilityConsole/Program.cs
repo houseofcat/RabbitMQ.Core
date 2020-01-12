@@ -20,6 +20,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         private static Consumer con3;
         private static Consumer con4;
 
+        // Per Publisher
         private const ulong MessageCount = 250_000;
         private const int MessageSize = 1_000;
 
@@ -207,7 +208,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             {
                 while (messageCount + errorCount < count) // TODO: Possible Infinite loop on lost messages.
                 {
-                    await foreach (var message in consumer.StreamOutRabbitMessagesUntilEmptyAsync())
+                    await foreach (var message in consumer.StreamOutMessagesUntilEmptyAsync())
                     {
                         if (message.Ackable)
                         { message.AckMessage(); }
