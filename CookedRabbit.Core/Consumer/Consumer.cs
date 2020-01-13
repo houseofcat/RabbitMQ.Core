@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using CookedRabbit.Core.WorkEngines;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
@@ -118,7 +119,7 @@ namespace CookedRabbit.Core
             finally { conLock.Release(); }
         }
 
-        public async Task StopConsumingAsync(bool immediate = false)
+        public async Task StopConsumerAsync(bool immediate = false)
         {
             await conLock
                 .WaitAsync()
@@ -143,6 +144,9 @@ namespace CookedRabbit.Core
 
         private async Task<bool> StartConsumingAsync()
         {
+            if (Shutdown)
+            { return false; }
+
             await SetChannelHostAsync()
                 .ConfigureAwait(false);
 
@@ -382,15 +386,18 @@ namespace CookedRabbit.Core
                 {
                     while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                     {
-                        try
+                        if (receivedMessage != null)
                         {
-                            await workAsync(receivedMessage)
-                                .ConfigureAwait(false);
+                            try
+                            {
+                                await workAsync(receivedMessage)
+                                    .ConfigureAwait(false);
 
-                            receivedMessage.AckMessage();
+                                receivedMessage.AckMessage();
+                            }
+                            catch
+                            { receivedMessage.NackMessage(true); }
                         }
-                        catch
-                        { receivedMessage.NackMessage(true); }
                     }
                 }
                 catch { }
@@ -405,15 +412,18 @@ namespace CookedRabbit.Core
                 {
                     while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                     {
-                        try
+                        if (receivedMessage != null)
                         {
-                            if (await workAsync(receivedMessage).ConfigureAwait(false))
-                            { receivedMessage.AckMessage(); }
-                            else
+                            try
+                            {
+                                if (await workAsync(receivedMessage).ConfigureAwait(false))
+                                { receivedMessage.AckMessage(); }
+                                else
+                                { receivedMessage.NackMessage(true); }
+                            }
+                            catch
                             { receivedMessage.NackMessage(true); }
                         }
-                        catch
-                        { receivedMessage.NackMessage(true); }
                     }
                 }
                 catch { }
@@ -428,15 +438,18 @@ namespace CookedRabbit.Core
                 {
                     while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                     {
-                        try
+                        if (receivedMessage != null)
                         {
-                            if (await workAsync(receivedMessage, options).ConfigureAwait(false))
-                            { receivedMessage.AckMessage(); }
-                            else
+                            try
+                            {
+                                if (await workAsync(receivedMessage, options).ConfigureAwait(false))
+                                { receivedMessage.AckMessage(); }
+                                else
+                                { receivedMessage.NackMessage(true); }
+                            }
+                            catch
                             { receivedMessage.NackMessage(true); }
                         }
-                        catch
-                        { receivedMessage.NackMessage(true); }
                     }
                 }
                 catch { }
@@ -539,11 +552,11 @@ namespace CookedRabbit.Core
 
         public async Task ParallelExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync, int maxDoP = 4)
         {
+            var parallelLock = new SemaphoreSlim(1, maxDoP);
             while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
                 try
                 {
-                    var parallelLock = new SemaphoreSlim(1, maxDoP);
                     while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                     {
                         if (receivedMessage != null)
@@ -552,7 +565,7 @@ namespace CookedRabbit.Core
 
                             _ = Task.Run(ExecuteWorkAsync);
 
-                            async Task ExecuteWorkAsync()
+                            async ValueTask ExecuteWorkAsync()
                             {
                                 try
                                 {
@@ -563,13 +576,76 @@ namespace CookedRabbit.Core
                                 }
                                 catch
                                 { receivedMessage.NackMessage(true); }
-                                finally { parallelLock.Release(); }
+                                finally
+                                { parallelLock.Release(); }
                             }
                         }
                     }
                 }
                 catch { }
             }
+        }
+
+        private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1,1);
+
+        public async Task DataflowExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDoP = 4)
+        {
+            await dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
+
+            var messageEngine = new MessageDataflowEngine(workBodyAsync, maxDoP);
+
+            try
+            {
+                while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                {
+                    try
+                    {
+                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                        {
+                            if (receivedMessage != null)
+                            {
+                                await messageEngine
+                                    .EnqueueWorkAsync(receivedMessage)
+                                    .ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            finally { dataFlowExecLock.Release(); }
+        }
+
+        private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
+
+        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedMessage, TOut> pipeline, int maxDoP = 4)
+        {
+            await pipeExecLock
+                .WaitAsync(2000)
+                .ConfigureAwait(false);
+
+            var pipelineEngine = new WorkflowEngine<ReceivedMessage, TOut>(pipeline, maxDoP);
+
+            try
+            {
+                while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                {
+                    try
+                    {
+                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                        {
+                            if (receivedMessage != null)
+                            {
+                                await pipelineEngine
+                                    .EnqueueWorkAsync(receivedMessage)
+                                    .ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            finally { pipeExecLock.Release(); }
         }
     }
 }

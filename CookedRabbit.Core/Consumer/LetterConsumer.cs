@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using CookedRabbit.Core.WorkEngines;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
@@ -121,7 +122,7 @@ namespace CookedRabbit.Core
             finally { conLock.Release(); }
         }
 
-        public async Task StopConsumingAsync(bool immediate = false)
+        public async Task StopConsumerAsync(bool immediate = false)
         {
             await conLock
                 .WaitAsync()
@@ -146,6 +147,9 @@ namespace CookedRabbit.Core
 
         private async Task<bool> StartConsumingAsync()
         {
+            if (Shutdown)
+            { return false; }
+
             await SetChannelHostAsync()
                 .ConfigureAwait(false);
 
@@ -584,11 +588,11 @@ namespace CookedRabbit.Core
 
         public async Task ParallelExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync, int maxDoP = 4)
         {
+            var parallelLock = new SemaphoreSlim(1, maxDoP);
             while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
                 try
                 {
-                    var parallelLock = new SemaphoreSlim(1, maxDoP);
                     while (LetterBuffer.Reader.TryRead(out var receivedLetter))
                     {
                         if (receivedLetter != null)
@@ -597,7 +601,7 @@ namespace CookedRabbit.Core
 
                             _ = Task.Run(ExecuteWorkAsync);
 
-                            async Task ExecuteWorkAsync()
+                            async ValueTask ExecuteWorkAsync()
                             {
                                 try
                                 {
@@ -608,13 +612,78 @@ namespace CookedRabbit.Core
                                 }
                                 catch
                                 { receivedLetter.NackMessage(true); }
-                                finally { parallelLock.Release(); }
+                                finally
+                                { parallelLock.Release(); }
                             }
                         }
                     }
                 }
                 catch { }
             }
+        }
+
+        private LetterDataflowEngine letterEngine;
+
+        private readonly SemaphoreSlim dataFlowLock = new SemaphoreSlim(1, 1);
+
+        public async Task DataflowExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workBodyAsync, int maxDoP = 4)
+        {
+            await dataFlowLock.WaitAsync(2000).ConfigureAwait(false);
+
+            letterEngine = new LetterDataflowEngine(workBodyAsync, maxDoP);
+
+            try
+            {
+                while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                {
+                    try
+                    {
+                        while (LetterBuffer.Reader.TryRead(out var receivedMessage))
+                        {
+                            if (receivedMessage != null)
+                            {
+                                await letterEngine
+                                    .EnqueueWorkAsync(receivedMessage)
+                                    .ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            finally { dataFlowLock.Release(); }
+        }
+
+        private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
+
+        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedLetter, TOut> pipeline, int maxDoP = 4)
+        {
+            await pipeExecLock
+                .WaitAsync(2000)
+                .ConfigureAwait(false);
+
+            var pipelineEngine = new WorkflowEngine<ReceivedLetter, TOut>(pipeline, maxDoP);
+
+            try
+            {
+                while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                {
+                    try
+                    {
+                        while (LetterBuffer.Reader.TryRead(out var receivedMessage))
+                        {
+                            if (receivedMessage != null)
+                            {
+                                await pipelineEngine
+                                    .EnqueueWorkAsync(receivedMessage)
+                                    .ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            finally { pipeExecLock.Release(); }
         }
     }
 }

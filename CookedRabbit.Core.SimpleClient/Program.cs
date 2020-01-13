@@ -14,7 +14,16 @@ namespace CookedRabbit.Core.SimpleClient
 
         public static async Task Main()
         {
-            await RunParallelExecutionEngineAsync()
+            //await RunSimpleClientWithEncryptionAsync()
+            //    .ConfigureAwait(false);
+
+            //await RunExecutionEngineAsync()
+            //    .ConfigureAwait(false);
+
+            //await RunParallelExecutionEngineAsync()
+            //    .ConfigureAwait(false);
+
+            await RunDataExecutionEngineAsync()
                 .ConfigureAwait(false);
         }
 
@@ -138,6 +147,45 @@ namespace CookedRabbit.Core.SimpleClient
                 .ConfigureAwait(false);
 
             _ = Task.Run(() => consumer.ParallelExecutionEngineAsync(ConsumerWorkerAsync, 7));
+
+            await Console.In.ReadLineAsync().ConfigureAwait(false);
+        }
+
+        private static async Task RunDataExecutionEngineAsync()
+        {
+            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+
+            var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
+            var rabbitService = new RabbitService("Config.json");
+            await rabbitService
+                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .ConfigureAwait(false);
+
+            await rabbitService
+                .Topologer
+                .CreateQueueAsync("TestRabbitServiceQueue")
+                .ConfigureAwait(false);
+
+            // Produce Messages
+            for (ulong i = 0; i < 100; i++)
+            {
+                var letter = letterTemplate.Clone();
+                letter.LetterId = i;
+                var sentMessage = new TestMessage { Message = "Sensitive Message" };
+                sentMessage.Message += $" {i.ToString()}";
+                letter.Body = JsonSerializer.Serialize(sentMessage);
+                await rabbitService
+                    .AutoPublisher
+                    .QueueLetterAsync(letter);
+            }
+
+            // Start Consumer As An Execution Engine
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            await consumer
+                .StartConsumerAsync(false, true)
+                .ConfigureAwait(false);
+
+            _ = Task.Run(() => consumer.DataflowExecutionEngineAsync(ConsumerWorkerAsync, 7));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }

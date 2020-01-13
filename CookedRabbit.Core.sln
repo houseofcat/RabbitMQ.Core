@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Tests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.StressTestClient", "CookedRabbit.Core.StressAndStabilityConsole\CookedRabbit.Core.StressTestClient.csproj", "{CB15603F-0431-46EB-89DA-56A289B6AA82}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CookedRabbit.Core.SimpleClient", "CookedRabbit.Core.SimpleClient\CookedRabbit.Core.SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.SimpleClient", "CookedRabbit.Core.SimpleClient\CookedRabbit.Core.SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CookedRabbit.Core.PipelineClient", "CookedRabbit.Core.PipelineClient\CookedRabbit.Core.PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
