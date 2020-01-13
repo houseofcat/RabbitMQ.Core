@@ -28,9 +28,11 @@ namespace CookedRabbit.Core
 
         public async Task CreateTopologyFromFileAsync(string fileNamePath)
         {
-            var topologyConfig = ConfigReader.TopologyConfigFileRead(fileNamePath);
+            var topologyConfig = await ConfigReader
+                .TopologyConfigFileReadAsync(fileNamePath)
+                .ConfigureAwait(false);
 
-            foreach(var exchange in topologyConfig.ExchangeConfigs)
+            foreach(var exchange in topologyConfig.Exchanges)
             {
                 try
                 {
@@ -44,7 +46,7 @@ namespace CookedRabbit.Core
                 catch { }
             }
 
-            foreach (var queue in topologyConfig.QueueConfigs)
+            foreach (var queue in topologyConfig.Queues)
             {
                 try
                 {
@@ -58,7 +60,7 @@ namespace CookedRabbit.Core
                 catch { }
             }
 
-            foreach (var binding in topologyConfig.ExchangeBindingConfigs)
+            foreach (var binding in topologyConfig.ExchangeBindings)
             {
                 try
                 {
@@ -71,7 +73,7 @@ namespace CookedRabbit.Core
                 catch { }
             }
 
-            foreach (var binding in topologyConfig.QueueBindingConfigs)
+            foreach (var binding in topologyConfig.QueueBindings)
             {
                 try
                 {

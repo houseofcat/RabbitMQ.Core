@@ -114,7 +114,7 @@ namespace CookedRabbit.Core.SimpleClient
 
         private static async Task RunParallelExecutionEngineAsync()
         {
-            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ParallelExecutionEngine...").ConfigureAwait(false);
 
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
             var rabbitService = new RabbitService("Config.json");
@@ -153,7 +153,7 @@ namespace CookedRabbit.Core.SimpleClient
 
         private static async Task RunDataExecutionEngineAsync()
         {
-            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An DataExecutionEngine...").ConfigureAwait(false);
 
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
             var rabbitService = new RabbitService("Config.json");

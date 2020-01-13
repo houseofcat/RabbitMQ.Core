@@ -163,6 +163,9 @@ namespace CookedRabbit.Core
             {
                 while (channelReader.TryRead(out var letter))
                 {
+                    if (letter == null)
+                    { continue; }
+
                     if (Compress)
                     {
                         letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
@@ -189,7 +192,7 @@ namespace CookedRabbit.Core
                 while (channelReader.TryRead(out var letter))
                 {
                     if (letter == null)
-                    { break; }
+                    { continue; }
 
                     if (Compress)
                     {

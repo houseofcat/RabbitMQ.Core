@@ -1,4 +1,5 @@
 using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -189,6 +190,22 @@ namespace CookedRabbit.Core.Tests
 
             error = await top.DeleteExchangeAsync("TestExchange2Test").ConfigureAwait(false);
             Assert.False(error);
+        }
+
+        [Fact]
+        public async Task CreateTopologyFromFileAsync()
+        {
+            var config = ConfigReader.ConfigFileRead("TestConfig.json");
+            var top = new Topologer(config);
+
+            await top
+                .ChannelPool
+                .InitializeAsync()
+                .ConfigureAwait(false);
+
+            await top
+                .CreateTopologyFromFileAsync("TestTopologyConfig.json")
+                .ConfigureAwait(false);
         }
     }
 }

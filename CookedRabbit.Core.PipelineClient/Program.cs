@@ -16,7 +16,7 @@ namespace CookedRabbit.Core.PipelineClient
 
         private static async Task RunPipelineExecutionAsync()
         {
-            await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Starting PipelineClient...").ConfigureAwait(false);
 
             var rabbitService = await SetupAsync().ConfigureAwait(false);
 

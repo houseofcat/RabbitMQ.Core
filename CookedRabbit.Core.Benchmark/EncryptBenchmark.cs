@@ -46,6 +46,30 @@ namespace CookedRabbit.Core.Benchmark
         }
 
         [Benchmark]
+        public void Encrypt256()
+        {
+            var encryptedData = AesEncrypt.Encrypt(Payload1, HashKey);
+        }
+
+        [Benchmark]
+        public void Encrypt512()
+        {
+            var encryptedData = AesEncrypt.Encrypt(Payload2, HashKey);
+        }
+
+        [Benchmark]
+        public void Encrypt1024()
+        {
+            var encryptedData = AesEncrypt.Encrypt(Payload3, HashKey);
+        }
+
+        [Benchmark]
+        public void Encrypt2048()
+        {
+            var encryptedData = AesEncrypt.Encrypt(Payload4, HashKey);
+        }
+
+        [Benchmark]
         public void EncryptDecrypt256()
         {
             var decryptedData = AesEncrypt.Decrypt(AesEncrypt.Encrypt(Payload1, HashKey), HashKey);

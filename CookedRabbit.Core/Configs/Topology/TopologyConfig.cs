@@ -2,9 +2,9 @@ namespace CookedRabbit.Core
 {
     public class TopologyConfig
     {
-        public ExchangeConfig[] ExchangeConfigs { get; set; }
-        public QueueConfig[] QueueConfigs { get; set; }
-        public ExchangeBindingConfig[] ExchangeBindingConfigs { get; set; }
-        public QueueBindingConfig[] QueueBindingConfigs { get; set; }
+        public ExchangeConfig[] Exchanges { get; set; }
+        public QueueConfig[] Queues { get; set; }
+        public ExchangeBindingConfig[] ExchangeBindings { get; set; }
+        public QueueBindingConfig[] QueueBindings { get; set; }
     }
 }

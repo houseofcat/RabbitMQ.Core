@@ -13,8 +13,6 @@ namespace CookedRabbit.Core
         public long Timestamp { get; }
         public string MessageId { get; }
 
-        public ReceivedLetter() { }
-
         public ReceivedLetter(IModel channel, BasicGetResult result, bool ackable)
         {
             Ackable = ackable;
@@ -50,7 +48,7 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicAck(DeliveryTag, false); }
+            try { Channel?.BasicAck(DeliveryTag, false); }
             catch { success = false; }
 
             return success;
@@ -63,7 +61,7 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicNack(DeliveryTag, false, requeue); }
+            try { Channel?.BasicNack(DeliveryTag, false, requeue); }
             catch { success = false; }
 
             return success;
@@ -76,7 +74,7 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicReject(DeliveryTag, requeue); }
+            try { Channel?.BasicReject(DeliveryTag, requeue); }
             catch { success = false; }
 
             return success;

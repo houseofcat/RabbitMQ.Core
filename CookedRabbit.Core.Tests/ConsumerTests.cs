@@ -56,7 +56,7 @@ namespace CookedRabbit.Core.Tests
             var con = new Consumer(topologer.ChannelPool, "TestConsumerName");
 
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
-            await con.StopConsumingAsync().ConfigureAwait(false);
+            await con.StopConsumerAsync().ConfigureAwait(false);
         }
     }
 }
