@@ -1,14 +1,15 @@
+using System;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class ReceivedLetter
+    public class ReceivedLetter : IDisposable
     {
         public bool Ackable { get; }
-        private IModel Channel { get; }
-        public Letter Letter { get; }
+        private IModel Channel { get; set; }
+        public Letter Letter { get; private set; }
         public ulong DeliveryTag { get; }
         public long Timestamp { get; }
         public string MessageId { get; }
@@ -48,7 +49,11 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel?.BasicAck(DeliveryTag, false); }
+            try
+            {
+                Channel?.BasicAck(DeliveryTag, false);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
@@ -61,7 +66,11 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel?.BasicNack(DeliveryTag, false, requeue); }
+            try
+            {
+                Channel?.BasicNack(DeliveryTag, false, requeue);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
@@ -74,10 +83,20 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel?.BasicReject(DeliveryTag, requeue); }
+            try
+            {
+                Channel?.BasicReject(DeliveryTag, requeue);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
+        }
+
+        public void Dispose()
+        {
+            if (Channel != null) { Channel = null; }
+            if (Letter != null) { Letter = null; }
         }
     }
 }

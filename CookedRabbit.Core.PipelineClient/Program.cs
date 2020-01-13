@@ -26,10 +26,10 @@ namespace CookedRabbit.Core.PipelineClient
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
-            var workflow = await BuildWorkflowAsync().ConfigureAwait(false);
-            const int maxDegreesOfParallelism = 10;
+            const int maxDegreesOfParallelism = 1;
+            var workflow = await BuildWorkflowAsync(maxDegreesOfParallelism).ConfigureAwait(false);
 
-            _ = Task.Run(() => consumer.WorkflowExecutionEngineAsync(workflow, maxDegreesOfParallelism));
+            _ = Task.Run(() => consumer.WorkflowExecutionEngineAsync(workflow));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
@@ -64,9 +64,9 @@ namespace CookedRabbit.Core.PipelineClient
             return rabbitService;
         }
 
-        public static async Task<Workflow<ReceivedLetter, WorkState>> BuildWorkflowAsync()
+        public static async Task<Workflow<ReceivedLetter, WorkState>> BuildWorkflowAsync(int maxDegreesOfParallelism)
         {
-            var workflow = new Workflow<ReceivedLetter, WorkState>();
+            var workflow = new Workflow<ReceivedLetter, WorkState>(maxDegreesOfParallelism);
             workflow.AddStep<ReceivedLetter, WorkState>(DeserializeStep);
             workflow.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
             workflow.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
@@ -102,19 +102,19 @@ namespace CookedRabbit.Core.PipelineClient
 
         private static WorkState DeserializeStep(ReceivedLetter receivedLetter)
         {
-            var workSummary = new WorkState();
+            var state = new WorkState();
             try
             {
                 var decodedLetter = JsonSerializer.Deserialize<Message>(receivedLetter.Letter.Body);
-                workSummary.ReceivedLetter = receivedLetter;
-                workSummary.LetterId = receivedLetter.Letter.LetterId;
-                workSummary.Message = decodedLetter;
-                workSummary.DeserializeStepSuccess = true;
+                state.ReceivedLetter = receivedLetter;
+                state.LetterId = receivedLetter.Letter.LetterId;
+                state.Message = decodedLetter;
+                state.DeserializeStepSuccess = true;
             }
             catch
-            { workSummary.DeserializeStepSuccess = false; }
+            { state.DeserializeStepSuccess = false; }
 
-            return workSummary;
+            return state;
         }
 
         private static async Task<WorkState> ProcessStepAsync(WorkState state)

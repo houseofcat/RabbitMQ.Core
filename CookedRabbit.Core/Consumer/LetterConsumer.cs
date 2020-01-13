@@ -656,13 +656,11 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedLetter, TOut> pipeline, int maxDoP = 4)
+        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedLetter, TOut> pipeline)
         {
             await pipeExecLock
                 .WaitAsync(2000)
                 .ConfigureAwait(false);
-
-            var pipelineEngine = new WorkflowEngine<ReceivedLetter, TOut>(pipeline, maxDoP);
 
             try
             {
@@ -670,12 +668,12 @@ namespace CookedRabbit.Core
                 {
                     try
                     {
-                        while (LetterBuffer.Reader.TryRead(out var receivedMessage))
+                        while (LetterBuffer.Reader.TryRead(out var receivedLetter))
                         {
-                            if (receivedMessage != null)
+                            if (receivedLetter != null)
                             {
-                                await pipelineEngine
-                                    .EnqueueWorkAsync(receivedMessage)
+                                await pipeline
+                                    .QueueForExecutionAsync(receivedLetter)
                                     .ConfigureAwait(false);
                             }
                         }

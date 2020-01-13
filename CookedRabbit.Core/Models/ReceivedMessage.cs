@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
@@ -6,11 +7,11 @@ using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class ReceivedMessage
+    public class ReceivedMessage : IDisposable
     {
         public bool Ackable { get; }
-        private IModel Channel { get; }
-        public byte[] Body { get; }
+        private IModel Channel { get; set; }
+        public byte[] Body { get; private set; }
         public ulong DeliveryTag { get; }
         public long Timestamp { get; }
         public string MessageId { get; }
@@ -52,7 +53,11 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicAck(DeliveryTag, false); }
+            try
+            {
+                Channel?.BasicAck(DeliveryTag, false);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
@@ -65,7 +70,11 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicNack(DeliveryTag, false, requeue); }
+            try
+            {
+                Channel?.BasicNack(DeliveryTag, false, requeue);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
@@ -78,7 +87,11 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try { Channel.BasicReject(DeliveryTag, requeue); }
+            try
+            {
+                Channel?.BasicReject(DeliveryTag, requeue);
+                Channel = null;
+            }
             catch { success = false; }
 
             return success;
@@ -111,5 +124,11 @@ namespace CookedRabbit.Core
             await JsonSerializer
             .DeserializeAsync<Letter>(new MemoryStream(Body))
             .ConfigureAwait(false);
+
+        public void Dispose()
+        {
+            if (Channel != null) { Channel = null; }
+            if (Body != null) { Body = null; }
+        }
     }
 }
