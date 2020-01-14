@@ -10,16 +10,20 @@ namespace CookedRabbit.Core.WorkEngines
     // Great lessons/template found here.
     // https://michaelscodingspot.com/pipeline-implementations-csharp-3/
 
-    public class Workflow<TIn, TOut>
+    public class Pipeline<TIn, TOut>
     {
         private readonly List<(IDataflowBlock Block, bool IsAsync)> pipelineSteps = new List<(IDataflowBlock Block, bool IsAsync)>();
         public bool Ready { get; private set; }
         private readonly SemaphoreSlim pipeLock = new SemaphoreSlim(1, 1);
-        private ExecutionDataflowBlockOptions StepOptions { get; }
+        private ExecutionDataflowBlockOptions ExecuteStepOptions { get; }
+        private DataflowLinkOptions LinkStepOptions { get; }
+        public int MaxDegreeOfParallelism { get; }
 
-        public Workflow(int maxDegreeOfParallelism)
+        public Pipeline(int maxDegreeOfParallelism)
         {
-            StepOptions = new ExecutionDataflowBlockOptions
+            MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            LinkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            ExecuteStepOptions = new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism,
             };
@@ -29,18 +33,18 @@ namespace CookedRabbit.Core.WorkEngines
         {
             if (pipelineSteps.Count == 0)
             {
-                pipelineSteps.Add((new TransformBlock<TLocalIn, TLocalOut>(stepFunc, StepOptions), IsAsync: false));
+                pipelineSteps.Add((new TransformBlock<TLocalIn, TLocalOut>(stepFunc, ExecuteStepOptions), IsAsync: false));
             }
             else
             {
                 var (Block, IsAsync) = pipelineSteps.Last();
                 if (!IsAsync)
                 {
-                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, StepOptions);
+                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, ExecuteStepOptions);
 
                     if (Block is ISourceBlock<TLocalIn> targetBlock)
                     {
-                        targetBlock.LinkTo(step, new DataflowLinkOptions { PropagateCompletion = true });
+                        targetBlock.LinkTo(step, LinkStepOptions);
                         pipelineSteps.Add((step, IsAsync: false));
                     }
                 }
@@ -49,11 +53,11 @@ namespace CookedRabbit.Core.WorkEngines
                     var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
                         async (input) =>
                         stepFunc(await input.ConfigureAwait(false)),
-                        StepOptions);
+                        ExecuteStepOptions);
 
                     if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
-                        targetBlock.LinkTo(step, new DataflowLinkOptions { PropagateCompletion = true });
+                        targetBlock.LinkTo(step, LinkStepOptions);
                         pipelineSteps.Add((step, IsAsync: false));
                     }
                 }
@@ -67,7 +71,7 @@ namespace CookedRabbit.Core.WorkEngines
                 var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
                     async (input) =>
                     await stepFunc(input).ConfigureAwait(false),
-                    StepOptions);
+                    ExecuteStepOptions);
 
                 pipelineSteps.Add((step, IsAsync: true));
             }
@@ -79,11 +83,11 @@ namespace CookedRabbit.Core.WorkEngines
                     var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
                         async (input) =>
                         await stepFunc(await input.ConfigureAwait(false)).ConfigureAwait(false),
-                        StepOptions);
+                        ExecuteStepOptions);
 
                     if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
-                        targetBlock.LinkTo(step, new DataflowLinkOptions { PropagateCompletion = true });
+                        targetBlock.LinkTo(step, LinkStepOptions);
                         pipelineSteps.Add((step, IsAsync: true));
                     }
                 }
@@ -92,11 +96,11 @@ namespace CookedRabbit.Core.WorkEngines
                     var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
                         async (input) =>
                         await stepFunc(input).ConfigureAwait(false),
-                        StepOptions);
+                        ExecuteStepOptions);
 
                     if (Block is ISourceBlock<TLocalIn> targetBlock)
                     {
-                        targetBlock.LinkTo(step, new DataflowLinkOptions { PropagateCompletion = true });
+                        targetBlock.LinkTo(step, LinkStepOptions);
                         pipelineSteps.Add((step, IsAsync: true));
                     }
                 }
@@ -119,20 +123,20 @@ namespace CookedRabbit.Core.WorkEngines
                             var callBackStep = new ActionBlock<Task<TOut>>(
                                 async t =>
                                 callBack(await t.ConfigureAwait(false)),
-                                StepOptions);
+                                ExecuteStepOptions);
 
                             if (Block is ISourceBlock<Task<TOut>> targetBlock)
                             {
-                                targetBlock.LinkTo(callBackStep, new DataflowLinkOptions { PropagateCompletion = true });
+                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
                             }
                         }
                         else
                         {
-                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), StepOptions);
+                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), ExecuteStepOptions);
 
                             if (Block is ISourceBlock<TOut> targetBlock)
                             {
-                                targetBlock.LinkTo(callBackStep, new DataflowLinkOptions { PropagateCompletion = true });
+                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
                             }
                         }
                     }
@@ -161,20 +165,20 @@ namespace CookedRabbit.Core.WorkEngines
                                 async t =>
                                 await callBack(await t.ConfigureAwait(false))
                                 .ConfigureAwait(false),
-                                StepOptions);
+                                ExecuteStepOptions);
 
                             if (Block is ISourceBlock<Task<TOut>> targetBlock)
                             {
-                                targetBlock.LinkTo(callBackStep, new DataflowLinkOptions { PropagateCompletion = true });
+                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
                             }
                         }
                         else
                         {
-                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), StepOptions);
+                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), ExecuteStepOptions);
 
                             if (Block is ISourceBlock<TOut> targetBlock)
                             {
-                                targetBlock.LinkTo(callBackStep, new DataflowLinkOptions { PropagateCompletion = true });
+                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
                             }
                         }
                     }
@@ -194,6 +198,27 @@ namespace CookedRabbit.Core.WorkEngines
             if (pipelineSteps[0].Block is ITargetBlock<TIn> firstStep)
             {
                 await firstStep.SendAsync(input).ConfigureAwait(false);
+            }
+
+            return false;
+        }
+
+        public async Task<bool> AwaitCompletionAsync()
+        {
+            if (!Ready || pipelineSteps.Count == 0)
+            { return false; }
+
+            if (pipelineSteps[0].Block is ITargetBlock<TIn> firstStep)
+            {
+                // Tell the pipeline its finished.
+                firstStep.Complete();
+
+                // Await the last step.
+                if (pipelineSteps[pipelineSteps.Count - 1].Block is ITargetBlock<TIn> lastStep)
+                {
+                    await lastStep.Completion.ConfigureAwait(false);
+                    return true;
+                }
             }
 
             return false;

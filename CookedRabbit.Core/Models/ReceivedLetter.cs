@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Utf8Json;
@@ -13,6 +14,7 @@ namespace CookedRabbit.Core
         public ulong DeliveryTag { get; }
         public long Timestamp { get; }
         public string MessageId { get; }
+        private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
 
         public ReceivedLetter(IModel channel, BasicGetResult result, bool ackable)
         {
@@ -93,10 +95,22 @@ namespace CookedRabbit.Core
             return success;
         }
 
+        /// <summary>
+        /// A way to indicate this letter is fully finished with.
+        /// </summary>
+        public void Complete() => CompletionSource.SetResult(true);
+
+        /// <summary>
+        /// A way to await the letter until it is marked complete.
+        /// </summary>
+        public Task<bool> Completion() => CompletionSource.Task;
+
         public void Dispose()
         {
             if (Channel != null) { Channel = null; }
             if (Letter != null) { Letter = null; }
+
+            CompletionSource.Task.Dispose();
         }
     }
 }

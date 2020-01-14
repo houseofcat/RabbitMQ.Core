@@ -16,7 +16,7 @@ namespace CookedRabbit.Core
         public long Timestamp { get; }
         public string MessageId { get; }
 
-        public ReceivedMessage() { }
+        private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
 
         public ReceivedMessage(IModel channel, BasicGetResult result, bool ackable)
         {
@@ -125,10 +125,22 @@ namespace CookedRabbit.Core
             .DeserializeAsync<Letter>(new MemoryStream(Body))
             .ConfigureAwait(false);
 
+        /// <summary>
+        /// A way to indicate this message is fully finished with.
+        /// </summary>
+        public void Complete() => CompletionSource.SetResult(true);
+
+        /// <summary>
+        /// A way to await the message until it is marked complete.
+        /// </summary>
+        public Task<bool> Completion() => CompletionSource.Task;
+
         public void Dispose()
         {
             if (Channel != null) { Channel = null; }
             if (Body != null) { Body = null; }
+
+            CompletionSource.Task.Dispose();
         }
     }
 }

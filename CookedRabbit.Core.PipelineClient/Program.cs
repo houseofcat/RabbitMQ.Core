@@ -26,10 +26,10 @@ namespace CookedRabbit.Core.PipelineClient
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
-            const int maxDegreesOfParallelism = 1;
-            var workflow = await BuildWorkflowAsync(maxDegreesOfParallelism).ConfigureAwait(false);
+            const int maxDegreesOfParallelism = 4;
+            var workflow = await BuildPipelineAsync(maxDegreesOfParallelism).ConfigureAwait(false);
 
-            _ = Task.Run(() => consumer.WorkflowExecutionEngineAsync(workflow));
+            _ = Task.Run(() => consumer.PipelineExecutionEngineAsync(workflow, true));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
@@ -64,24 +64,27 @@ namespace CookedRabbit.Core.PipelineClient
             return rabbitService;
         }
 
-        public static async Task<Workflow<ReceivedLetter, WorkState>> BuildWorkflowAsync(int maxDegreesOfParallelism)
+        public static async Task<Pipeline<ReceivedLetter, WorkState>> BuildPipelineAsync(int maxDegreesOfParallelism)
         {
-            var workflow = new Workflow<ReceivedLetter, WorkState>(maxDegreesOfParallelism);
-            workflow.AddStep<ReceivedLetter, WorkState>(DeserializeStep);
-            workflow.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
-            workflow.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
+            var pipeline = new Pipeline<ReceivedLetter, WorkState>(maxDegreesOfParallelism);
+            pipeline.AddStep<ReceivedLetter, WorkState>(DeserializeStep);
+            pipeline.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
+            pipeline.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
 
-            await workflow
+            await pipeline
                 .FinalizeAsync((state) =>
                 {
                     if (state.AllStepsSuccess)
                     { Console.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Finished pipeline successful."); }
                     else
                     { Console.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Finished pipeline unsuccesfully."); }
+
+                    // Lastly mark the excution pipeline finished for this message.
+                    state.ReceivedLetter.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
                 })
                 .ConfigureAwait(false);
 
-            return workflow;
+            return pipeline;
         }
 
         public class Message

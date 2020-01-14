@@ -33,7 +33,7 @@ namespace CookedRabbit.Core
         private bool AutoAck { get; set; }
         private bool UseTransientChannel { get; set; }
         private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
-        private byte[] HashKey { get; set; }
+        private byte[] HashKey { get; }
 
         public LetterConsumer(Config config, string consumerName, byte[] hashKey = null)
         {
@@ -656,11 +656,13 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedLetter, TOut> pipeline)
+        public async Task PipelineExecutionEngineAsync<TOut>(Pipeline<ReceivedLetter, TOut> pipeline, bool waitForCompletion)
         {
             await pipeExecLock
                 .WaitAsync(2000)
                 .ConfigureAwait(false);
+
+            var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
 
             try
             {
@@ -672,9 +674,23 @@ namespace CookedRabbit.Core
                         {
                             if (receivedLetter != null)
                             {
-                                await pipeline
-                                    .QueueForExecutionAsync(receivedLetter)
-                                    .ConfigureAwait(false);
+                                await workLock.WaitAsync().ConfigureAwait(false);
+
+                                try
+                                {
+                                    await pipeline
+                                        .QueueForExecutionAsync(receivedLetter)
+                                        .ConfigureAwait(false);
+
+                                    if (waitForCompletion)
+                                    {
+                                        await receivedLetter
+                                            .Completion()
+                                            .ConfigureAwait(false);
+                                    }
+                                }
+                                finally
+                                { workLock.Release(); }
                             }
                         }
                     }

@@ -13,7 +13,7 @@ using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class Consumer
+    public class MessageConsumer
     {
         private Config Config { get; }
 
@@ -35,7 +35,7 @@ namespace CookedRabbit.Core
         private bool UseTransientChannel { get; set; }
         private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
 
-        public Consumer(Config config, string consumerName)
+        public MessageConsumer(Config config, string consumerName)
         {
             Guard.AgainstNull(config, nameof(config));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
@@ -51,7 +51,7 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public Consumer(ChannelPool channelPool, string consumerName)
+        public MessageConsumer(ChannelPool channelPool, string consumerName)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
@@ -67,7 +67,7 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public Consumer(ChannelPool channelPool, ConsumerOptions consumerSettings, string consumerName)
+        public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings, string consumerName)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
@@ -618,7 +618,7 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task WorkflowExecutionEngineAsync<TOut>(Workflow<ReceivedMessage, TOut> pipeline)
+        public async Task WorkflowExecutionEngineAsync<TOut>(Pipeline<ReceivedMessage, TOut> pipeline)
         {
             await pipeExecLock
                 .WaitAsync(2000)
