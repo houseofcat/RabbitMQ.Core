@@ -28,7 +28,7 @@ namespace CookedRabbit.Core
             ChannelPool = channelPool;
         }
 
-        public async Task CreateTopology(TopologyConfig topologyConfig)
+        public async Task CreateTopologyAsync(TopologyConfig topologyConfig)
         {
             Guard.AgainstNull(topologyConfig, nameof(topologyConfig));
 
