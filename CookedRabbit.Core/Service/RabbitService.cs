@@ -17,7 +17,7 @@ namespace CookedRabbit.Core.Service
         public ChannelPool ChannelPool { get; }
         public AutoPublisher AutoPublisher { get; }
         public Topologer Topologer { get; }
-        private ConcurrentDictionary<string, LetterConsumer> Consumers { get; }
+        public ConcurrentDictionary<string, LetterConsumer> Consumers { get; }
 
         private byte[] HashKey { get; set; }
         private const int KeySize = 32;
@@ -104,6 +104,38 @@ namespace CookedRabbit.Core.Service
         {
             if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
             return Consumers[consumerName];
+        }
+
+        public async ValueTask ShutdownAsync(bool immediately)
+        {
+            await serviceLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                await AutoPublisher
+                    .StopAsync(immediately)
+                    .ConfigureAwait(false);
+
+                await StopAllConsumers(immediately)
+                    .ConfigureAwait(false);
+
+                await ChannelPool
+                    .ShutdownAsync()
+                    .ConfigureAwait(false);
+            }
+            finally
+            { serviceLock.Release(); }
+        }
+
+        private async ValueTask StopAllConsumers(bool immediately)
+        {
+            foreach (var kvp in Consumers)
+            {
+                await kvp
+                    .Value
+                    .StopConsumerAsync(immediately)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }
