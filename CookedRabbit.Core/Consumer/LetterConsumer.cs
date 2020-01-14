@@ -14,7 +14,7 @@ namespace CookedRabbit.Core
 {
     public class LetterConsumer
     {
-        private Config Config { get; }
+        public Config Config { get; }
 
         public ChannelPool ChannelPool { get; }
         private Channel<ReceivedLetter> LetterBuffer { get; set; }
@@ -132,7 +132,11 @@ namespace CookedRabbit.Core
             {
                 LetterBuffer.Writer.Complete();
 
-                if (!immediate)
+                if (immediate)
+                {
+                    ConsumingChannelHost.Close();
+                }
+                else
                 {
                     await LetterBuffer
                         .Reader

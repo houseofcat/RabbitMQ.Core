@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
@@ -26,8 +28,70 @@ namespace CookedRabbit.Core
             ChannelPool = channelPool;
         }
 
+        public async Task CreateTopology(TopologyConfig topologyConfig)
+        {
+            Guard.AgainstNull(topologyConfig, nameof(topologyConfig));
+
+            foreach (var exchange in topologyConfig.Exchanges)
+            {
+                try
+                {
+                    await CreateExchangeAsync(
+                        exchange.Name,
+                        exchange.Type,
+                        exchange.Durable,
+                        exchange.AutoDelete,
+                        exchange.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var queue in topologyConfig.Queues)
+            {
+                try
+                {
+                    await CreateQueueAsync(
+                        queue.Name,
+                        queue.Durable,
+                        queue.Exclusive,
+                        queue.AutoDelete,
+                        queue.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var binding in topologyConfig.ExchangeBindings)
+            {
+                try
+                {
+                    await BindExchangeToExchangeAsync(
+                        binding.ChildExchange,
+                        binding.ParentExchange,
+                        binding.RoutingKey,
+                        binding.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+
+            foreach (var binding in topologyConfig.QueueBindings)
+            {
+                try
+                {
+                    await BindQueueToExchangeAsync(
+                        binding.QueueName,
+                        binding.ExchangeName,
+                        binding.RoutingKey,
+                        binding.Args).ConfigureAwait(false);
+                }
+                catch { }
+            }
+        }
+
         public async Task CreateTopologyFromFileAsync(string fileNamePath)
         {
+            if (string.IsNullOrWhiteSpace(fileNamePath)) throw new ArgumentNullException(nameof(fileNamePath));
+            if (!File.Exists(fileNamePath)) throw new FileNotFoundException(fileNamePath);
+
             var topologyConfig = await ConfigReader
                 .TopologyConfigFileReadAsync(fileNamePath)
                 .ConfigureAwait(false);

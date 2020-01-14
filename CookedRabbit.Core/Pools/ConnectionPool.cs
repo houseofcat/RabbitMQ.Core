@@ -5,7 +5,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Utils;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Exceptions;
 
 namespace CookedRabbit.Core.Pools
 {

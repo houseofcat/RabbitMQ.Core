@@ -9,7 +9,7 @@ namespace CookedRabbit.Core
 {
     public class AutoPublisher
     {
-        private Config Config { get; }
+        public Config Config { get; }
         public Publisher Publisher { get; }
         private Channel<Letter> LetterQueue { get; set; }
         private Channel<Letter> PriorityLetterQueue { get; set; }

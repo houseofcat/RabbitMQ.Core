@@ -129,7 +129,11 @@ namespace CookedRabbit.Core
             {
                 MessageBuffer.Writer.Complete();
 
-                if (!immediate)
+                if (immediate)
+                {
+                    ConsumingChannelHost.Close();
+                }
+                else
                 {
                     await MessageBuffer
                         .Reader
@@ -236,9 +240,12 @@ namespace CookedRabbit.Core
 
         private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
         {
-            bool success;
-            do { success = await StartConsumingAsync().ConfigureAwait(false); }
-            while (!success);
+            if (!Shutdown)
+            {
+                bool success;
+                do { success = await StartConsumingAsync().ConfigureAwait(false); }
+                while (!success);
+            }
         }
 
         private AsyncEventingBasicConsumer CreateAsyncConsumer()
@@ -277,9 +284,12 @@ namespace CookedRabbit.Core
 
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
-            bool success;
-            do { success = await StartConsumingAsync().ConfigureAwait(false); }
-            while (!success);
+            if (!Shutdown)
+            {
+                bool success;
+                do { success = await StartConsumingAsync().ConfigureAwait(false); }
+                while (!success);
+            }
         }
 
         /// <summary>

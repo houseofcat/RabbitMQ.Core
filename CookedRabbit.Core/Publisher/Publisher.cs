@@ -11,7 +11,7 @@ namespace CookedRabbit.Core
 {
     public class Publisher
     {
-        private Config Config { get; }
+        public Config Config { get; }
         public ChannelPool ChannelPool { get; }
 
         public Channel<PublishReceipt> ReceiptBuffer { get; }
