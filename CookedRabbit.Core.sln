@@ -13,7 +13,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.StressTes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.SimpleClient", "CookedRabbit.Core.SimpleClient\CookedRabbit.Core.SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CookedRabbit.Core.PipelineClient", "CookedRabbit.Core.PipelineClient\CookedRabbit.Core.PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.PipelineClient", "CookedRabbit.Core.PipelineClient\CookedRabbit.Core.PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5EDF225B-B61D-4B7E-8A82-11D326DF15BF}"
+	ProjectSection(SolutionItems) = preProject
+		CookedRabbit.Core\.editorconfig = CookedRabbit.Core\.editorconfig
+		CookedRabbit.Core\BuildRelease.bat = CookedRabbit.Core\BuildRelease.bat
+		CookedRabbit.Core\README.md = CookedRabbit.Core\README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

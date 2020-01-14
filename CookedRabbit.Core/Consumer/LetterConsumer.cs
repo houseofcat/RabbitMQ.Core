@@ -699,6 +699,8 @@ namespace CookedRabbit.Core
                         }
                     }
                     catch { }
+                    finally
+                    { workLock.Release(); }
                 }
             }
             finally { pipeExecLock.Release(); }
