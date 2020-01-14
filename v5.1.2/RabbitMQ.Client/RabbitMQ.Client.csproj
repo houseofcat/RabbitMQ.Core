@@ -3,13 +3,13 @@
   <PropertyGroup>
     <Description>The RabbitMQ.Core.Client is the Unofficial port of the official client library for C#.</Description>
     <VersionPrefix>5.0.0</VersionPrefix>
-    <TargetFrameworks>netcoreapp2.2;netcoreapp3.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.2;netstandard2.0;netstandard2.1;netcoreapp3.0;netcoreapp3.1</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>RabbitMQ.Client</AssemblyName>
     <PackageId>RabbitMQ.Core.Client</PackageId>
-    <PackageTags>RabbitMQ, NetCore, NetCore2.2, NetCore3.0, NetCore3.1, Unofficial</PackageTags>
+    <PackageTags>RabbitMQ, NetCore, NetStandard 2.0, NetCore2.2, NetCore3.0, NetCore3.1, Unofficial</PackageTags>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core</PackageProjectUrl>
     <PackageLicenseUrl></PackageLicenseUrl>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
@@ -20,13 +20,13 @@
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <FileVersion>1.0.2.0</FileVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <PackageReleaseNotes>The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
     <RepositoryType>Library</RepositoryType>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Authors>HouseofCat.io</Authors>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
