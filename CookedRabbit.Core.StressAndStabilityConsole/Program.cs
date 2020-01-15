@@ -120,7 +120,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
         private static async Task StartPubSubTestAsync(AutoPublisher autoPublisher, MessageConsumer consumer)
         {
-            var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.QueueName, MessageCount);
+            var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.ConsumerSettings.QueueName, MessageCount);
             var processReceiptsTask = ProcessReceiptsAsync(autoPublisher, MessageCount);
             var consumeMessagesTask = ConsumeMessagesAsync(consumer, MessageCount);
 

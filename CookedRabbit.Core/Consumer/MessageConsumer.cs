@@ -22,11 +22,7 @@ namespace CookedRabbit.Core
 
         private ChannelHost ConsumingChannelHost { get; set; }
 
-        public string ConsumerName { get; }
-        public string QueueName { get; }
-        public bool NoLocal { get; }
-        public bool Exclusive { get; }
-        public ushort QosPrefetchCount { get; }
+        public ConsumerOptions ConsumerSettings { get; set; }
 
         public bool Consuming { get; private set; }
         public bool Shutdown { get; private set; }
@@ -42,13 +38,7 @@ namespace CookedRabbit.Core
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-
-            var conSettings = Config.GetLetterConsumerSettings(consumerName);
-            ConsumerName = conSettings.ConsumerName;
-            QueueName = conSettings.QueueName;
-            NoLocal = conSettings.NoLocal;
-            Exclusive = conSettings.Exclusive;
-            QosPrefetchCount = conSettings.QosPrefetchCount;
+            ConsumerSettings = Config.GetLetterConsumerSettings(consumerName);
         }
 
         public MessageConsumer(ChannelPool channelPool, string consumerName)
@@ -59,12 +49,7 @@ namespace CookedRabbit.Core
             Config = channelPool.Config;
             ChannelPool = channelPool;
 
-            var conSettings = Config.GetLetterConsumerSettings(consumerName);
-            ConsumerName = conSettings.ConsumerName;
-            QueueName = conSettings.QueueName;
-            NoLocal = conSettings.NoLocal;
-            Exclusive = conSettings.Exclusive;
-            QosPrefetchCount = conSettings.QosPrefetchCount;
+            ConsumerSettings = Config.GetLetterConsumerSettings(consumerName);
         }
 
         public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings)
@@ -74,12 +59,7 @@ namespace CookedRabbit.Core
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
-
-            ConsumerName = consumerSettings.ConsumerName;
-            QueueName = consumerSettings.QueueName;
-            NoLocal = consumerSettings.NoLocal;
-            Exclusive = consumerSettings.Exclusive;
-            QosPrefetchCount = consumerSettings.QosPrefetchCount;
+            ConsumerSettings = consumerSettings;
         }
 
         public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
@@ -95,7 +75,7 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    var conSettings = Config.GetLetterConsumerSettings(ConsumerName);
+                    var conSettings = Config.GetLetterConsumerSettings(ConsumerSettings.ConsumerName);
 
                     MessageBuffer = Channel.CreateBounded<ReceivedMessage>(
                     new BoundedChannelOptions(conSettings.MessageBufferSize)
@@ -163,7 +143,14 @@ namespace CookedRabbit.Core
 
                 ConsumingChannelHost
                     .Channel
-                    .BasicConsume(QueueName, AutoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
+                    .BasicConsume(
+                        ConsumerSettings.QueueName,
+                        AutoAck,
+                        ConsumerSettings.ConsumerName,
+                        ConsumerSettings.NoLocal,
+                        ConsumerSettings.Exclusive,
+                        null,
+                        consumer);
             }
             else
             {
@@ -172,7 +159,14 @@ namespace CookedRabbit.Core
 
                 ConsumingChannelHost
                     .Channel
-                    .BasicConsume(QueueName, AutoAck, ConsumerName, NoLocal, Exclusive, null, consumer);
+                    .BasicConsume(
+                        ConsumerSettings.QueueName,
+                        AutoAck,
+                        ConsumerSettings.ConsumerName,
+                        ConsumerSettings.NoLocal,
+                        ConsumerSettings.Exclusive,
+                        null,
+                        consumer);
             }
 
             return true;
@@ -210,7 +204,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, QosPrefetchCount, false);
+                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.QosPrefetchCount, false);
                 consumer = new EventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandler;
@@ -254,7 +248,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, QosPrefetchCount, false);
+                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.QosPrefetchCount, false);
                 consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandlerAsync;

@@ -268,24 +268,17 @@ namespace CookedRabbit.Core.Pools
         {
             Channels.Writer.Complete(); // Signal to Channel no more data is coming.
             AckChannels.Writer.Complete();
-#if CORE3
-            await foreach (var chanHost in Channels.Reader.ReadAllAsync())
-#elif CORE2
+
             await Channels.Reader.WaitToReadAsync().ConfigureAwait(false);
             while (Channels.Reader.TryRead(out ChannelHost chanHost))
-#endif
             {
                 try
                 { chanHost.Close(); }
                 catch { }
             }
 
-#if CORE3
-            await foreach (var chanHost in AckChannels.Reader.ReadAllAsync())
-#elif CORE2
             await AckChannels.Reader.WaitToReadAsync().ConfigureAwait(false);
             while (AckChannels.Reader.TryRead(out ChannelHost chanHost))
-#endif
             {
                 try
                 { chanHost.Close(); }

@@ -4,8 +4,15 @@ namespace CookedRabbit.Core
 {
     public class ConsumerOptions
     {
+        public bool Enabled { get; set; }
         public string QueueName { get; set; }
         public string ConsumerName { get; set; }
+
+        public string ErrorSuffix { get; set; }
+        public string ErrorQueueName => $"{ConsumerName}.{ErrorSuffix}";
+
+        public string TargetQueueName { get; set; }
+
         public bool NoLocal { get; set; }
         public bool Exclusive { get; set; }
         public ushort QosPrefetchCount { get; set; } = 5;

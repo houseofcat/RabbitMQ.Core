@@ -157,12 +157,9 @@ namespace CookedRabbit.Core.Pools
         private async Task CloseConnectionsAsync()
         {
             Connections.Writer.Complete();
-#if CORE3
-            await foreach (var connHost in Connections.Reader.ReadAllAsync())
-#elif CORE2
+
             await Connections.Reader.WaitToReadAsync().ConfigureAwait(false);
             while (Connections.Reader.TryRead(out ConnectionHost connHost))
-#endif
             {
                 try
                 { connHost.Close(); }

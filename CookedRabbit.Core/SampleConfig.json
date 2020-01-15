@@ -31,12 +31,29 @@
   },
   "LetterConsumerSettings": {
     "ServiceConsumerName": {
-      "ConsumerName": "ServiceConsumerName",
-      "QueueName": "ServiceConsumerQueue",
+      "Enabled": true,
+      "ConsumerName": "LetterConsumerName",
+      "QueueName": "LetterQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "LetterQueueTwo",
       "NoLocal": false,
       "Exclusive": false,
       "QosPrefetchCount": 5,
-      "RabbitMessageBufferSize": 100,
+      "MessageBufferSize": 100,
+      "BehaviorWhenFull": 0
+    }
+  },
+  "MessageConsumerSettings": {
+    "ServiceConsumerName": {
+      "Enabled": true,
+      "ConsumerName": "MessageConsumerName",
+      "QueueName": "MessageQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "MessageQueueTwo",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
       "BehaviorWhenFull": 0
     }
   }
