@@ -165,5 +165,118 @@ namespace CookedRabbit.Core.Service
             if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
             return MessageConsumers[consumerName];
         }
+
+        public async Task DecomcryptAsync(ReceivedLetter receivedLetter)
+        {
+            var decryptFailed = false;
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                }
+                catch { decryptFailed = true; }
+            }
+
+            if (!decryptFailed && receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                }
+                catch { }
+            }
+        }
+
+        public async Task ComcryptAsync(ReceivedLetter receivedLetter)
+        {
+            if (receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.CompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = true;
+                }
+                catch { }
+            }
+
+            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = true;
+                }
+                catch { }
+            }
+        }
+
+        public bool Encrypt(ReceivedLetter receivedLetter)
+        {
+            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = true;
+                }
+                catch { }
+            }
+
+            return receivedLetter.Letter.LetterMetadata.Encrypted;
+        }
+
+        public bool Decrypt(ReceivedLetter receivedLetter)
+        {
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                }
+                catch { }
+            }
+
+            return !receivedLetter.Letter.LetterMetadata.Encrypted;
+        }
+
+        public async Task<bool> CompressAsync(ReceivedLetter receivedLetter)
+        {
+            if (receivedLetter.Letter.LetterMetadata.Encrypted)
+            { return false; }
+
+            if (!receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.CompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = true;
+                }
+                catch { }
+            }
+
+            return receivedLetter.Letter.LetterMetadata.Compressed;
+        }
+
+        public async Task<bool> DecompressAsync(ReceivedLetter receivedLetter)
+        {
+            if (receivedLetter.Letter.LetterMetadata.Encrypted)
+            { return false; }
+
+            if (receivedLetter.Letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
+                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                }
+                catch { }
+            }
+
+            return !receivedLetter.Letter.LetterMetadata.Compressed;
+        }
     }
 }

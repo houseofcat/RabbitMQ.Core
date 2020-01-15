@@ -13,6 +13,12 @@ namespace CookedRabbit.Core.Service
         ConcurrentDictionary<string, MessageConsumer> MessageConsumers { get; }
         Topologer Topologer { get; }
 
+        Task ComcryptAsync(ReceivedLetter receivedLetter);
+        Task<bool> CompressAsync(ReceivedLetter receivedLetter);
+        Task DecomcryptAsync(ReceivedLetter receivedLetter);
+        Task<bool> DecompressAsync(ReceivedLetter receivedLetter);
+        bool Decrypt(ReceivedLetter receivedLetter);
+        bool Encrypt(ReceivedLetter receivedLetter);
         LetterConsumer GetLetterConsumer(string consumerName);
         MessageConsumer GetMessageConsumer(string consumerName);
         Task InitializeAsync();
