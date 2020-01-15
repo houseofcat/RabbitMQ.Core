@@ -590,64 +590,86 @@ namespace CookedRabbit.Core
         }
 #endif
 
-        public async Task ParallelExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync, int maxDoP = 4)
+        private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
+
+        public async Task ParallelExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default)
         {
-            var parallelLock = new SemaphoreSlim(1, maxDoP);
-            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
-                    {
-                        if (receivedLetter != null)
-                        {
-                            await parallelLock.WaitAsync().ConfigureAwait(false);
-
-                            _ = Task.Run(ExecuteWorkAsync);
-
-                            async ValueTask ExecuteWorkAsync()
-                            {
-                                try
-                                {
-                                    if (await workAsync(receivedLetter).ConfigureAwait(false))
-                                    { receivedLetter.AckMessage(); }
-                                    else
-                                    { receivedLetter.NackMessage(true); }
-                                }
-                                catch
-                                { receivedLetter.NackMessage(true); }
-                                finally
-                                { parallelLock.Release(); }
-                            }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        private LetterDataflowEngine letterEngine;
-
-        private readonly SemaphoreSlim dataFlowLock = new SemaphoreSlim(1, 1);
-
-        public async Task DataflowExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workBodyAsync, int maxDoP = 4)
-        {
-            await dataFlowLock.WaitAsync(2000).ConfigureAwait(false);
-
-            letterEngine = new LetterDataflowEngine(workBodyAsync, maxDoP);
+            await parallelExecLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                if (token.IsCancellationRequested)
+                { return; }
+
+                while (await LetterBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
+                    if (token.IsCancellationRequested)
+                    { return; }
+
+                    var parallelLock = new SemaphoreSlim(1, maxDoP);
+
                     try
                     {
-                        while (LetterBuffer.Reader.TryRead(out var receivedMessage))
+                        while (LetterBuffer.Reader.TryRead(out var receivedLetter))
                         {
-                            if (receivedMessage != null)
+                            if (token.IsCancellationRequested)
+                            { return; }
+
+                            if (receivedLetter != null)
+                            {
+                                await parallelLock.WaitAsync().ConfigureAwait(false);
+
+                                _ = Task.Run(ExecuteWorkAsync);
+
+                                async ValueTask ExecuteWorkAsync()
+                                {
+                                    try
+                                    {
+                                        if (await workAsync(receivedLetter).ConfigureAwait(false))
+                                        { receivedLetter.AckMessage(); }
+                                        else
+                                        { receivedLetter.NackMessage(true); }
+                                    }
+                                    catch
+                                    { receivedLetter.NackMessage(true); }
+                                    finally
+                                    { parallelLock.Release(); }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            finally { parallelExecLock.Release(); }
+        }
+
+        private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1, 1);
+
+        public async Task DataflowExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
+        {
+            await dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
+
+            try
+            {
+                if (token.IsCancellationRequested)
+                { return; }
+
+                var letterEngine = new LetterDataflowEngine(workBodyAsync, maxDoP);
+
+                while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                {
+                    if (token.IsCancellationRequested)
+                    { return; }
+
+                    try
+                    {
+                        while (LetterBuffer.Reader.TryRead(out var receivedLetter))
+                        {
+                            if (receivedLetter != null)
                             {
                                 await letterEngine
-                                    .EnqueueWorkAsync(receivedMessage)
+                                    .EnqueueWorkAsync(receivedLetter)
                                     .ConfigureAwait(false);
                             }
                         }
@@ -655,27 +677,37 @@ namespace CookedRabbit.Core
                     catch { }
                 }
             }
-            finally { dataFlowLock.Release(); }
+            catch { }
+            finally { dataFlowExecLock.Release(); }
         }
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task PipelineExecutionEngineAsync<TOut>(Pipeline<ReceivedLetter, TOut> pipeline, bool waitForCompletion)
+        public async Task PipelineExecutionEngineAsync<TOut>(Pipeline<ReceivedLetter, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
             await pipeExecLock
                 .WaitAsync(2000)
                 .ConfigureAwait(false);
 
-            var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
-
             try
             {
-                while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                if (token.IsCancellationRequested)
+                { return; }
+
+                var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
+
+                while (await LetterBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
+                    if (token.IsCancellationRequested)
+                    { return; }
+
                     try
                     {
                         while (LetterBuffer.Reader.TryRead(out var receivedLetter))
                         {
+                            if (token.IsCancellationRequested)
+                            { return; }
+
                             if (receivedLetter != null)
                             {
                                 await workLock.WaitAsync().ConfigureAwait(false);
@@ -699,10 +731,9 @@ namespace CookedRabbit.Core
                         }
                     }
                     catch { }
-                    finally
-                    { workLock.Release(); }
                 }
             }
+            catch { }
             finally { pipeExecLock.Release(); }
         }
     }

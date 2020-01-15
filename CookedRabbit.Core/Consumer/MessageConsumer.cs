@@ -560,54 +560,78 @@ namespace CookedRabbit.Core
         }
 #endif
 
-        public async Task ParallelExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync, int maxDoP = 4)
+        private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
+
+        public async Task ParallelExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default)
         {
-            var parallelLock = new SemaphoreSlim(1, maxDoP);
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            await parallelExecLock.WaitAsync().ConfigureAwait(false);
+
+            try
             {
-                try
+                if (token.IsCancellationRequested)
+                { return; }
+
+                while (await MessageBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                    if (token.IsCancellationRequested)
+                    { return; }
+
+                    var parallelLock = new SemaphoreSlim(1, maxDoP);
+
+                    try
                     {
-                        if (receivedMessage != null)
+                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                         {
-                            await parallelLock.WaitAsync().ConfigureAwait(false);
+                            if (token.IsCancellationRequested)
+                            { return; }
 
-                            _ = Task.Run(ExecuteWorkAsync);
-
-                            async ValueTask ExecuteWorkAsync()
+                            if (receivedMessage != null)
                             {
-                                try
+                                await parallelLock.WaitAsync().ConfigureAwait(false);
+
+                                _ = Task.Run(ExecuteWorkAsync);
+
+                                async ValueTask ExecuteWorkAsync()
                                 {
-                                    if (await workAsync(receivedMessage).ConfigureAwait(false))
-                                    { receivedMessage.AckMessage(); }
-                                    else
+                                    try
+                                    {
+                                        if (await workAsync(receivedMessage).ConfigureAwait(false))
+                                        { receivedMessage.AckMessage(); }
+                                        else
+                                        { receivedMessage.NackMessage(true); }
+                                    }
+                                    catch
                                     { receivedMessage.NackMessage(true); }
+                                    finally
+                                    { parallelLock.Release(); }
                                 }
-                                catch
-                                { receivedMessage.NackMessage(true); }
-                                finally
-                                { parallelLock.Release(); }
                             }
                         }
                     }
+                    catch { }
                 }
-                catch { }
             }
+            finally { parallelExecLock.Release(); }
         }
 
         private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1,1);
 
-        public async Task DataflowExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDoP = 4)
+        public async Task DataflowExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
         {
             await dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
 
-            var messageEngine = new MessageDataflowEngine(workBodyAsync, maxDoP);
-
             try
             {
+                if (token.IsCancellationRequested)
+                { return; }
+
+                var messageEngine = new MessageDataflowEngine(workBodyAsync, maxDoP);
+
                 while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
                 {
+                    if (token.IsCancellationRequested)
+                    { return; }
+
                     try
                     {
                         while (MessageBuffer.Reader.TryRead(out var receivedMessage))
@@ -623,12 +647,13 @@ namespace CookedRabbit.Core
                     catch { }
                 }
             }
+            catch { }
             finally { dataFlowExecLock.Release(); }
         }
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task WorkflowExecutionEngineAsync<TOut>(Pipeline<ReceivedMessage, TOut> pipeline)
+        public async Task PipelineExecutionEngineAsync<TOut>(Pipeline<ReceivedMessage, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
             await pipeExecLock
                 .WaitAsync(2000)
@@ -636,23 +661,49 @@ namespace CookedRabbit.Core
 
             try
             {
-                while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                if (token.IsCancellationRequested)
+                { return; }
+
+                var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
+
+                while (await MessageBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
+                    if (token.IsCancellationRequested)
+                    { return; }
+
                     try
                     {
                         while (MessageBuffer.Reader.TryRead(out var receivedMessage))
                         {
+                            if (token.IsCancellationRequested)
+                            { return; }
+
                             if (receivedMessage != null)
                             {
-                                await pipeline
-                                    .QueueForExecutionAsync(receivedMessage)
-                                    .ConfigureAwait(false);
+                                await workLock.WaitAsync().ConfigureAwait(false);
+
+                                try
+                                {
+                                    await pipeline
+                                        .QueueForExecutionAsync(receivedMessage)
+                                        .ConfigureAwait(false);
+
+                                    if (waitForCompletion)
+                                    {
+                                        await receivedMessage
+                                            .Completion()
+                                            .ConfigureAwait(false);
+                                    }
+                                }
+                                finally
+                                { workLock.Release(); }
                             }
                         }
                     }
                     catch { }
                 }
             }
+            catch { }
             finally { pipeExecLock.Release(); }
         }
     }
