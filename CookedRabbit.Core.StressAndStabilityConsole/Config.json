@@ -30,7 +30,7 @@
     "AutoPublisherSleepInterval": 1000,
     "CreatePublishReceipts":  true
   },
-  "ConsumerSettings": {
+  "LetterConsumerSettings": {
     "Consumer1": {
       "ConsumerName": "Consumer1",
       "QueueName": "StressTestQueue1",

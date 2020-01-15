@@ -43,7 +43,7 @@ namespace CookedRabbit.Core
             Config = config;
             ChannelPool = new ChannelPool(Config);
 
-            var conSettings = Config.GetConsumerSettings(consumerName);
+            var conSettings = Config.GetLetterConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
             QueueName = conSettings.QueueName;
             NoLocal = conSettings.NoLocal;
@@ -59,7 +59,7 @@ namespace CookedRabbit.Core
             Config = channelPool.Config;
             ChannelPool = channelPool;
 
-            var conSettings = Config.GetConsumerSettings(consumerName);
+            var conSettings = Config.GetLetterConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
             QueueName = conSettings.QueueName;
             NoLocal = conSettings.NoLocal;
@@ -67,10 +67,10 @@ namespace CookedRabbit.Core
             QosPrefetchCount = conSettings.QosPrefetchCount;
         }
 
-        public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings, string consumerName)
+        public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
-            Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
+            Guard.AgainstNull(consumerSettings, nameof(consumerSettings));
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
@@ -95,7 +95,7 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    var conSettings = Config.GetConsumerSettings(ConsumerName);
+                    var conSettings = Config.GetLetterConsumerSettings(ConsumerName);
 
                     MessageBuffer = Channel.CreateBounded<ReceivedMessage>(
                     new BoundedChannelOptions(conSettings.MessageBufferSize)

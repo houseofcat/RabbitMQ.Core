@@ -29,7 +29,7 @@
     "BehaviorWhenFull": 0,
     "AutoPublisherSleepInterval":  1000
   },
-  "ConsumerSettings": {
+  "LetterConsumerSettings": {
     "TestAutoPublisherConsumerName": {
       "ConsumerName": "TestAutoPublisherConsumerName",
       "QueueName": "TestAutoPublisherConsumerQueue",

@@ -24,12 +24,19 @@ namespace CookedRabbit.Core
         /// <summary>
         /// Dictionary to hold all the ConsumerSettings using the ConsumerOption class.
         /// </summary>
-        public IDictionary<string, ConsumerOptions> ConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
+        public IDictionary<string, ConsumerOptions> LetterConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
+        public IDictionary<string, ConsumerOptions> MessageConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
 
-        public ConsumerOptions GetConsumerSettings(string consumerName)
+        public ConsumerOptions GetLetterConsumerSettings(string consumerName)
         {
-            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
-            return ConsumerSettings[consumerName];
+            if (!LetterConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return LetterConsumerSettings[consumerName];
+        }
+
+        public ConsumerOptions GetMessageConsumerSettings(string consumerName)
+        {
+            if (!MessageConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return MessageConsumerSettings[consumerName];
         }
     }
 }

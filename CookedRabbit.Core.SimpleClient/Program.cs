@@ -50,7 +50,7 @@ namespace CookedRabbit.Core.SimpleClient
                 .QueueLetterAsync(letter);
 
             // Start Consumer
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -102,7 +102,7 @@ namespace CookedRabbit.Core.SimpleClient
                 .QueueLetterAsync(letter);
 
             // Start Consumer
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -141,7 +141,7 @@ namespace CookedRabbit.Core.SimpleClient
             }
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -180,7 +180,7 @@ namespace CookedRabbit.Core.SimpleClient
             }
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);

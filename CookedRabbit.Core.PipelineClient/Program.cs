@@ -21,7 +21,7 @@ namespace CookedRabbit.Core.PipelineClient
             var rabbitService = await SetupAsync().ConfigureAwait(false);
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);

@@ -72,14 +72,14 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             await Console.Out.WriteLineAsync("- Creating stress test queues!").ConfigureAwait(false);
 
-            foreach (var kvp in config.ConsumerSettings)
+            foreach (var kvp in config.LetterConsumerSettings)
             {
                 await topologer
                     .DeleteQueueAsync(kvp.Value.QueueName)
                     .ConfigureAwait(false);
             }
 
-            foreach (var kvp in config.ConsumerSettings)
+            foreach (var kvp in config.LetterConsumerSettings)
             {
                 await topologer
                     .CreateQueueAsync(kvp.Value.QueueName, true)

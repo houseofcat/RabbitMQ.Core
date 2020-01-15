@@ -10,16 +10,16 @@
     <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
     <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.0.5.0</AssemblyVersion>
-    <FileVersion>2.0.5.0</FileVersion>
-    <Version>2.0.5</Version>
+    <AssemblyVersion>2.0.6.0</AssemblyVersion>
+    <FileVersion>2.0.6.0</FileVersion>
+    <Version>2.0.6</Version>
     <Authors>HouseofCat.io</Authors>
     <Description>CookedRabbit.Core is a C# RabbitMQ wrapper for NetCore.</Description>
     <Copyright>Copyright © 2018-2020</Copyright>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core/CookedRabbit.Core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core/CookedRabbit.Core</RepositoryUrl>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>Adding Topologer enhancements and a consumer shutdown bug fix.</PackageReleaseNotes>
+    <PackageReleaseNotes>Adding RabbitService enhancements (adding support for MessageConsumers.)</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   
@@ -42,6 +42,12 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' Or '$(TargetFramework)' == 'netcoreapp3.1' ">
     <DefineConstants>$(DefineConstants);CORE3</DefineConstants>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Remove=".editorconfig" />
+    <None Remove="BuildRelease.bat" />
+    <None Remove="README.md" />
+  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCore" Version="1.8.5" />

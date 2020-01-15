@@ -17,7 +17,8 @@ namespace CookedRabbit.Core.Service
         public ChannelPool ChannelPool { get; }
         public AutoPublisher AutoPublisher { get; }
         public Topologer Topologer { get; }
-        public ConcurrentDictionary<string, LetterConsumer> Consumers { get; }
+        public ConcurrentDictionary<string, LetterConsumer> LetterConsumers { get; }
+        public ConcurrentDictionary<string, MessageConsumer> MessageConsumers { get; }
 
         private byte[] HashKey { get; set; }
         private const int KeySize = 32;
@@ -28,7 +29,8 @@ namespace CookedRabbit.Core.Service
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
-            Consumers = new ConcurrentDictionary<string, LetterConsumer>();
+            LetterConsumers = new ConcurrentDictionary<string, LetterConsumer>();
+            MessageConsumers = new ConcurrentDictionary<string, MessageConsumer>();
         }
 
         public RabbitService(Config config)
@@ -37,7 +39,8 @@ namespace CookedRabbit.Core.Service
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
-            Consumers = new ConcurrentDictionary<string, LetterConsumer>();
+            LetterConsumers = new ConcurrentDictionary<string, LetterConsumer>();
+            MessageConsumers = new ConcurrentDictionary<string, MessageConsumer>();
         }
 
         public async Task InitializeAsync()
@@ -92,20 +95,6 @@ namespace CookedRabbit.Core.Service
             { serviceLock.Release(); }
         }
 
-        private void BuildConsumers()
-        {
-            foreach (var consumerSetting in Config.ConsumerSettings)
-            {
-                Consumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
-            }
-        }
-
-        public LetterConsumer GetConsumer(string consumerName)
-        {
-            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
-            return Consumers[consumerName];
-        }
-
         public async ValueTask ShutdownAsync(bool immediately)
         {
             await serviceLock.WaitAsync().ConfigureAwait(false);
@@ -129,13 +118,46 @@ namespace CookedRabbit.Core.Service
 
         private async ValueTask StopAllConsumers(bool immediately)
         {
-            foreach (var kvp in Consumers)
+            foreach (var kvp in LetterConsumers)
             {
                 await kvp
                     .Value
                     .StopConsumerAsync(immediately)
                     .ConfigureAwait(false);
             }
+
+            foreach (var kvp in MessageConsumers)
+            {
+                await kvp
+                    .Value
+                    .StopConsumerAsync(immediately)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private void BuildConsumers()
+        {
+            foreach (var consumerSetting in Config.LetterConsumerSettings)
+            {
+                LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
+            }
+
+            foreach (var consumerSetting in Config.MessageConsumerSettings)
+            {
+                MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
+            }
+        }
+
+        public LetterConsumer GetLetterConsumer(string consumerName)
+        {
+            if (!LetterConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return LetterConsumers[consumerName];
+        }
+
+        public MessageConsumer GetMessageConsumer(string consumerName)
+        {
+            if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return MessageConsumers[consumerName];
         }
     }
 }

@@ -44,7 +44,7 @@ namespace CookedRabbit.Core
             ChannelPool = new ChannelPool(Config);
             HashKey = hashKey;
 
-            var conSettings = Config.GetConsumerSettings(consumerName);
+            var conSettings = Config.GetLetterConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
             QueueName = conSettings.QueueName;
             NoLocal = conSettings.NoLocal;
@@ -61,7 +61,7 @@ namespace CookedRabbit.Core
             ChannelPool = channelPool;
             HashKey = hashKey;
 
-            var conSettings = Config.GetConsumerSettings(consumerName);
+            var conSettings = Config.GetLetterConsumerSettings(consumerName);
             ConsumerName = conSettings.ConsumerName;
             QueueName = conSettings.QueueName;
             NoLocal = conSettings.NoLocal;
@@ -98,7 +98,7 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    var conSettings = Config.GetConsumerSettings(ConsumerName);
+                    var conSettings = Config.GetLetterConsumerSettings(ConsumerName);
 
                     LetterBuffer = Channel.CreateBounded<ReceivedLetter>(
                         new BoundedChannelOptions(conSettings.MessageBufferSize)
