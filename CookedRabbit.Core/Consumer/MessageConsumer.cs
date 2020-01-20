@@ -70,7 +70,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                if (!Consuming)
+                if (ConsumerSettings.Enabled && !Consuming)
                 {
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;

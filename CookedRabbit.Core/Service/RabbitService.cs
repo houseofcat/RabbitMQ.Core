@@ -139,18 +139,12 @@ namespace CookedRabbit.Core.Service
         {
             foreach (var consumerSetting in Config.LetterConsumerSettings)
             {
-                if (consumerSetting.Value.Enabled)
-                {
-                    LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
-                }
+                LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
             }
 
             foreach (var consumerSetting in Config.MessageConsumerSettings)
             {
-                if (consumerSetting.Value.Enabled)
-                {
-                    MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
-                }
+                MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
             }
         }
 

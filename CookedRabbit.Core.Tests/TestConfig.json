@@ -37,7 +37,8 @@
       "Exclusive": false,
       "QosPrefetchCount": 5,
       "RabbitMessageBufferSize": 100,
-      "BehaviorWhenFull": 0
+      "BehaviorWhenFull": 0,
+      "Enabled": true
     }
   }
 }
