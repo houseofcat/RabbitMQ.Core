@@ -27,9 +27,19 @@
     "LetterQueueBufferSize": 10000,
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
-    "AutoPublisherSleepInterval":  1000
+    "AutoPublisherSleepInterval": 1000
   },
   "LetterConsumerSettings": {
+    "TestLetterConsumer": {
+      "ConsumerName": "TestLetterConsumer",
+      "QueueName": "Queue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "RabbitMessageBufferSize": 100,
+      "BehaviorWhenFull": 0,
+      "Enabled": true
+    },
     "TestAutoPublisherConsumerName": {
       "ConsumerName": "TestAutoPublisherConsumerName",
       "QueueName": "TestAutoPublisherConsumerQueue",
@@ -37,6 +47,18 @@
       "Exclusive": false,
       "QosPrefetchCount": 5,
       "RabbitMessageBufferSize": 100,
+      "BehaviorWhenFull": 0,
+      "Enabled": true
+    }
+  },
+  "MessageConsumerSettings": {
+    "TestMessageConsumer": {
+      "ConsumerName": "TestMessageConsumer",
+      "QueueName": "Queue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 10,
+      "RabbitMessageBufferSize": 1000,
       "BehaviorWhenFull": 0,
       "Enabled": true
     }
