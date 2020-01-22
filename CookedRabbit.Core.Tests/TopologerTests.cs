@@ -207,5 +207,21 @@ namespace CookedRabbit.Core.Tests
                 .CreateTopologyFromFileAsync("TestTopologyConfig.json")
                 .ConfigureAwait(false);
         }
+
+        [Fact]
+        public async Task CreateTopologyFromPartialFileAsync()
+        {
+            var config = ConfigReader.ConfigFileRead("TestConfig.json");
+            var top = new Topologer(config);
+
+            await top
+                .ChannelPool
+                .InitializeAsync()
+                .ConfigureAwait(false);
+
+            await top
+                .CreateTopologyFromFileAsync("TestPartialTopologyConfig.json")
+                .ConfigureAwait(false);
+        }
     }
 }

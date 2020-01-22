@@ -32,58 +32,70 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(topologyConfig, nameof(topologyConfig));
 
-            foreach (var exchange in topologyConfig.Exchanges)
+            if (topologyConfig.Exchanges != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.Exchanges.Length; i++)
                 {
-                    await CreateExchangeAsync(
-                        exchange.Name,
-                        exchange.Type,
-                        exchange.Durable,
-                        exchange.AutoDelete,
-                        exchange.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await CreateExchangeAsync(
+                            topologyConfig.Exchanges[i].Name,
+                            topologyConfig.Exchanges[i].Type,
+                            topologyConfig.Exchanges[i].Durable,
+                            topologyConfig.Exchanges[i].AutoDelete,
+                            topologyConfig.Exchanges[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var queue in topologyConfig.Queues)
+            if (topologyConfig.Queues != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.Queues.Length; i++)
                 {
-                    await CreateQueueAsync(
-                        queue.Name,
-                        queue.Durable,
-                        queue.Exclusive,
-                        queue.AutoDelete,
-                        queue.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await CreateQueueAsync(
+                            topologyConfig.Queues[i].Name,
+                            topologyConfig.Queues[i].Durable,
+                            topologyConfig.Queues[i].Exclusive,
+                            topologyConfig.Queues[i].AutoDelete,
+                            topologyConfig.Queues[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var binding in topologyConfig.ExchangeBindings)
+            if (topologyConfig.ExchangeBindings != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.ExchangeBindings.Length; i++)
                 {
-                    await BindExchangeToExchangeAsync(
-                        binding.ChildExchange,
-                        binding.ParentExchange,
-                        binding.RoutingKey,
-                        binding.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await BindExchangeToExchangeAsync(
+                            topologyConfig.ExchangeBindings[i].ChildExchange,
+                            topologyConfig.ExchangeBindings[i].ParentExchange,
+                            topologyConfig.ExchangeBindings[i].RoutingKey,
+                            topologyConfig.ExchangeBindings[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var binding in topologyConfig.QueueBindings)
+            if (topologyConfig.QueueBindings != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.QueueBindings.Length; i++)
                 {
-                    await BindQueueToExchangeAsync(
-                        binding.QueueName,
-                        binding.ExchangeName,
-                        binding.RoutingKey,
-                        binding.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await BindQueueToExchangeAsync(
+                            topologyConfig.QueueBindings[i].QueueName,
+                            topologyConfig.QueueBindings[i].ExchangeName,
+                            topologyConfig.QueueBindings[i].RoutingKey,
+                            topologyConfig.QueueBindings[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
         }
 
@@ -96,58 +108,70 @@ namespace CookedRabbit.Core
                 .TopologyConfigFileReadAsync(fileNamePath)
                 .ConfigureAwait(false);
 
-            foreach(var exchange in topologyConfig.Exchanges)
+            if (topologyConfig.Exchanges != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.Exchanges.Length; i++)
                 {
-                    await CreateExchangeAsync(
-                        exchange.Name,
-                        exchange.Type,
-                        exchange.Durable,
-                        exchange.AutoDelete,
-                        exchange.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await CreateExchangeAsync(
+                            topologyConfig.Exchanges[i].Name,
+                            topologyConfig.Exchanges[i].Type,
+                            topologyConfig.Exchanges[i].Durable,
+                            topologyConfig.Exchanges[i].AutoDelete,
+                            topologyConfig.Exchanges[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var queue in topologyConfig.Queues)
+            if (topologyConfig.Queues != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.Queues.Length; i++)
                 {
-                    await CreateQueueAsync(
-                        queue.Name,
-                        queue.Durable,
-                        queue.Exclusive,
-                        queue.AutoDelete,
-                        queue.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await CreateQueueAsync(
+                            topologyConfig.Queues[i].Name,
+                            topologyConfig.Queues[i].Durable,
+                            topologyConfig.Queues[i].Exclusive,
+                            topologyConfig.Queues[i].AutoDelete,
+                            topologyConfig.Queues[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var binding in topologyConfig.ExchangeBindings)
+            if (topologyConfig.ExchangeBindings != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.ExchangeBindings.Length; i++)
                 {
-                    await BindExchangeToExchangeAsync(
-                        binding.ChildExchange,
-                        binding.ParentExchange,
-                        binding.RoutingKey,
-                        binding.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await BindExchangeToExchangeAsync(
+                            topologyConfig.ExchangeBindings[i].ChildExchange,
+                            topologyConfig.ExchangeBindings[i].ParentExchange,
+                            topologyConfig.ExchangeBindings[i].RoutingKey,
+                            topologyConfig.ExchangeBindings[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
-            foreach (var binding in topologyConfig.QueueBindings)
+            if (topologyConfig.QueueBindings != null)
             {
-                try
+                for (int i = 0; i < topologyConfig.QueueBindings.Length; i++)
                 {
-                    await BindQueueToExchangeAsync(
-                        binding.QueueName,
-                        binding.ExchangeName,
-                        binding.RoutingKey,
-                        binding.Args).ConfigureAwait(false);
+                    try
+                    {
+                        await BindQueueToExchangeAsync(
+                            topologyConfig.QueueBindings[i].QueueName,
+                            topologyConfig.QueueBindings[i].ExchangeName,
+                            topologyConfig.QueueBindings[i].RoutingKey,
+                            topologyConfig.QueueBindings[i].Args).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
             }
         }
 

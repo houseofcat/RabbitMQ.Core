@@ -18,30 +18,43 @@
     }
   },
   "PoolSettings": {
-    "ConnectionPoolName": "SimpleClient",
-    "MaxConnections": 10,
-    "MaxChannels": 50,
+    "ConnectionPoolName": "ServiceName",
+    "MaxConnections": 5,
+    "MaxChannels": 25,
     "SleepOnErrorInterval": 1000
   },
   "PublisherSettings": {
     "LetterQueueBufferSize": 10000,
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
-    "AutoPublisherSleepInterval": 1000,
-    "CreatePublishReceipts": true,
-    "Compress": true,
-    "Encrypt": true
+    "AutoPublisherSleepInterval": 1000
   },
   "LetterConsumerSettings": {
     "ConsumerFromConfig": {
+      "Enabled": true,
       "ConsumerName": "ConsumerFromConfig",
       "QueueName": "TestRabbitServiceQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "LetterQueueTwo",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
-      "BehaviorWhenFull": 0,
-      "Enabled": true
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
+      "BehaviorWhenFull": 0
+    }
+  },
+  "MessageConsumerSettings": {
+    "ConsumerFromConfig": {
+      "Enabled": true,
+      "ConsumerName": "ConsumerFromConfig",
+      "QueueName": "TestRabbitServiceQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "MessageQueueTwo",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
+      "BehaviorWhenFull": 0
     }
   }
 }
