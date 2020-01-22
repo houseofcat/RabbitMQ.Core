@@ -59,7 +59,7 @@ namespace CookedRabbit.Core.Service
                         .StartAsync()
                         .ConfigureAwait(false);
 
-                    BuildConsumers();
+                    await BuildConsumersAsync().ConfigureAwait(false);
                     Initialized = true;
                 }
             }
@@ -87,7 +87,7 @@ namespace CookedRabbit.Core.Service
                         .StartAsync(HashKey)
                         .ConfigureAwait(false);
 
-                    BuildConsumers();
+                    await BuildConsumersAsync().ConfigureAwait(false);
                     Initialized = true;
                 }
             }
@@ -135,15 +135,45 @@ namespace CookedRabbit.Core.Service
             }
         }
 
-        private void BuildConsumers()
+        private async Task BuildConsumersAsync()
         {
             foreach (var consumerSetting in Config.LetterConsumerSettings)
             {
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
+                }
+
                 LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
             }
 
             foreach (var consumerSetting in Config.MessageConsumerSettings)
             {
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
+                }
+
                 MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
             }
         }
