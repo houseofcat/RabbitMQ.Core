@@ -64,6 +64,8 @@ namespace CookedRabbit.Core
 
         public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
         {
+            ConsumerSettings = Config.GetMessageConsumerSettings(ConsumerSettings.ConsumerName);
+
             await conLock
                 .WaitAsync()
                 .ConfigureAwait(false);
@@ -75,12 +77,10 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    var conSettings = Config.GetLetterConsumerSettings(ConsumerSettings.ConsumerName);
-
                     MessageBuffer = Channel.CreateBounded<ReceivedMessage>(
-                    new BoundedChannelOptions(conSettings.MessageBufferSize)
+                    new BoundedChannelOptions(ConsumerSettings.MessageBufferSize)
                     {
-                        FullMode = conSettings.BehaviorWhenFull
+                        FullMode = ConsumerSettings.BehaviorWhenFull
                     });
 
                     await MessageBuffer
@@ -601,6 +601,10 @@ namespace CookedRabbit.Core
                                 }
                             }
                         }
+
+                        await Task
+                            .Delay(ConsumerSettings.SleepOnIdleInterval)
+                            .ConfigureAwait(false);
                     }
                     catch { }
                 }
@@ -637,6 +641,10 @@ namespace CookedRabbit.Core
                                     .ConfigureAwait(false);
                             }
                         }
+
+                        await Task
+                            .Delay(ConsumerSettings.SleepOnIdleInterval)
+                            .ConfigureAwait(false);
                     }
                     catch { }
                 }
@@ -693,6 +701,10 @@ namespace CookedRabbit.Core
                                 { workLock.Release(); }
                             }
                         }
+
+                        await Task
+                            .Delay(ConsumerSettings.SleepOnIdleInterval)
+                            .ConfigureAwait(false);
                     }
                     catch { }
                 }

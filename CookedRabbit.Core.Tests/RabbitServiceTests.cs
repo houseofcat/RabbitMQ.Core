@@ -34,5 +34,24 @@ namespace CookedRabbit.Core.Tests
 
             Assert.NotNull(consumer);
         }
+
+        [Fact]
+        public async Task ProductionBug_CantFindConsumer_WhenStartingMessageConsumers()
+        {
+            var rabbitService = new RabbitService("TestConfig.json");
+            await rabbitService
+                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .ConfigureAwait(false);
+
+            await rabbitService
+                .Topologer
+                .CreateTopologyFromFileAsync("TestTopologyConfig.json")
+                .ConfigureAwait(false);
+
+            var consumer = rabbitService.GetMessageConsumer("TestMessageConsumer");
+            await consumer
+                .StartConsumerAsync(false, true)
+                .ConfigureAwait(false);
+        }
     }
 }

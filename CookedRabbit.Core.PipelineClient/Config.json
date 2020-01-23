@@ -34,14 +34,17 @@
   },
   "LetterConsumerSettings": {
     "ConsumerFromConfig": {
+      "Enabled": true,
       "ConsumerName": "ConsumerFromConfig",
       "QueueName": "TestRabbitServiceQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "LetterQueueTwo",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
       "BehaviorWhenFull": 0,
-      "Enabled": true
+      "SleepOnIdleInterval": 1000
     }
   }
 }

@@ -19,5 +19,6 @@ namespace CookedRabbit.Core
 
         public int MessageBufferSize { get; set; } = 100;
         public BoundedChannelFullMode BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
+        public int SleepOnIdleInterval { get; set; } = 1000;
     }
 }

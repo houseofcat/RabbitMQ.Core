@@ -38,7 +38,8 @@
       "QosPrefetchCount": 5,
       "RabbitMessageBufferSize": 100,
       "BehaviorWhenFull": 0,
-      "Enabled": true
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
     },
     "TestAutoPublisherConsumerName": {
       "ConsumerName": "TestAutoPublisherConsumerName",
@@ -48,7 +49,8 @@
       "QosPrefetchCount": 5,
       "RabbitMessageBufferSize": 100,
       "BehaviorWhenFull": 0,
-      "Enabled": true
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
     }
   },
   "MessageConsumerSettings": {
@@ -60,7 +62,8 @@
       "QosPrefetchCount": 10,
       "RabbitMessageBufferSize": 1000,
       "BehaviorWhenFull": 0,
-      "Enabled": true
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
     }
   }
 }

@@ -7,7 +7,7 @@ using static CookedRabbit.Core.Utils.RandomData;
 
 namespace CookedRabbit.Core.Tests
 {
-    public class AutoPublisherConsumeTests
+    public class AutoPublisherConsumerTests
     {
         private readonly ITestOutputHelper output;
         private readonly Config config;
@@ -15,7 +15,7 @@ namespace CookedRabbit.Core.Tests
         private readonly AutoPublisher autoPublisher;
         private readonly MessageConsumer consumer;
 
-        public AutoPublisherConsumeTests(ITestOutputHelper output)
+        public AutoPublisherConsumerTests(ITestOutputHelper output)
         {
             this.output = output;
             config = ConfigReader.ConfigFileRead("TestConfig.json");

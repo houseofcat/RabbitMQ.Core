@@ -40,7 +40,8 @@
       "Exclusive": false,
       "QosPrefetchCount": 5,
       "MessageBufferSize": 100,
-      "BehaviorWhenFull": 0
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 1000
     }
   },
   "MessageConsumerSettings": {
@@ -54,7 +55,8 @@
       "Exclusive": false,
       "QosPrefetchCount": 5,
       "MessageBufferSize": 100,
-      "BehaviorWhenFull": 0
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 1000
     }
   }
 }
