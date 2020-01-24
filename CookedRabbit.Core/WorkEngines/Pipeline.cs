@@ -7,10 +7,10 @@ using System.Threading.Tasks.Dataflow;
 
 namespace CookedRabbit.Core.WorkEngines
 {
-    // Great lessons/template found here.
+    // Great lesson/template found here.
     // https://michaelscodingspot.com/pipeline-implementations-csharp-3/
 
-    public class Pipeline<TIn, TOut>
+    public class Pipeline<TIn, TOut> : IPipeline<TIn, TOut>
     {
         private readonly List<(IDataflowBlock Block, bool IsAsync)> pipelineSteps = new List<(IDataflowBlock Block, bool IsAsync)>();
         public bool Ready { get; private set; }
@@ -18,29 +18,36 @@ namespace CookedRabbit.Core.WorkEngines
         private ExecutionDataflowBlockOptions ExecuteStepOptions { get; }
         private DataflowLinkOptions LinkStepOptions { get; }
         public int MaxDegreeOfParallelism { get; }
+        public int? BufferSize { get; }
 
-        public Pipeline(int maxDegreeOfParallelism)
+        public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
         {
             MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            BufferSize = bufferSize;
             LinkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
             ExecuteStepOptions = new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism,
             };
+
+            ExecuteStepOptions.BoundedCapacity = bufferSize ?? ExecuteStepOptions.BoundedCapacity;
         }
 
-        public void AddStep<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut> stepFunc)
+        public void AddStep<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut> stepFunc, int? localMaxDoP = null, int? bufferSizeOverride = null)
         {
             if (pipelineSteps.Count == 0)
             {
-                pipelineSteps.Add((new TransformBlock<TLocalIn, TLocalOut>(stepFunc, ExecuteStepOptions), IsAsync: false));
+                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+                pipelineSteps.Add((new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options), IsAsync: false));
             }
             else
             {
+                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
                 var (Block, IsAsync) = pipelineSteps.Last();
+
                 if (!IsAsync)
                 {
-                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, ExecuteStepOptions);
+                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options);
 
                     if (Block is ISourceBlock<TLocalIn> targetBlock)
                     {
@@ -53,7 +60,7 @@ namespace CookedRabbit.Core.WorkEngines
                     var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
                         async (input) =>
                         stepFunc(await input.ConfigureAwait(false)),
-                        ExecuteStepOptions);
+                        options);
 
                     if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
@@ -64,26 +71,29 @@ namespace CookedRabbit.Core.WorkEngines
             }
         }
 
-        public void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc)
+        public void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc, int? localMaxDoP = null, int? bufferSizeOverride = null)
         {
             if (pipelineSteps.Count == 0)
             {
+                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
                 var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
                     async (input) =>
                     await stepFunc(input).ConfigureAwait(false),
-                    ExecuteStepOptions);
+                    options);
 
                 pipelineSteps.Add((step, IsAsync: true));
             }
             else
             {
+                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
                 var (Block, IsAsync) = pipelineSteps.Last();
+
                 if (IsAsync)
                 {
                     var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
                         async (input) =>
                         await stepFunc(await input.ConfigureAwait(false)).ConfigureAwait(false),
-                        ExecuteStepOptions);
+                        options);
 
                     if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
@@ -96,7 +106,7 @@ namespace CookedRabbit.Core.WorkEngines
                     var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
                         async (input) =>
                         await stepFunc(input).ConfigureAwait(false),
-                        ExecuteStepOptions);
+                        options);
 
                     if (Block is ISourceBlock<TLocalIn> targetBlock)
                     {
@@ -222,6 +232,51 @@ namespace CookedRabbit.Core.WorkEngines
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Let's you identify if any of your step Tasks are in a faulted state.
+        /// </summary>
+        public bool PipelineHasFault()
+        {
+            foreach (var (Block, _) in pipelineSteps)
+            {
+                if (Block.Completion.IsFaulted)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Let's you get any InnerExceptions from any faulted tasks.
+        /// </summary>
+        public IReadOnlyCollection<Exception> GetPipelineFaults()
+        {
+            foreach (var (Block, _) in pipelineSteps)
+            {
+                if (Block.Completion.IsFaulted)
+                {
+                    return Block.Completion.Exception.InnerExceptions;
+                }
+            }
+
+            return null;
+        }
+
+        private ExecutionDataflowBlockOptions GetExecuteStepOptions(int? maxDoPOverride, int? bufferSizeOverride)
+        {
+            var options = ExecuteStepOptions;
+            if (maxDoPOverride != null || bufferSizeOverride != null)
+            {
+                options = new ExecutionDataflowBlockOptions();
+
+                options.MaxDegreeOfParallelism = maxDoPOverride ?? options.MaxDegreeOfParallelism;
+                options.BoundedCapacity = bufferSizeOverride ?? options.BoundedCapacity;
+            }
+            return options;
         }
     }
 }
