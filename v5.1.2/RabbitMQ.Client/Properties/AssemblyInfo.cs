@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-[assembly: AssemblyTitle("RabbitMQ Client Library for .NET")]
+[assembly: AssemblyTitle("RabbitMQ Client Library for NetCore")]
 [assembly: AssemblyDescription("View https://github.com/houseofcat/RabbitMQ.Core for more details.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("HouseofCat.io")]
@@ -9,4 +9,4 @@
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-[assembly: AssemblyVersion("1.0.3")]
+[assembly: AssemblyVersion("1.0.5")]
