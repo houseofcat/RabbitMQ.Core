@@ -118,7 +118,7 @@ namespace CookedRabbit.Core
         }
 
         // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
-        public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer;
+        public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer.Reader;
 
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
         {
@@ -182,12 +182,6 @@ namespace CookedRabbit.Core
                         .ConfigureAwait(false);
                 }
             }
-            //while (await channelReader.WaitToReadAsync().ConfigureAwait(false))
-            //{
-            //    await Publisher
-            //        .PublishAsyncEnumerableAsync(channelReader.ReadAllAsync(), true)
-            //        .ConfigureAwait(false);
-            //}
         }
 
         public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)

@@ -76,6 +76,8 @@ namespace CookedRabbit.Core.Tests
 
         private async Task<bool> ProcessReceiptsAsync(AutoPublisher apub, ulong count)
         {
+            await Task.Yield();
+
             var buffer = apub.GetReceiptBufferReader();
             var receiptCount = 0ul;
             var error = false;
@@ -83,15 +85,12 @@ namespace CookedRabbit.Core.Tests
             var sw = Stopwatch.StartNew();
             while (receiptCount < count)
             {
-                try
+                if (buffer.TryRead(out var receipt))
                 {
-                    var receipt = await buffer.ReadAsync().ConfigureAwait(false);
+                    receiptCount++;
                     if (receipt.IsError)
-                    { error = true; break; }
+                    { error = true;  break; }
                 }
-                catch { error = true; break; }
-
-                receiptCount++;
             }
             sw.Stop();
 

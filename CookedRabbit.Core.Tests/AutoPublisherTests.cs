@@ -18,6 +18,8 @@ namespace CookedRabbit.Core.Tests
             this.output = output;
             config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
+            config.PublisherSettings = new PublisherOptions();
+            config.PublisherSettings.CreatePublishReceipts = true;
 
             topologer = new Topologer(config);
             topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
@@ -46,7 +48,7 @@ namespace CookedRabbit.Core.Tests
             var apub = new AutoPublisher(topologer.ChannelPool);
 
             var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
-            await apub.QueueLetterAsync(letter).ConfigureAwait(false);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await apub.QueueLetterAsync(letter));
         }
 
         [Fact]
@@ -149,12 +151,12 @@ namespace CookedRabbit.Core.Tests
             sw.Stop();
 
             output.WriteLine($"Finished queueing all letters in {sw.ElapsedMilliseconds} ms.");
-
-            await apub.StopAsync().ConfigureAwait(false);
         }
 
         private async Task<bool> ProcessReceiptsAsync(AutoPublisher apub, ulong count)
         {
+            await Task.Yield();
+
             var buffer = apub.GetReceiptBufferReader();
             var receiptCount = 0ul;
             var error = false;
@@ -162,15 +164,16 @@ namespace CookedRabbit.Core.Tests
             var sw = Stopwatch.StartNew();
             while (receiptCount < count)
             {
-                var receipt = await buffer.ReadAsync().ConfigureAwait(false);
-                if (receipt.IsError)
+                if (buffer.TryRead(out var receipt))
                 {
-                    error = true;
+                    receiptCount++;
+                    if (receipt.IsError)
+                    { error = true; break; }
                 }
-
-                receiptCount++;
             }
             sw.Stop();
+
+            await apub.StopAsync().ConfigureAwait(false);
 
             output.WriteLine($"Finished getting receipts on all published letters in {sw.ElapsedMilliseconds} ms.");
 
