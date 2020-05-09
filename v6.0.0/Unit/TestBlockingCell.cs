@@ -45,7 +45,7 @@ using System.Threading;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestBlockingCell : TimingFixture
+    public class TestBlockingCell : TimingFixture
     {
         public class DelayedSetter<T>
         {

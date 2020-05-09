@@ -1,3 +1,4 @@
+using RabbitMQ.Client.Apigen.Attributes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -590,7 +591,7 @@ $@"namespace {ApiNamespaceBase}
             EmitLine($"    public override ushort ProtocolClassId => {c.Index};");
             EmitLine($"    public override string ProtocolClassName => \"{c.Name}\";");
             EmitLine("");
-            EmitLine("    internal override void ReadPropertiesFrom(ref Client.Impl.ContentHeaderPropertyReader reader)");
+            EmitLine("    public override void ReadPropertiesFrom(ref Client.Impl.ContentHeaderPropertyReader reader)");
             EmitLine("    {");
             foreach (AmqpField f in c.m_Fields)
             {
@@ -613,7 +614,7 @@ $@"namespace {ApiNamespaceBase}
             }
             EmitLine("    }");
             EmitLine("");
-            EmitLine("    internal override void WritePropertiesTo(ref Client.Impl.ContentHeaderPropertyWriter writer)");
+            EmitLine("    public override void WritePropertiesTo(ref Client.Impl.ContentHeaderPropertyWriter writer)");
             EmitLine("    {");
             foreach (AmqpField f in c.m_Fields)
             {
@@ -882,7 +883,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitMethodArgumentReader()
         {
-            EmitLine("    internal override Client.Impl.MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> memory)");
+            EmitLine("    public override Client.Impl.MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> memory)");
             EmitLine("    {");
             EmitLine("      ushort classId = Util.NetworkOrderDeserializer.ReadUInt16(memory);");
             EmitLine("      ushort methodId = Util.NetworkOrderDeserializer.ReadUInt16(memory.Slice(2));");
@@ -916,7 +917,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitContentHeaderReader()
         {
-            EmitLine("    internal override Client.Impl.ContentHeaderBase DecodeContentHeaderFrom(ushort classId)");
+            EmitLine("    public override Client.Impl.ContentHeaderBase DecodeContentHeaderFrom(ushort classId)");
             EmitLine("    {");
             EmitLine("      switch (classId)");
             EmitLine("      {");
@@ -979,7 +980,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitModelImplementation()
         {
-            EmitLine("  internal class Model: Client.Impl.ModelBase {");
+            EmitLine("  public class Model: Client.Impl.ModelBase {");
             EmitLine("    public Model(Client.Impl.ISession session): base(session) {}");
             EmitLine("    public Model(Client.Impl.ISession session, ConsumerWorkService workService): base(session, workService) {}");
             IList<MethodInfo> asynchronousHandlers = new List<MethodInfo>();

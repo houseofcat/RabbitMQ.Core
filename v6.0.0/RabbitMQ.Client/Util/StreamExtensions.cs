@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace RabbitMQ.Util
 {
-    internal static class StreamExtensions
+    public static class StreamExtensions
     {
-        internal static int Read(this Stream stream, Memory<byte> memory)
+        public static int Read(this Stream stream, Memory<byte> memory)
         {
             if (MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> segment))
             {

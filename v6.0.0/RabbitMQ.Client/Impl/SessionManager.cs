@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class SessionManager
+    public class SessionManager
     {
         public readonly ushort ChannelMax;
         private readonly IntAllocator _ints;

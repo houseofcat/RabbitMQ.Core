@@ -3,7 +3,7 @@ using System;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class RecoveryAwareModel : Model, IFullModel, IRecoverable
+    public class RecoveryAwareModel : Model, IFullModel, IRecoverable
     {
         public RecoveryAwareModel(ISession session) : base(session)
         {

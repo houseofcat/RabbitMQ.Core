@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Util
 {
-    internal class SynchronizedList<T> : IList<T>
+    public class SynchronizedList<T> : IList<T>
     {
         private readonly IList<T> _list;
 
-        internal SynchronizedList()
+        public SynchronizedList()
             : this(new List<T>())
         {
         }
 
-        internal SynchronizedList(IList<T> list)
+        public SynchronizedList(IList<T> list)
         {
             _list = list;
             SyncRoot = new object();

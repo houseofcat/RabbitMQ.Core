@@ -3,10 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace RabbitMQ.Util
 {
-    internal static class NetworkOrderSerializer
+    public static class NetworkOrderSerializer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteDouble(Memory<byte> memory, double val)
+        public static void WriteDouble(Memory<byte> memory, double val)
         {
             if (memory.Length < 8)
             {
@@ -18,7 +18,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteInt16(Memory<byte> memory, short val)
+        public static void WriteInt16(Memory<byte> memory, short val)
         {
             if (memory.Length < 2)
             {
@@ -29,7 +29,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteInt32(Memory<byte> memory, int val)
+        public static void WriteInt32(Memory<byte> memory, int val)
         {
             if (memory.Length < 4)
             {
@@ -40,7 +40,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteInt64(Memory<byte> memory, long val)
+        public static void WriteInt64(Memory<byte> memory, long val)
         {
             if (memory.Length < 8)
             {
@@ -51,7 +51,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteSingle(Memory<byte> memory, float val)
+        public static void WriteSingle(Memory<byte> memory, float val)
         {
             if (memory.Length < 4)
             {
@@ -63,7 +63,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteUInt16(Memory<byte> memory, ushort val)
+        public static void WriteUInt16(Memory<byte> memory, ushort val)
         {
             if (memory.Length < 2)
             {
@@ -74,7 +74,7 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteUInt32(Memory<byte> memory, uint val)
+        public static void WriteUInt32(Memory<byte> memory, uint val)
         {
             if (memory.Length < 4)
             {
@@ -86,7 +86,7 @@ namespace RabbitMQ.Util
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteUInt64(Memory<byte> memory, ulong val)
+        public static void WriteUInt64(Memory<byte> memory, ulong val)
         {
             if (memory.Length < 8)
             {

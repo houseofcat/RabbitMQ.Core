@@ -44,7 +44,7 @@ using System;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestNetworkByteOrderSerialization
+    public class TestNetworkByteOrderSerialization
     {
         public void Check(byte[] actual, byte[] expected)
         {

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class ModelBase : IFullModel, IRecoverable
+    public abstract class ModelBase : IFullModel, IRecoverable
     {
         public readonly IDictionary<string, IBasicConsumer> m_consumers = new Dictionary<string, IBasicConsumer>();
 
@@ -1048,7 +1048,7 @@ namespace RabbitMQ.Client.Impl
             bool multiple,
             bool requeue);
 
-        internal void AllocatatePublishSeqNos(int count)
+        public void AllocatatePublishSeqNos(int count)
         {
             lock (_confirmLock)
             {
@@ -1370,7 +1370,7 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        internal void SendCommands(IList<Command> commands)
+        public void SendCommands(IList<Command> commands)
         {
             _flowControlBlock.WaitOne();
             AllocatatePublishSeqNos(commands.Count);

@@ -43,7 +43,7 @@ using System;
 
 namespace RabbitMQ.Client.Unit
 {
-    internal class TestMessageCount : IntegrationFixture
+    public class TestMessageCount : IntegrationFixture
     {
         [Test]
         public void TestMessageCountMethod()

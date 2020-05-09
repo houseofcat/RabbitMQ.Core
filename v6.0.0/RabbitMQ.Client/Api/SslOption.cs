@@ -129,7 +129,7 @@ namespace RabbitMQ.Client
         /// Only used in environments where System.Security.Authentication.SslProtocols.None
         /// is unavailable or effectively disabled, as reported by System.Net.ServicePointManager.
         /// </summary>
-        internal SslProtocols UseFallbackTlsVersions()
+        public SslProtocols UseFallbackTlsVersions()
         {
             this.Version = SslProtocols.Tls12;
             return Version;

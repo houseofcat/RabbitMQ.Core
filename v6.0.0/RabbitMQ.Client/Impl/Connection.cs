@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    internal sealed class Connection : IConnection
+    public sealed class Connection : IConnection
     {
         private readonly object _eventLock = new object();
 
@@ -234,7 +234,7 @@ namespace RabbitMQ.Client.Framing.Impl
         ///and do not report any errors if it was already closed.
         ///</para>
         ///<para>
-        ///Timeout determines how much time internal close operations should be given
+        ///Timeout determines how much time public close operations should be given
         ///to complete. System.Threading.Timeout.InfiniteTimeSpan value means infinity.
         ///</para>
         ///</remarks>

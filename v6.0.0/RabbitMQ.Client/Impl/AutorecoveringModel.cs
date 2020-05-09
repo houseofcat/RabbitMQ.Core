@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class AutorecoveringModel : IFullModel, IRecoverable
+    public sealed class AutorecoveringModel : IFullModel, IRecoverable
     {
         private readonly object _eventLock = new object();
         private AutorecoveringConnection _connection;

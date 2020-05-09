@@ -49,7 +49,7 @@ using System.Threading;
 
 namespace RabbitMQ.Client.Unit
 {
-    internal class DisposableConnection : IDisposable
+    public class DisposableConnection : IDisposable
     {
         public DisposableConnection(AutorecoveringConnection c)
         {

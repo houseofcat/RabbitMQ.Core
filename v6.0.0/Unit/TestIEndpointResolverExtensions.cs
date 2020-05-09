@@ -58,7 +58,7 @@ namespace RabbitMQ.Client.Unit
         }
     }
 
-    internal class TestEndpointException : Exception
+    public class TestEndpointException : Exception
     {
         public TestEndpointException(string message) : base(message)
         {

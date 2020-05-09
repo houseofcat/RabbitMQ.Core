@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class BasicDeliver : Work
+    public sealed class BasicDeliver : Work
     {
         private readonly string _consumerTag;
         private readonly ulong _deliveryTag;

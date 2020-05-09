@@ -27,7 +27,7 @@ namespace RabbitMQ.Client.Impl
     /// of this class must be used.
     /// </para>
     /// </remarks>
-    internal class BinaryTableValue
+    public class BinaryTableValue
     {
         /// <summary>
         /// Creates a new instance of the <see cref="BinaryTableValue"/> with null for its Bytes property.

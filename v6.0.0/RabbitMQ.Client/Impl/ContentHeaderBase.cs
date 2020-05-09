@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class ContentHeaderBase : IContentHeader
+    public abstract class ContentHeaderBase : IContentHeader
     {
         ///<summary>
         /// Retrieve the AMQP class ID of this content header.
@@ -26,7 +26,7 @@ namespace RabbitMQ.Client.Impl
         ///<summary>
         /// Fill this instance from the given byte buffer stream.
         ///</summary>
-        internal ulong ReadFrom(ReadOnlyMemory<byte> memory)
+        public ulong ReadFrom(ReadOnlyMemory<byte> memory)
         {
             // Skipping the first two bytes since they arent used (weight - not currently used)
             ulong bodySize = NetworkOrderDeserializer.ReadUInt64(memory.Slice(2));
@@ -35,12 +35,12 @@ namespace RabbitMQ.Client.Impl
             return bodySize;
         }
 
-        internal abstract void ReadPropertiesFrom(ref ContentHeaderPropertyReader reader);
-        internal abstract void WritePropertiesTo(ref ContentHeaderPropertyWriter writer);
+        public abstract void ReadPropertiesFrom(ref ContentHeaderPropertyReader reader);
+        public abstract void WritePropertiesTo(ref ContentHeaderPropertyWriter writer);
 
         private const ushort ZERO = 0;
 
-        internal int WriteTo(Memory<byte> memory, ulong bodySize)
+        public int WriteTo(Memory<byte> memory, ulong bodySize)
         {
             NetworkOrderSerializer.WriteUInt16(memory, ZERO); // Weight - not used
             NetworkOrderSerializer.WriteUInt64(memory.Slice(2), bodySize);

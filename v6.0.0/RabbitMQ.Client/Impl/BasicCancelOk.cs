@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class BasicCancelOk : Work
+    public sealed class BasicCancelOk : Work
     {
         private readonly string _consumerTag;
 

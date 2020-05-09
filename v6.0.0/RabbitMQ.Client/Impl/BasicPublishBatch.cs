@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class BasicPublishBatch : IBasicPublishBatch
+    public class BasicPublishBatch : IBasicPublishBatch
     {
         private readonly List<Command> _commands = new List<Command>();
         private readonly ModelBase _model;
-        internal BasicPublishBatch(ModelBase model)
+        public BasicPublishBatch(ModelBase model)
         {
             _model = model;
         }

@@ -2,7 +2,7 @@
 
 namespace RabbitMQ.Util
 {
-    internal class SetQueue<T>
+    public class SetQueue<T>
     {
         private readonly HashSet<T> _members = new HashSet<T>();
         private readonly LinkedList<T> _queue = new LinkedList<T>();

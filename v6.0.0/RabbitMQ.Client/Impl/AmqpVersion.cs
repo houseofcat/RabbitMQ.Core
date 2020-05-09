@@ -14,7 +14,7 @@ namespace RabbitMQ.Client.Framing.Impl
     /// special-cases 8-0, rewriting it at construction time to be 0-8 instead.
     /// </para>
     /// </remarks>
-    internal class AmqpVersion
+    public class AmqpVersion
     {
         /// <summary>
         /// Construct an <see cref="AmqpVersion"/> from major and minor version numbers.

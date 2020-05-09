@@ -3,7 +3,7 @@ using System;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class ShutdownContinuation
+    public class ShutdownContinuation
     {
         public readonly BlockingCell<ShutdownEventArgs> m_cell = new BlockingCell<ShutdownEventArgs>();
 

@@ -9,7 +9,7 @@ using System;
 namespace RabbitMQ.Client.Impl
 {
     ///<summary>Small ISession implementation used only for channel 0.</summary>
-    internal class MainSession : Session
+    public class MainSession : Session
     {
         private readonly object _closingLock = new object();
 

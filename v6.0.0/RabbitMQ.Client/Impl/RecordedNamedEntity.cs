@@ -1,6 +1,6 @@
 namespace RabbitMQ.Client.Impl
 {
-    internal class RecordedNamedEntity : RecordedEntity
+    public class RecordedNamedEntity : RecordedEntity
     {
         public RecordedNamedEntity(AutorecoveringModel model, string name) : base(model)
         {

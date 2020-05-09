@@ -46,7 +46,7 @@ using System.Text;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestMethodArgumentCodec
+    public class TestMethodArgumentCodec
     {
         public static MethodArgumentWriter Writer()
         {

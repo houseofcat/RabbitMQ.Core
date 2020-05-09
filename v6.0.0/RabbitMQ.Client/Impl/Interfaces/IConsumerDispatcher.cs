@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal interface IConsumerDispatcher
+    public interface IConsumerDispatcher
     {
         bool IsShutdown { get; }
 

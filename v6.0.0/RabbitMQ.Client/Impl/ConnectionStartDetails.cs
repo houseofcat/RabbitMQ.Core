@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class ConnectionStartDetails
+    public class ConnectionStartDetails
     {
         public byte[] m_locales;
         public byte[] m_mechanisms;

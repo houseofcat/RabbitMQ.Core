@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class AsyncConsumerDispatcher : IConsumerDispatcher
+    public sealed class AsyncConsumerDispatcher : IConsumerDispatcher
     {
         private readonly ModelBase _model;
         private readonly AsyncConsumerWorkService _workService;

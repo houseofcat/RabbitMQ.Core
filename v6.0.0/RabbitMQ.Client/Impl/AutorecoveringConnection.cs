@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    internal sealed class AutorecoveringConnection : IAutorecoveringConnection
+    public sealed class AutorecoveringConnection : IAutorecoveringConnection
     {
         private readonly object _eventLock = new object();
 
@@ -565,7 +565,7 @@ namespace RabbitMQ.Client.Framing.Impl
             _delegate.HandleConnectionUnblocked();
         }
 
-        internal int RecordedExchangesCount
+        public int RecordedExchangesCount
         {
             get
             {
@@ -576,7 +576,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        internal int RecordedQueuesCount
+        public int RecordedQueuesCount
         {
             get
             {

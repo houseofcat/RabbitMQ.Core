@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class RecordedQueue : RecordedNamedEntity
+    public class RecordedQueue : RecordedNamedEntity
     {
         private IDictionary<string, object> _arguments;
         private bool _durable;

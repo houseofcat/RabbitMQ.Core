@@ -2,7 +2,7 @@ using System.Text;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class MethodBase : IMethod
+    public abstract class MethodBase : IMethod
     {
         public abstract bool HasContent { get; }
 

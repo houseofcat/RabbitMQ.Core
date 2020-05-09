@@ -46,7 +46,7 @@ using System.Text;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestFieldTableFormattingGeneric : WireFormattingFixture
+    public class TestFieldTableFormattingGeneric : WireFormattingFixture
     {
         [Test]
         public void TestStandardTypes()

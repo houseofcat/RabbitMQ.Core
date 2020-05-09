@@ -4,7 +4,7 @@ using System;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class SimpleBlockingRpcContinuation : IRpcContinuation
+    public class SimpleBlockingRpcContinuation : IRpcContinuation
     {
         public readonly BlockingCell<Either<Command, ShutdownEventArgs>> m_cell = new BlockingCell<Either<Command, ShutdownEventArgs>>();
 

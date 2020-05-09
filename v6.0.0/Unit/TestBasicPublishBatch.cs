@@ -43,7 +43,7 @@ using System;
 
 namespace RabbitMQ.Client.Unit
 {
-    internal class TestBasicPublishBatch : IntegrationFixture
+    public class TestBasicPublishBatch : IntegrationFixture
     {
         [Test]
         public void TestBasicPublishBatchSend()

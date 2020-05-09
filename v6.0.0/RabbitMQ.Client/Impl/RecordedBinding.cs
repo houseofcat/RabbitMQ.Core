@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class RecordedBinding : RecordedEntity
+    public abstract class RecordedBinding : RecordedEntity
     {
         protected RecordedBinding(AutorecoveringModel model) : base(model)
         {
@@ -82,7 +82,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal sealed class RecordedQueueBinding : RecordedBinding
+    public sealed class RecordedQueueBinding : RecordedBinding
     {
         public RecordedQueueBinding(AutorecoveringModel model) : base(model)
         {
@@ -94,7 +94,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal sealed class RecordedExchangeBinding : RecordedBinding
+    public sealed class RecordedExchangeBinding : RecordedBinding
     {
         public RecordedExchangeBinding(AutorecoveringModel model) : base(model)
         {

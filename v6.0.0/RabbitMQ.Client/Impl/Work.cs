@@ -2,7 +2,7 @@
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class Work
+    public abstract class Work
     {
         private readonly IAsyncBasicConsumer _asyncConsumer;
 

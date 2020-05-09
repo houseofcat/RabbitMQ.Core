@@ -44,7 +44,7 @@ using System;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestConnectionFactoryContinuationTimeout : IntegrationFixture
+    public class TestConnectionFactoryContinuationTimeout : IntegrationFixture
     {
         [Test]
         public void TestConnectionFactoryContinuationTimeoutOnRecoveringConnection()

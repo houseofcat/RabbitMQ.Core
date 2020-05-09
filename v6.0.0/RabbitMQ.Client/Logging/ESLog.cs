@@ -1,6 +1,6 @@
 namespace RabbitMQ.Client.Logging
 {
-    internal static class ESLog
+    public static class ESLog
     {
         public static void Info(string message)
         {

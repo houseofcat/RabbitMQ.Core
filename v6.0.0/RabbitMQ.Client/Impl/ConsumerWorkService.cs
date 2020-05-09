@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class ConsumerWorkService
+    public class ConsumerWorkService
     {
         private readonly ConcurrentDictionary<IModel, WorkPool> _workPools = new ConcurrentDictionary<IModel, WorkPool>();
 
@@ -34,7 +34,7 @@ namespace RabbitMQ.Client.Impl
             StopWorkAsync(model).GetAwaiter().GetResult();
         }
 
-        internal Task StopWorkAsync(IModel model)
+        public Task StopWorkAsync(IModel model)
         {
             if (_workPools.TryRemove(model, out WorkPool workPool))
             {

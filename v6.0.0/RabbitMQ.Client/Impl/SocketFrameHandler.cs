@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal static class TaskExtensions
+    public static class TaskExtensions
     {
         public static Task CompletedTask = Task.FromResult(0);
 
@@ -29,7 +29,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal class SocketFrameHandler : IFrameHandler
+    public class SocketFrameHandler : IFrameHandler
     {
         // Socket poll timeout in ms. If the socket does not
         // become writeable in this amount of time, we throw

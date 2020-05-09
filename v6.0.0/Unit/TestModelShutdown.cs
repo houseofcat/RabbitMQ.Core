@@ -45,7 +45,7 @@ using System.Threading;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestModelShutdown : IntegrationFixture
+    public class TestModelShutdown : IntegrationFixture
     {
         [Test]
         public void TestConsumerDispatcherShutdown()

@@ -45,7 +45,7 @@ using System.Collections.Generic;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestConnectionFactory
+    public class TestConnectionFactory
     {
         [Test]
         public void TestProperties()

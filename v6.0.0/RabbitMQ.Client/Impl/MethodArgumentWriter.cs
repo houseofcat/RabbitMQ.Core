@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal struct MethodArgumentWriter
+    public struct MethodArgumentWriter
     {
         private byte _bitAccumulator;
         private int _bitMask;

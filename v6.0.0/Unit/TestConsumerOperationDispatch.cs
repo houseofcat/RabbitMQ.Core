@@ -47,7 +47,7 @@ using System.Threading;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestConsumerOperationDispatch : IntegrationFixture
+    public class TestConsumerOperationDispatch : IntegrationFixture
     {
         private readonly string _x = "dotnet.tests.consumer-operation-dispatch.fanout";
         private readonly List<IModel> _channels = new List<IModel>();

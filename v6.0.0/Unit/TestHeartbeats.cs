@@ -46,7 +46,7 @@ using System.Threading;
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    internal class TestHeartbeats : IntegrationFixture
+    public class TestHeartbeats : IntegrationFixture
     {
         private readonly TimeSpan _heartbeatTimeout = TimeSpan.FromSeconds(2);
 

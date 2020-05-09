@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal struct ContentHeaderPropertyReader
+    public struct ContentHeaderPropertyReader
     {
         private ushort m_bitCount;
         private ushort m_flagWord;

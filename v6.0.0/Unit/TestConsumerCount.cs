@@ -44,7 +44,7 @@ using RabbitMQ.Client.Events;
 
 namespace RabbitMQ.Client.Unit
 {
-    internal class TestConsumerCount : IntegrationFixture
+    public class TestConsumerCount : IntegrationFixture
     {
         [Test]
         public void TestConsumerCountMethod()

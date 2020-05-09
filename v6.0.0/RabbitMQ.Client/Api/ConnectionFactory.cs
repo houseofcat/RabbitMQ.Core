@@ -464,7 +464,7 @@ namespace RabbitMQ.Client
             return conn;
         }
 
-        internal IFrameHandler CreateFrameHandler(AmqpTcpEndpoint endpoint)
+        public IFrameHandler CreateFrameHandler(AmqpTcpEndpoint endpoint)
         {
             IFrameHandler fh = Protocols.DefaultProtocol.CreateFrameHandler(endpoint, SocketFactory,
                 RequestedConnectionTimeout, SocketReadTimeout, SocketWriteTimeout);

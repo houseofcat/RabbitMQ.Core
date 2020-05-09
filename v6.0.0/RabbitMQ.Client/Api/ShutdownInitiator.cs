@@ -15,7 +15,7 @@ namespace RabbitMQ.Client
         ///</summary>
         ///<remarks>
         /// Shutdowns with this ShutdownInitiator code may appear if,
-        /// for example, an internal error is detected by the client,
+        /// for example, an public error is detected by the client,
         /// or if the server sends a syntactically invalid
         /// frame. Another potential use is on IConnection AutoClose.
         ///</remarks>

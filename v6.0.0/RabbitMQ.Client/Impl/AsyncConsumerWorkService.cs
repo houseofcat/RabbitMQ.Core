@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class AsyncConsumerWorkService : ConsumerWorkService
+    public sealed class AsyncConsumerWorkService : ConsumerWorkService
     {
         private readonly ConcurrentDictionary<IModel, WorkPool> _workPools = new ConcurrentDictionary<IModel, WorkPool>();
 

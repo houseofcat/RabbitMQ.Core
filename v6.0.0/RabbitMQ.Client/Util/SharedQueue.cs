@@ -7,13 +7,13 @@ using System.Threading;
 namespace RabbitMQ.Util
 {
     ///<summary>A thread-safe shared queue implementation.</summary>
-    internal class SharedQueue : SharedQueue<object>
+    public class SharedQueue : SharedQueue<object>
     {
     }
 
 
     ///<summary>A thread-safe shared queue implementation.</summary>
-    internal class SharedQueue<T> : IEnumerable<T>
+    public class SharedQueue<T> : IEnumerable<T>
     {
         ///<summary>Flag holding our current status.</summary>
         protected bool m_isOpen = true;
@@ -209,7 +209,7 @@ namespace RabbitMQ.Util
 
     ///<summary>Implementation of the IEnumerator interface, for
     ///permitting SharedQueue to be used in foreach loops.</summary>
-    internal struct SharedQueueEnumerator<T> : IEnumerator<T>
+    public struct SharedQueueEnumerator<T> : IEnumerator<T>
     {
         private readonly SharedQueue<T> _queue;
         private T _current;

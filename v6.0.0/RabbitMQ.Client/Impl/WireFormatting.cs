@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal static class WireFormatting
+    public static class WireFormatting
     {
         public static decimal AmqpToDecimal(byte scale, uint unsignedMantissa)
         {

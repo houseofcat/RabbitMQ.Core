@@ -3,13 +3,13 @@ using System.Runtime.CompilerServices;
 
 namespace RabbitMQ.Util
 {
-    internal static class NetworkOrderDeserializer
+    public static class NetworkOrderDeserializer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static double ReadDouble(ReadOnlyMemory<byte> memory) => ReadDouble(memory.Span);
+        public static double ReadDouble(ReadOnlyMemory<byte> memory) => ReadDouble(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static double ReadDouble(ReadOnlySpan<byte> span)
+        public static double ReadDouble(ReadOnlySpan<byte> span)
         {
             if (span.Length < 8)
             {
@@ -21,10 +21,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static short ReadInt16(ReadOnlyMemory<byte> memory) => ReadInt16(memory.Span);
+        public static short ReadInt16(ReadOnlyMemory<byte> memory) => ReadInt16(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static short ReadInt16(ReadOnlySpan<byte> span)
+        public static short ReadInt16(ReadOnlySpan<byte> span)
         {
             if (span.Length < 2)
             {
@@ -35,10 +35,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int ReadInt32(ReadOnlyMemory<byte> memory) => ReadInt32(memory.Span);
+        public static int ReadInt32(ReadOnlyMemory<byte> memory) => ReadInt32(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int ReadInt32(ReadOnlySpan<byte> span)
+        public static int ReadInt32(ReadOnlySpan<byte> span)
         {
             if (span.Length < 4)
             {
@@ -49,10 +49,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static long ReadInt64(ReadOnlyMemory<byte> memory) => ReadInt64(memory.Span);
+        public static long ReadInt64(ReadOnlyMemory<byte> memory) => ReadInt64(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static long ReadInt64(ReadOnlySpan<byte> span)
+        public static long ReadInt64(ReadOnlySpan<byte> span)
         {
             if (span.Length < 8)
             {
@@ -63,10 +63,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static float ReadSingle(ReadOnlyMemory<byte> memory) => ReadSingle(memory.Span);
+        public static float ReadSingle(ReadOnlyMemory<byte> memory) => ReadSingle(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static float ReadSingle(ReadOnlySpan<byte> span)
+        public static float ReadSingle(ReadOnlySpan<byte> span)
         {
             if (span.Length < 4)
             {
@@ -78,10 +78,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ushort ReadUInt16(ReadOnlyMemory<byte> memory) => ReadUInt16(memory.Span);
+        public static ushort ReadUInt16(ReadOnlyMemory<byte> memory) => ReadUInt16(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ushort ReadUInt16(ReadOnlySpan<byte> span)
+        public static ushort ReadUInt16(ReadOnlySpan<byte> span)
         {
             if (span.Length < 2)
             {
@@ -92,10 +92,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ReadUInt32(ReadOnlyMemory<byte> memory) => ReadUInt32(memory.Span);
+        public static uint ReadUInt32(ReadOnlyMemory<byte> memory) => ReadUInt32(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ReadUInt32(ReadOnlySpan<byte> span)
+        public static uint ReadUInt32(ReadOnlySpan<byte> span)
         {
             if (span.Length < 4)
             {
@@ -106,10 +106,10 @@ namespace RabbitMQ.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ulong ReadUInt64(ReadOnlyMemory<byte> memory) => ReadUInt64(memory.Span);
+        public static ulong ReadUInt64(ReadOnlyMemory<byte> memory) => ReadUInt64(memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ulong ReadUInt64(ReadOnlySpan<byte> span)
+        public static ulong ReadUInt64(ReadOnlySpan<byte> span)
         {
             if (span.Length < 8)
             {

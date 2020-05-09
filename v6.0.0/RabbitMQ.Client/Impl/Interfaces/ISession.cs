@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal interface ISession
+    public interface ISession
     {
         /// <summary>
         /// Gets the channel number.

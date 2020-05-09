@@ -13,7 +13,7 @@ namespace RabbitMQ.Util
     /// <typeparam name="T">
     /// Queue element type
     /// </typeparam>
-    internal class AsyncConcurrentQueue<T>
+    public class AsyncConcurrentQueue<T>
     {
         private readonly ConcurrentQueue<T> _internalQueue = new ConcurrentQueue<T>();
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0);
@@ -29,7 +29,7 @@ namespace RabbitMQ.Util
 
             if (!_internalQueue.TryDequeue(out var command))
             {
-                throw new InvalidOperationException("Internal queue is empty despite receiving an enqueueing signal");
+                throw new InvalidOperationException("public queue is empty despite receiving an enqueueing signal");
             }
 
             return command;

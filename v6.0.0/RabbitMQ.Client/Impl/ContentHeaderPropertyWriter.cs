@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal struct ContentHeaderPropertyWriter
+    public struct ContentHeaderPropertyWriter
     {
         private int _bitCount;
         private ushort _flagWord;

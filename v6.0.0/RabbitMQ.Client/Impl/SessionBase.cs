@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal abstract class SessionBase : ISession
+    public abstract class SessionBase : ISession
     {
         private readonly object _shutdownLock = new object();
         private EventHandler<ShutdownEventArgs> _sessionShutdown;
@@ -124,7 +124,7 @@ namespace RabbitMQ.Client.Impl
                 {
                     if (CloseReason == null)
                     {
-                        throw new Exception("Internal Error in Session.Close");
+                        throw new Exception("public Error in Session.Close");
                     }
                 }
             }

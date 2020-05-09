@@ -8,24 +8,24 @@ using System.Net.Sockets;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class HeaderOutboundFrame : OutboundFrame
+    public class HeaderOutboundFrame : OutboundFrame
     {
         private readonly ContentHeaderBase _header;
         private readonly int _bodyLength;
 
-        internal HeaderOutboundFrame(int channel, ContentHeaderBase header, int bodyLength) : base(FrameType.FrameHeader, channel)
+        public HeaderOutboundFrame(int channel, ContentHeaderBase header, int bodyLength) : base(FrameType.FrameHeader, channel)
         {
             _header = header;
             _bodyLength = bodyLength;
         }
 
-        internal override int GetMinimumPayloadBufferSize()
+        public override int GetMinimumPayloadBufferSize()
         {
             // ProtocolClassId (2) + header (X bytes)
             return 2 + _header.GetRequiredBufferSize();
         }
 
-        internal override int WritePayload(Memory<byte> memory)
+        public override int WritePayload(Memory<byte> memory)
         {
             // write protocol class id (2 bytes)
             NetworkOrderSerializer.WriteUInt16(memory, _header.ProtocolClassId);
@@ -35,43 +35,43 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal class BodySegmentOutboundFrame : OutboundFrame
+    public class BodySegmentOutboundFrame : OutboundFrame
     {
         private readonly ReadOnlyMemory<byte> _body;
 
-        internal BodySegmentOutboundFrame(int channel, ReadOnlyMemory<byte> bodySegment) : base(FrameType.FrameBody, channel)
+        public BodySegmentOutboundFrame(int channel, ReadOnlyMemory<byte> bodySegment) : base(FrameType.FrameBody, channel)
         {
             _body = bodySegment;
         }
 
-        internal override int GetMinimumPayloadBufferSize()
+        public override int GetMinimumPayloadBufferSize()
         {
             return _body.Length;
         }
 
-        internal override int WritePayload(Memory<byte> memory)
+        public override int WritePayload(Memory<byte> memory)
         {
             _body.CopyTo(memory);
             return _body.Length;
         }
     }
 
-    internal class MethodOutboundFrame : OutboundFrame
+    public class MethodOutboundFrame : OutboundFrame
     {
         private readonly MethodBase _method;
 
-        internal MethodOutboundFrame(int channel, MethodBase method) : base(FrameType.FrameMethod, channel)
+        public MethodOutboundFrame(int channel, MethodBase method) : base(FrameType.FrameMethod, channel)
         {
             _method = method;
         }
 
-        internal override int GetMinimumPayloadBufferSize()
+        public override int GetMinimumPayloadBufferSize()
         {
             // class id (2 bytes) + method id (2 bytes) + arguments (X bytes)
             return 4 + _method.GetRequiredBufferSize();
         }
 
-        internal override int WritePayload(Memory<byte> memory)
+        public override int WritePayload(Memory<byte> memory)
         {
             NetworkOrderSerializer.WriteUInt16(memory, _method.ProtocolClassId);
             NetworkOrderSerializer.WriteUInt16(memory.Slice(2), _method.ProtocolMethodId);
@@ -82,31 +82,31 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal class EmptyOutboundFrame : OutboundFrame
+    public class EmptyOutboundFrame : OutboundFrame
     {
         public EmptyOutboundFrame() : base(FrameType.FrameHeartbeat, 0)
         {
         }
 
-        internal override int GetMinimumPayloadBufferSize()
+        public override int GetMinimumPayloadBufferSize()
         {
             return 0;
         }
 
-        internal override int WritePayload(Memory<byte> memory)
+        public override int WritePayload(Memory<byte> memory)
         {
             return 0;
         }
     }
 
-    internal abstract class OutboundFrame : Frame
+    public abstract class OutboundFrame : Frame
     {
         public int ByteCount { get; private set; } = 0;
         protected OutboundFrame(FrameType type, int channel) : base(type, channel)
         {
         }
 
-        internal void WriteTo(Memory<byte> memory)
+        public void WriteTo(Memory<byte> memory)
         {
             memory.Span[0] = (byte)Type;
             NetworkOrderSerializer.WriteUInt16(memory.Slice(1), (ushort)Channel);
@@ -116,15 +116,15 @@ namespace RabbitMQ.Client.Impl
             ByteCount = bytesWritten + 8;
         }
 
-        internal abstract int WritePayload(Memory<byte> memory);
-        internal abstract int GetMinimumPayloadBufferSize();
-        internal int GetMinimumBufferSize()
+        public abstract int WritePayload(Memory<byte> memory);
+        public abstract int GetMinimumPayloadBufferSize();
+        public int GetMinimumBufferSize()
         {
             return 8 + GetMinimumPayloadBufferSize();
         }
     }
 
-    internal sealed class InboundFrame : Frame, IDisposable
+    public sealed class InboundFrame : Frame, IDisposable
     {
         private readonly IMemoryOwner<byte> _payload;
         private InboundFrame(FrameType type, int channel, IMemoryOwner<byte> payload, int payloadSize) : base(type, channel, payload.Memory.Slice(0, payloadSize))
@@ -163,7 +163,7 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        internal static InboundFrame ReadFrom(Stream reader)
+        public static InboundFrame ReadFrom(Stream reader)
         {
             int type;
 
@@ -233,7 +233,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal class Frame
+    public class Frame
     {
         public Frame(FrameType type, int channel)
         {
@@ -281,7 +281,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal enum FrameType : int
+    public enum FrameType : int
     {
         FrameMethod = 1,
         FrameHeader = 2,

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal static class ExtensionMethods
+    public static class ExtensionMethods
     {
         /// <summary>
         /// Returns a random item from the list.
@@ -24,7 +24,7 @@ namespace RabbitMQ.Client.Impl
             return list[hashCode % n];
         }
 
-        internal static ArraySegment<byte> GetBufferSegment(this MemoryStream ms)
+        public static ArraySegment<byte> GetBufferSegment(this MemoryStream ms)
         {
             byte[] buffer = ms.GetBuffer();
             return new ArraySegment<byte>(buffer, 0, (int)ms.Position);

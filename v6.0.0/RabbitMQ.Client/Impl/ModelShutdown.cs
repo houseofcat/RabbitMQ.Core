@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal sealed class ModelShutdown : Work
+    public sealed class ModelShutdown : Work
     {
         private readonly ShutdownEventArgs _reason;
 
