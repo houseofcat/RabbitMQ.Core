@@ -38,7 +38,7 @@ namespace CookedRabbit.Core
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-            ConsumerSettings = Config.GetLetterConsumerSettings(consumerName);
+            ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
         }
 
         public MessageConsumer(ChannelPool channelPool, string consumerName)
@@ -49,7 +49,7 @@ namespace CookedRabbit.Core
             Config = channelPool.Config;
             ChannelPool = channelPool;
 
-            ConsumerSettings = Config.GetLetterConsumerSettings(consumerName);
+            ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
         }
 
         public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings)

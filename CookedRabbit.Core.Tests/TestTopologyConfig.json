@@ -58,14 +58,16 @@
   ],
   "ExchangeBindings": [
     {
-      "ExchangeName": "MyTestExchange.Child01",
-      "ParentExchangeName": "MyTestExchangeRoot",
-      "RoutingKey": "ExchangeKey1"
+        "ChildExchange": "MyTestExchange.Child01",
+        "ParentExchange": "MyTestExchangeRoot",
+        "RoutingKey": "ExchangeKey1",
+        "Args":  null
     },
     {
-      "ExchangeName": "MyTestExchange.Child02",
-      "ParentExchangeName": "MyTestExchange.Child01",
-      "RoutingKey": "ExchangeKey2"
+        "ChildExchange": "MyTestExchange.Child02",
+        "ParentExchange": "MyTestExchange.Child01",
+        "RoutingKey": "ExchangeKey2",
+        "Args": null
     }
   ]
 }

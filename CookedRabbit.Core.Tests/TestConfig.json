@@ -33,7 +33,7 @@
     "LetterConsumerSettings": {
         "TestLetterConsumer": {
             "ConsumerName": "TestLetterConsumer",
-            "QueueName": "Queue",
+            "QueueName": "TestConsumerQueue",
             "NoLocal": false,
             "Exclusive": false,
             "QosPrefetchCount": 5,
@@ -57,7 +57,7 @@
     "MessageConsumerSettings": {
         "TestMessageConsumer": {
             "ConsumerName": "TestMessageConsumer",
-            "QueueName": "Queue",
+            "QueueName": "TestConsumerQueue",
             "NoLocal": false,
             "Exclusive": false,
             "QosPrefetchCount": 10,
