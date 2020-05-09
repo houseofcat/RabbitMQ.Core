@@ -72,7 +72,7 @@ namespace RabbitMQ.Client.Impl
 
             async Task Loop()
             {
-                while (_tokenSource.IsCancellationRequested == false)
+                while (!_tokenSource.IsCancellationRequested)
                 {
                     try
                     {

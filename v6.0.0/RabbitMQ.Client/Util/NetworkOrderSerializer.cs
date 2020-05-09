@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RabbitMQ.Util
 {
@@ -50,7 +48,7 @@ namespace RabbitMQ.Util
             }
 
             SerializeInt64(memory.Span, val);
-        }        
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void WriteSingle(Memory<byte> memory, float val)
@@ -86,7 +84,7 @@ namespace RabbitMQ.Util
             SerializeUInt32(memory.Span, val);
         }
 
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void WriteUInt64(Memory<byte> memory, ulong val)
         {

@@ -13,11 +13,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		.gitignore = .gitignore
 		Build.v6.0.0.bat = Build.v6.0.0.bat
 		LICENSE = LICENSE
-		PIVOTAL_LICENSE = PIVOTAL_LICENSE
+		PIVOTAL_VMWARE_LICENSE = PIVOTAL_VMWARE_LICENSE
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client", "v6.0.0\RabbitMQ.Client\RabbitMQ.Client.csproj", "{72E577F3-6023-4E61-A1FD-0B1F035E6B04}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Client", "v6.0.0\RabbitMQ.Client\RabbitMQ.Client.csproj", "{72E577F3-6023-4E61-A1FD-0B1F035E6B04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

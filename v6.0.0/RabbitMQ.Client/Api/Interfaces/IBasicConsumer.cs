@@ -1,11 +1,22 @@
-using System;
-using System.Threading.Tasks;
-
 using RabbitMQ.Client.Events;
+using System;
 
 namespace RabbitMQ.Client
 {
-    public interface IAsyncBasicConsumer
+    /// <summary>Consumer interface. Used to
+    ///receive messages from a queue by subscription.</summary>
+    /// <remarks>
+    /// <para>
+    /// See IModel.BasicConsume, IModel.BasicCancel.
+    /// </para>
+    /// <para>
+    /// Note that the "Handle*" methods run in the connection's
+    /// thread! Consider using <see cref="EventingBasicConsumer"/>, which uses a
+    /// SharedQueue instance to safely pass received messages across
+    /// to user threads.
+    /// </para>
+    /// </remarks>
+    public interface IBasicConsumer
     {
         /// <summary>
         /// Retrieve the <see cref="IModel"/> this consumer is associated with,
@@ -16,7 +27,7 @@ namespace RabbitMQ.Client
         /// <summary>
         /// Signalled when the consumer gets cancelled.
         /// </summary>
-        event AsyncEventHandler<ConsumerEventArgs> ConsumerCancelled;
+        event EventHandler<ConsumerEventArgs> ConsumerCancelled;
 
         /// <summary>
         ///  Called when the consumer is cancelled for reasons other than by a basicCancel:
@@ -24,19 +35,19 @@ namespace RabbitMQ.Client
         ///  See <see cref="HandleBasicCancelOk"/> for notification of consumer cancellation due to basicCancel
         /// </summary>
         /// <param name="consumerTag">Consumer tag this consumer is registered.</param>
-        Task HandleBasicCancel(string consumerTag);
+        void HandleBasicCancel(string consumerTag);
 
         /// <summary>
         /// Called upon successful deregistration of the consumer from the broker.
         /// </summary>
         /// <param name="consumerTag">Consumer tag this consumer is registered.</param>
-        Task HandleBasicCancelOk(string consumerTag);
+        void HandleBasicCancelOk(string consumerTag);
 
         /// <summary>
         /// Called upon successful registration of the consumer with the broker.
         /// </summary>
         /// <param name="consumerTag">Consumer tag this consumer is registered.</param>
-        Task HandleBasicConsumeOk(string consumerTag);
+        void HandleBasicConsumeOk(string consumerTag);
 
         /// <summary>
         /// Called each time a message arrives for this consumer.
@@ -46,7 +57,7 @@ namespace RabbitMQ.Client
         /// Note that in particular, some delivered messages may require acknowledgement via <see cref="IModel.BasicAck"/>.
         /// The implementation of this method in this class does NOT acknowledge such messages.
         /// </remarks>
-        Task HandleBasicDeliver(string consumerTag,
+        void HandleBasicDeliver(string consumerTag,
             ulong deliveryTag,
             bool redelivered,
             string exchange,
@@ -59,6 +70,6 @@ namespace RabbitMQ.Client
         ///  </summary>
         ///  <param name="model"> Common AMQP model.</param>
         /// <param name="reason"> Information about the reason why a particular model, session, or connection was destroyed.</param>
-        Task HandleModelShutdown(object model, ShutdownEventArgs reason);
+        void HandleModelShutdown(object model, ShutdownEventArgs reason);
     }
 }

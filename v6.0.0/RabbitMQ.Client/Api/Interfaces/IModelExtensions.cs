@@ -1,43 +1,3 @@
-// This source code is dual-licensed under the Apache License, version
-// 2.0, and the Mozilla Public License, version 1.1.
-//
-// The APL v2.0:
-//
-//---------------------------------------------------------------------------
-//   Copyright (c) 2007-2020 VMware, Inc.
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       https://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-//---------------------------------------------------------------------------
-//
-// The MPL v1.1:
-//
-//---------------------------------------------------------------------------
-//  The contents of this file are subject to the Mozilla Public License
-//  Version 1.1 (the "License"); you may not use this file except in
-//  compliance with the License. You may obtain a copy of the License
-//  at https://www.mozilla.org/MPL/
-//
-//  Software distributed under the License is distributed on an "AS IS"
-//  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-//  the License for the specific language governing rights and
-//  limitations under the License.
-//
-//  The Original Code is RabbitMQ.
-//
-//  The Initial Developer of the Original Code is Pivotal Software, Inc.
-//  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
-//---------------------------------------------------------------------------
-
 using System;
 using System.Collections.Generic;
 
@@ -46,7 +6,8 @@ namespace RabbitMQ.Client
     public static class IModelExensions
     {
         /// <summary>Start a Basic content-class consumer.</summary>
-        public static string BasicConsume(this IModel model,
+        public static string BasicConsume(
+            this IModel model,
             IBasicConsumer consumer,
             string queue,
             bool autoAck = false,
@@ -54,9 +15,9 @@ namespace RabbitMQ.Client
             bool noLocal = false,
             bool exclusive = false,
             IDictionary<string, object> arguments = null)
-            {
-                return model.BasicConsume(queue, autoAck, consumerTag, noLocal, exclusive, arguments, consumer);
-            }
+        {
+            return model.BasicConsume(queue, autoAck, consumerTag, noLocal, exclusive, arguments, consumer);
+        }
 
         /// <summary>Start a Basic content-class consumer.</summary>
         public static string BasicConsume(this IModel model, string queue, bool autoAck, IBasicConsumer consumer)
@@ -118,9 +79,9 @@ namespace RabbitMQ.Client
         /// </summary>
         public static QueueDeclareOk QueueDeclare(this IModel model, string queue = "", bool durable = false, bool exclusive = true,
             bool autoDelete = true, IDictionary<string, object> arguments = null)
-            {
-                return model.QueueDeclare(queue, durable, exclusive, autoDelete, arguments);
-            }
+        {
+            return model.QueueDeclare(queue, durable, exclusive, autoDelete, arguments);
+        }
 
         /// <summary>
         /// (Extension method) Bind an exchange to an exchange.
@@ -143,18 +104,18 @@ namespace RabbitMQ.Client
         /// </summary>
         public static void ExchangeDeclare(this IModel model, string exchange, string type, bool durable = false, bool autoDelete = false,
             IDictionary<string, object> arguments = null)
-            {
-                model.ExchangeDeclare(exchange, type, durable, autoDelete, arguments);
-            }
+        {
+            model.ExchangeDeclare(exchange, type, durable, autoDelete, arguments);
+        }
 
         /// <summary>
         /// (Extension method) Like ExchangeDeclare but sets nowait to true. 
         /// </summary>
         public static void ExchangeDeclareNoWait(this IModel model, string exchange, string type, bool durable = false, bool autoDelete = false,
             IDictionary<string, object> arguments = null)
-            {
-                model.ExchangeDeclareNoWait(exchange, type, durable, autoDelete, arguments);
-            }
+        {
+            model.ExchangeDeclareNoWait(exchange, type, durable, autoDelete, arguments);
+        }
 
         /// <summary>
         /// (Spec method) Unbinds an exchange.
@@ -163,9 +124,9 @@ namespace RabbitMQ.Client
             string source,
             string routingKey,
             IDictionary<string, object> arguments = null)
-            {
-                model.ExchangeUnbind(destination, source, routingKey, arguments);
-            }
+        {
+            model.ExchangeUnbind(destination, source, routingKey, arguments);
+        }
 
         /// <summary>
         /// (Spec method) Deletes an exchange.
