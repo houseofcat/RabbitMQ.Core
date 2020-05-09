@@ -1,29 +1,28 @@
-﻿using System;
+﻿using RabbitMQ.Client.Events;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using RabbitMQ.Client.Events;
-
 namespace RabbitMQ.Client.Impl
 {
-    sealed class BasicDeliver : Work
+    internal sealed class BasicDeliver : Work
     {
-        readonly string _consumerTag;
-        readonly ulong _deliveryTag;
-        readonly bool _redelivered;
-        readonly string _exchange;
-        readonly string _routingKey;
-        readonly IBasicProperties _basicProperties;
-        readonly IMemoryOwner<byte> _body;
-        readonly int _bodyLength;
+        private readonly string _consumerTag;
+        private readonly ulong _deliveryTag;
+        private readonly bool _redelivered;
+        private readonly string _exchange;
+        private readonly string _routingKey;
+        private readonly IBasicProperties _basicProperties;
+        private readonly IMemoryOwner<byte> _body;
+        private readonly int _bodyLength;
 
-        public BasicDeliver(IBasicConsumer consumer, 
-            string consumerTag, 
-            ulong deliveryTag, 
-            bool redelivered, 
-            string exchange, 
-            string routingKey, 
+        public BasicDeliver(IBasicConsumer consumer,
+            string consumerTag,
+            ulong deliveryTag,
+            bool redelivered,
+            string exchange,
+            string routingKey,
             IBasicProperties basicProperties,
             IMemoryOwner<byte> body,
             int bodyLength) : base(consumer)

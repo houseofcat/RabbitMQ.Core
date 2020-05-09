@@ -4,7 +4,7 @@ using System.Net.Sockets;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    static class IProtocolExtensions
+    internal static class IProtocolExtensions
     {
         public static IFrameHandler CreateFrameHandler(
             this IProtocol protocol,

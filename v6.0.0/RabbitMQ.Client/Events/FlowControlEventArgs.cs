@@ -15,6 +15,6 @@ namespace RabbitMQ.Client.Events
         /// <summary>
         /// Access the flow control setting.
         /// </summary>
-        public bool Active { get; private set; }
+        public bool Active { get; }
     }
 }

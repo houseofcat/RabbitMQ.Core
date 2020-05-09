@@ -8,7 +8,7 @@ using System.Net.Sockets;
 
 namespace RabbitMQ.Client.Impl
 {
-    class HeaderOutboundFrame : OutboundFrame
+    internal class HeaderOutboundFrame : OutboundFrame
     {
         private readonly ContentHeaderBase _header;
         private readonly int _bodyLength;
@@ -35,7 +35,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class BodySegmentOutboundFrame : OutboundFrame
+    internal class BodySegmentOutboundFrame : OutboundFrame
     {
         private readonly ReadOnlyMemory<byte> _body;
 
@@ -56,7 +56,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class MethodOutboundFrame : OutboundFrame
+    internal class MethodOutboundFrame : OutboundFrame
     {
         private readonly MethodBase _method;
 
@@ -82,7 +82,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class EmptyOutboundFrame : OutboundFrame
+    internal class EmptyOutboundFrame : OutboundFrame
     {
         public EmptyOutboundFrame() : base(FrameType.FrameHeartbeat, 0)
         {
@@ -99,7 +99,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    abstract class OutboundFrame : Frame
+    internal abstract class OutboundFrame : Frame
     {
         public int ByteCount { get; private set; } = 0;
         public OutboundFrame(FrameType type, int channel) : base(type, channel)
@@ -124,9 +124,9 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class InboundFrame : Frame, IDisposable
+    internal class InboundFrame : Frame, IDisposable
     {
-        private IMemoryOwner<byte> _payload;
+        private readonly IMemoryOwner<byte> _payload;
         private InboundFrame(FrameType type, int channel, IMemoryOwner<byte> payload, int payloadSize) : base(type, channel, payload.Memory.Slice(0, payloadSize))
         {
             _payload = payload;
@@ -235,7 +235,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class Frame
+    internal class Frame
     {
         public Frame(FrameType type, int channel)
         {
@@ -251,11 +251,11 @@ namespace RabbitMQ.Client.Impl
             Payload = payload;
         }
 
-        public int Channel { get; private set; }
+        public int Channel { get; }
 
-        public ReadOnlyMemory<byte> Payload { get; private set; }
+        public ReadOnlyMemory<byte> Payload { get; }
 
-        public FrameType Type { get; private set; }
+        public FrameType Type { get; }
 
         public override string ToString()
         {
@@ -283,7 +283,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    enum FrameType : int
+    internal enum FrameType : int
     {
         FrameMethod = 1,
         FrameHeader = 2,

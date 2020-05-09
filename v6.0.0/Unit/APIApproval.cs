@@ -38,16 +38,16 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System.Threading.Tasks;
 using NUnit.Framework;
 using PublicApiGenerator;
+using System.Threading.Tasks;
 using Verify;
 using VerifyNUnit;
 
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    [Platform(Exclude="Mono")]
+    [Platform(Exclude = "Mono")]
     public class APIApproval
     {
         [Test]

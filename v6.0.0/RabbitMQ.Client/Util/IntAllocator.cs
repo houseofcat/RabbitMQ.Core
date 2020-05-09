@@ -8,7 +8,7 @@ namespace RabbitMQ.Util
    */
 
 
-    class IntAllocator
+    internal class IntAllocator
     {
         private readonly int[] _unsorted;
         private IntervalList _base;

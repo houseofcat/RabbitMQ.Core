@@ -40,6 +40,7 @@
 
 #pragma warning disable 2002
 
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -48,11 +49,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Framing;
-using RabbitMQ.Client.Framing.Impl;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -77,11 +73,11 @@ namespace RabbitMQ.Client.Unit
         [TearDown]
         public void Dispose()
         {
-            if(Model.IsOpen)
+            if (Model.IsOpen)
             {
                 Model.Close();
             }
-            if(Conn.IsOpen)
+            if (Conn.IsOpen)
             {
                 Conn.Close();
             }
@@ -304,7 +300,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclare(queue, false, true, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(x => x.QueueDelete(queue));
             }
@@ -316,7 +313,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclare(queue, false, false, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(tm => tm.QueueDelete(queue));
             }
@@ -328,7 +326,8 @@ namespace RabbitMQ.Client.Unit
             {
                 model.QueueDeclareNoWait(queue, false, true, false, null);
                 action(model, queue);
-            } finally
+            }
+            finally
             {
                 WithTemporaryModel(x => x.QueueDelete(queue));
             }
@@ -369,7 +368,8 @@ namespace RabbitMQ.Client.Unit
 
         internal void AssertMessageCount(string q, int count)
         {
-            WithTemporaryModel((m) => {
+            WithTemporaryModel((m) =>
+            {
                 QueueDeclareOk ok = m.QueueDeclarePassive(q);
                 Assert.AreEqual(count, ok.MessageCount);
             });
@@ -377,7 +377,8 @@ namespace RabbitMQ.Client.Unit
 
         internal void AssertConsumerCount(string q, int count)
         {
-            WithTemporaryModel((m) => {
+            WithTemporaryModel((m) =>
+            {
                 QueueDeclareOk ok = m.QueueDeclarePassive(q);
                 Assert.AreEqual(count, ok.ConsumerCount);
             });
@@ -414,7 +415,7 @@ namespace RabbitMQ.Client.Unit
 
         internal void WaitOn(object o)
         {
-            lock(o)
+            lock (o)
             {
                 Monitor.Wait(o, TimingFixture.TestTimeout);
             }
@@ -438,7 +439,9 @@ namespace RabbitMQ.Client.Unit
                 if (match.Success)
                 {
                     return ExecRabbitMqCtlUsingDocker(args, match.Groups["dockerMachine"].Value);
-                } else {
+                }
+                else
+                {
                     rabbitmqctlPath = envVariable;
                 }
             }
@@ -453,14 +456,19 @@ namespace RabbitMQ.Client.Unit
                 {
                     umbrellaRabbitmqctlPath = "../../../../../../rabbit/scripts/rabbitmqctl";
                     providedRabbitmqctlPath = "rabbitmqctl";
-                } else {
+                }
+                else
+                {
                     umbrellaRabbitmqctlPath = @"..\..\..\..\..\..\rabbit\scripts\rabbitmqctl.bat";
                     providedRabbitmqctlPath = "rabbitmqctl.bat";
                 }
 
-                if (File.Exists(umbrellaRabbitmqctlPath)) {
+                if (File.Exists(umbrellaRabbitmqctlPath))
+                {
                     rabbitmqctlPath = umbrellaRabbitmqctlPath;
-                } else {
+                }
+                else
+                {
                     rabbitmqctlPath = providedRabbitmqctlPath;
                 }
             }
@@ -479,7 +487,8 @@ namespace RabbitMQ.Client.Unit
                 }
             };
 
-            try {
+            try
+            {
                 proc.StartInfo.FileName = "docker";
                 proc.StartInfo.Arguments = $"exec {dockerMachineName} rabbitmqctl {args}";
                 proc.StartInfo.RedirectStandardError = true;
@@ -488,7 +497,7 @@ namespace RabbitMQ.Client.Unit
                 proc.Start();
                 string stderr = proc.StandardError.ReadToEnd();
                 proc.WaitForExit();
-                if (stderr.Length >  0 || proc.ExitCode > 0)
+                if (stderr.Length > 0 || proc.ExitCode > 0)
                 {
                     string stdout = proc.StandardOutput.ReadToEnd();
                     ReportExecFailure("rabbitmqctl", args, stderr + "\n" + stdout);
@@ -523,35 +532,39 @@ namespace RabbitMQ.Client.Unit
                     UseShellExecute = false
                 }
             };
-            if(changeDirTo != null)
+            if (changeDirTo != null)
             {
                 proc.StartInfo.WorkingDirectory = changeDirTo;
             }
 
             string cmd;
-            if(IsRunningOnMonoOrDotNetCore()) {
-                cmd  = ctl;
-            } else {
-                cmd  = "cmd.exe";
+            if (IsRunningOnMonoOrDotNetCore())
+            {
+                cmd = ctl;
+            }
+            else
+            {
+                cmd = "cmd.exe";
                 args = "/c \"\"" + ctl + "\" " + args + "\"";
             }
 
-            try {
-              proc.StartInfo.FileName = cmd;
-              proc.StartInfo.Arguments = args;
-              proc.StartInfo.RedirectStandardError = true;
-              proc.StartInfo.RedirectStandardOutput = true;
+            try
+            {
+                proc.StartInfo.FileName = cmd;
+                proc.StartInfo.Arguments = args;
+                proc.StartInfo.RedirectStandardError = true;
+                proc.StartInfo.RedirectStandardOutput = true;
 
-              proc.Start();
+                proc.Start();
                 string stderr = proc.StandardError.ReadToEnd();
-              proc.WaitForExit();
-              if (stderr.Length >  0 || proc.ExitCode > 0)
-              {
+                proc.WaitForExit();
+                if (stderr.Length > 0 || proc.ExitCode > 0)
+                {
                     string stdout = proc.StandardOutput.ReadToEnd();
-                  ReportExecFailure(cmd, args, stderr + "\n" + stdout);
-              }
+                    ReportExecFailure(cmd, args, stderr + "\n" + stdout);
+                }
 
-              return proc;
+                return proc;
             }
             catch (Exception e)
             {
@@ -567,11 +580,11 @@ namespace RabbitMQ.Client.Unit
 
         public static bool IsRunningOnMonoOrDotNetCore()
         {
-            #if NETCOREAPP
+#if NETCOREAPP
             return true;
-            #else
+#else
             return Type.GetType("Mono.Runtime") != null;
-            #endif
+#endif
         }
 
         //
@@ -629,14 +642,14 @@ namespace RabbitMQ.Client.Unit
 
         internal List<ConnectionInfo> ListConnections()
         {
-            Process proc  = ExecRabbitMQCtl("list_connections --silent pid client_properties");
+            Process proc = ExecRabbitMQCtl("list_connections --silent pid client_properties");
             string stdout = proc.StandardOutput.ReadToEnd();
 
             try
             {
                 // {Environment.NewLine} is not sufficient
                 string[] splitOn = new string[] { "\r\n", "\n" };
-                string[] lines   = stdout.Split(splitOn, StringSplitOptions.RemoveEmptyEntries);
+                string[] lines = stdout.Split(splitOn, StringSplitOptions.RemoveEmptyEntries);
                 // line: <rabbit@mercurio.1.11491.0>	{.../*client_properties*/...}
                 return lines.Select(s =>
                 {
@@ -664,7 +677,7 @@ namespace RabbitMQ.Client.Unit
         internal void CloseAllConnections()
         {
             List<ConnectionInfo> cs = ListConnections();
-            foreach(ConnectionInfo c in cs)
+            foreach (ConnectionInfo c in cs)
             {
                 CloseConnection(c.Pid);
             }

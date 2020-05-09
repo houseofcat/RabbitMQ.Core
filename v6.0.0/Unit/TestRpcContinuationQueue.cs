@@ -38,11 +38,8 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
-
-using RabbitMQ.Client.Impl;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -78,7 +75,7 @@ namespace RabbitMQ.Client.Unit
             var inputContinuation = new SimpleBlockingRpcContinuation();
             var inputContinuation1 = new SimpleBlockingRpcContinuation();
             queue.Enqueue(inputContinuation);
-            Assert.Throws(typeof(NotSupportedException), () => 
+            Assert.Throws(typeof(NotSupportedException), () =>
             {
                 queue.Enqueue(inputContinuation1);
             });

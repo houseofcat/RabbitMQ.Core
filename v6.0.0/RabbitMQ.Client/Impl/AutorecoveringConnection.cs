@@ -129,7 +129,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public event EventHandler<ConsumerTagChangedAfterRecoveryEventArgs> ConsumerTagChangeAfterRecovery;
         public event EventHandler<QueueNameChangedAfterRecoveryEventArgs> QueueNameChangeAfterRecovery;
 
-        public string ClientProvidedName { get; private set; }
+        public string ClientProvidedName { get; }
 
         public ushort ChannelMax
         {

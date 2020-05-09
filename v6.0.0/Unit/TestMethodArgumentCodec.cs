@@ -38,19 +38,15 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Text;
 
-using NUnit.Framework;
-
-using RabbitMQ.Client.Impl;
-using RabbitMQ.Util;
-
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    class TestMethodArgumentCodec
+    internal class TestMethodArgumentCodec
     {
         public static MethodArgumentWriter Writer()
         {

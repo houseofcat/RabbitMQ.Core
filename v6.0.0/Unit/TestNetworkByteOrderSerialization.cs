@@ -38,16 +38,13 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
-
-using RabbitMQ.Util;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    class TestNetworkByteOrderSerialization
+    internal class TestNetworkByteOrderSerialization
     {
         public void Check(byte[] actual, byte[] expected)
         {
@@ -67,8 +64,8 @@ namespace RabbitMQ.Client.Unit
             }
         }
 
-        readonly byte[] expectedDoubleBytes = new byte[] { 63, 243, 190, 118, 200, 180, 57, 88 };
-        readonly byte[] expectedSingleBytes = new byte[] { 63, 157, 243, 182 };
+        private readonly byte[] expectedDoubleBytes = new byte[] { 63, 243, 190, 118, 200, 180, 57, 88 };
+        private readonly byte[] expectedSingleBytes = new byte[] { 63, 157, 243, 182 };
 
         [Test]
         public void TestSingleDecoding()

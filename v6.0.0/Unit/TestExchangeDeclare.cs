@@ -38,16 +38,16 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 
-using NUnit.Framework;
-
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    public class TestExchangeDeclare : IntegrationFixture {
+    public class TestExchangeDeclare : IntegrationFixture
+    {
 
         [Test]
         [Category("RequireSMP")]
@@ -58,7 +58,7 @@ namespace RabbitMQ.Client.Unit
 
             List<Thread> ts = new List<Thread>();
             System.NotSupportedException nse = null;
-            for(int i = 0; i < 256; i++)
+            for (int i = 0; i < 256; i++)
             {
                 Thread t = new Thread(() =>
                         {
@@ -68,7 +68,8 @@ namespace RabbitMQ.Client.Unit
                                 // of thread interleaving. MK.
                                 Thread.Sleep(rnd.Next(5, 500));
                                 Model.ExchangeDeclare(x, "fanout", false, false, null);
-                            } catch (System.NotSupportedException e)
+                            }
+                            catch (System.NotSupportedException e)
                             {
                                 nse = e;
                             }

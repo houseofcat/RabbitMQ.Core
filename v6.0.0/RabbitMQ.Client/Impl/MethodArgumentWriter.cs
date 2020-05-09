@@ -4,13 +4,13 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    struct MethodArgumentWriter
+    internal struct MethodArgumentWriter
     {
         private byte _bitAccumulator;
         private int _bitMask;
         private bool _needBitFlush;
         public int Offset { get; private set; }
-        public Memory<byte> Memory { get; private set; }
+        public Memory<byte> Memory { get; }
 
         public MethodArgumentWriter(Memory<byte> memory)
         {

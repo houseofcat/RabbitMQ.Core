@@ -59,7 +59,7 @@ namespace RabbitMQ.Client.Framing.Impl
         // true if we haven't finished connection negotiation.
         // In this state socket exceptions are treated as fatal connection
         // errors, otherwise as read timeouts
-        public ConsumerWorkService ConsumerWorkService { get; private set; }
+        public ConsumerWorkService ConsumerWorkService { get; }
 
         public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, string clientProvidedName = null)
         {
@@ -122,7 +122,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public event EventHandler<EventArgs> ConnectionUnblocked;
 
 
-        public string ClientProvidedName { get; private set; }
+        public string ClientProvidedName { get; }
 
         public ushort ChannelMax
         {
@@ -302,9 +302,9 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        ///<remarks>
+        /// <summary>
         /// Loop only used while quiescing. Use only to cleanly close connection
-        ///</remarks>
+        /// </summary>
         public void ClosingLoop()
         {
             try
@@ -377,10 +377,10 @@ namespace RabbitMQ.Client.Framing.Impl
             _model0.FinishClose();
         }
 
-        /// <remarks>
+        /// <summary>
         /// We need to close the socket, otherwise attempting to unload the domain
         /// could cause a CannotUnloadAppDomainException
-        /// </remarks>
+        /// </summary>
         public void HandleDomainUnload(object sender, EventArgs ea)
         {
             Abort(Constants.InternalError, "Domain Unload");
@@ -781,7 +781,7 @@ entry.ToString());
 
         public void StartMainLoop(bool useBackgroundThread)
         {
-            _mainLoopTask = Task.Run((Action)MainLoop);
+            _mainLoopTask = Task.Run(MainLoop);
         }
 
         public void HeartbeatReadTimerCallback(object state)
@@ -864,14 +864,14 @@ entry.ToString());
                 // timer is already disposed,
                 // e.g. due to shutdown
             }
-            catch (Exception)
+            catch
             {
                 // ignore, let the read callback detect
                 // peer unavailability. See rabbitmq/rabbitmq-dotnet-client#638 for details.
             }
         }
 
-        void MaybeStopHeartbeatTimers()
+        private void MaybeStopHeartbeatTimers()
         {
             NotifyHeartbeatListener();
             _heartbeatReadTimer?.Dispose();
@@ -1004,13 +1004,13 @@ entry.ToString());
             // dispose unmanaged resources
         }
 
-        Command ChannelCloseWrapper(ushort reasonCode, string reasonText)
+        private Command ChannelCloseWrapper(ushort reasonCode, string reasonText)
         {
             Protocol.CreateChannelClose(reasonCode, reasonText, out Command request, out _, out _);
             return request;
         }
 
-        void StartAndTune()
+        private void StartAndTune()
         {
             var connectionStartCell = new BlockingCell<ConnectionStartDetails>();
             _model0.m_connectionStartCell = connectionStartCell;
@@ -1108,7 +1108,7 @@ entry.ToString());
 
             TimeSpan requestedHeartbeat = _factory.RequestedHeartbeat;
             uint heartbeatInSeconds = NegotiatedMaxValue((uint)requestedHeartbeat.TotalSeconds,
-                (uint)connectionTune.m_heartbeatInSeconds);
+                connectionTune.m_heartbeatInSeconds);
             Heartbeat = TimeSpan.FromSeconds(heartbeatInSeconds);
 
             _model0.ConnectionTuneOk(channelMax, frameMax, (ushort)Heartbeat.TotalSeconds);

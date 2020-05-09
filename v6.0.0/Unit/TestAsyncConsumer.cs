@@ -38,13 +38,11 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
+using RabbitMQ.Client.Events;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Events;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -54,9 +52,9 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicRoundtrip()
         {
-            var cf = new ConnectionFactory{ DispatchConsumersAsync = true };
-            using(IConnection c = cf.CreateConnection())
-            using(IModel m = c.CreateModel())
+            var cf = new ConnectionFactory { DispatchConsumersAsync = true };
+            using (IConnection c = cf.CreateConnection())
+            using (IModel m = c.CreateModel())
             {
                 QueueDeclareOk q = m.QueueDeclare();
                 IBasicProperties bp = m.CreateBasicProperties();
@@ -84,7 +82,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicRoundtripNoWait()
         {
-            var cf = new ConnectionFactory{ DispatchConsumersAsync = true };
+            var cf = new ConnectionFactory { DispatchConsumersAsync = true };
             using (IConnection c = cf.CreateConnection())
             {
                 using (IModel m = c.CreateModel())
@@ -116,9 +114,9 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void NonAsyncConsumerShouldThrowInvalidOperationException()
         {
-            var cf = new ConnectionFactory{ DispatchConsumersAsync = true };
-            using(IConnection c = cf.CreateConnection())
-            using(IModel m = c.CreateModel())
+            var cf = new ConnectionFactory { DispatchConsumersAsync = true };
+            using (IConnection c = cf.CreateConnection())
+            using (IModel m = c.CreateModel())
             {
                 QueueDeclareOk q = m.QueueDeclare();
                 IBasicProperties bp = m.CreateBasicProperties();

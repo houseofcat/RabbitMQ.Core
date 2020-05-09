@@ -1,11 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
     internal abstract class Work
     {
-        readonly IAsyncBasicConsumer _asyncConsumer;
+        private readonly IAsyncBasicConsumer _asyncConsumer;
 
         protected Work(IBasicConsumer consumer)
         {
@@ -19,7 +18,7 @@ namespace RabbitMQ.Client.Impl
                 await Task.Yield();
                 await Execute(model, _asyncConsumer).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch
             {
                 // intentionally caught
             }

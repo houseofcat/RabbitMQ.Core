@@ -14,7 +14,7 @@ namespace RabbitMQ.Client.Framing.Impl
     /// special-cases 8-0, rewriting it at construction time to be 0-8 instead.
     /// </para>
     /// </remarks>
-    class AmqpVersion
+    internal class AmqpVersion
     {
         /// <summary>
         /// Construct an <see cref="AmqpVersion"/> from major and minor version numbers.
@@ -39,12 +39,12 @@ namespace RabbitMQ.Client.Framing.Impl
         /// <summary>
         /// The AMQP specification major version number.
         /// </summary>
-        public int Major { get; private set; }
+        public int Major { get; }
 
         /// <summary>
         /// The AMQP specification minor version number.
         /// </summary>
-        public int Minor { get; private set; }
+        public int Minor { get; }
 
         /// <summary>
         /// Implement value-equality comparison.

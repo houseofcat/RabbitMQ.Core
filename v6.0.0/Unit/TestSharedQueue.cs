@@ -38,18 +38,15 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading;
 
-using NUnit.Framework;
-
-using RabbitMQ.Util;
-
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    class TestSharedQueue : TimingFixture
+    internal class TestSharedQueue : TimingFixture
     {
         //wrapper to work around C#'s lack of local volatiles
         public class VolatileInt
@@ -283,8 +280,8 @@ namespace RabbitMQ.Client.Unit
             var queue = new SharedQueue();
             var c1 = new VolatileInt();
             var c2 = new VolatileInt();
-            var thread1 = new Thread(() => { foreach (int v in queue) c1.v += v; });
-            var thread2 = new Thread(() => { foreach (int v in queue) c2.v += v; });
+            var thread1 = new Thread(() => { foreach (int v in queue) { c1.v += v; } });
+            var thread2 = new Thread(() => { foreach (int v in queue) { c2.v += v; } });
             thread1.Start();
             thread2.Start();
             queue.Enqueue(1);

@@ -8,7 +8,7 @@ namespace RabbitMQ.Client.Impl
     /// <summary>
     /// Simple wrapper around TcpClient.
     /// </summary>
-    class TcpClientAdapter : ITcpClient
+    internal class TcpClientAdapter : ITcpClient
     {
         private Socket _sock;
 
@@ -78,7 +78,11 @@ namespace RabbitMQ.Client.Impl
         {
             get
             {
-                if (_sock == null) return false;
+                if (_sock == null)
+                {
+                    return false;
+                }
+
                 return _sock.Connected;
             }
         }

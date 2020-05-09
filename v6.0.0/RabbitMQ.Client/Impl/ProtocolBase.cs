@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    abstract class ProtocolBase : IProtocol
+    internal abstract class ProtocolBase : IProtocol
     {
         public IDictionary<string, bool> Capabilities = new Dictionary<string, bool>();
 

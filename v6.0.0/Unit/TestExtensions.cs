@@ -38,9 +38,8 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -53,7 +52,7 @@ namespace RabbitMQ.Client.Unit
             Model.ConfirmSelect();
             for (int i = 0; i < 10; i++)
             {
-                Model.BasicPublish("", string.Empty, null, new byte[] {});
+                Model.BasicPublish("", string.Empty, null, new byte[] { });
             }
             Assert.That(Model.WaitForConfirms(), Is.True);
         }
@@ -61,7 +60,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestConfirmBeforeWait()
         {
-            Assert.Throws(typeof (InvalidOperationException), () => Model.WaitForConfirms());
+            Assert.Throws(typeof(InvalidOperationException), () => Model.WaitForConfirms());
         }
 
         [Test]
@@ -77,12 +76,12 @@ namespace RabbitMQ.Client.Unit
             Model.ExchangeBind("dest", "src", string.Empty);
             Model.QueueBind(queue, "dest", string.Empty);
 
-            Model.BasicPublish("src", string.Empty, null, new byte[] {});
+            Model.BasicPublish("src", string.Empty, null, new byte[] { });
             Model.WaitForConfirms();
             Assert.IsNotNull(Model.BasicGet(queue, true));
 
             Model.ExchangeUnbind("dest", "src", string.Empty);
-            Model.BasicPublish("src", string.Empty, null, new byte[] {});
+            Model.BasicPublish("src", string.Empty, null, new byte[] { });
             Model.WaitForConfirms();
             Assert.IsNull(Model.BasicGet(queue, true));
 

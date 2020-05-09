@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    abstract class BasicProperties : ContentHeaderBase, IBasicProperties
+    internal abstract class BasicProperties : ContentHeaderBase, IBasicProperties
     {
         /// <summary>
         /// Application Id.

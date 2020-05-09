@@ -38,9 +38,8 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -53,8 +52,8 @@ namespace RabbitMQ.Client.Unit
             Model.QueueDeclare(queue: "test-message-batch-a", durable: false);
             Model.QueueDeclare(queue: "test-message-batch-b", durable: false);
             IBasicPublishBatch batch = Model.CreateBasicPublishBatch();
-            batch.Add("", "test-message-batch-a", false, null, new byte [] {});
-            batch.Add("", "test-message-batch-b", false, null, new byte [] {});
+            batch.Add("", "test-message-batch-a", false, null, new byte[] { });
+            batch.Add("", "test-message-batch-b", false, null, new byte[] { });
             batch.Publish();
             Model.WaitForConfirmsOrDie(TimeSpan.FromSeconds(15));
             BasicGetResult resultA = Model.BasicGet("test-message-batch-a", true);

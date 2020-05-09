@@ -11,14 +11,16 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    static class TaskExtensions
+    internal static class TaskExtensions
     {
         public static Task CompletedTask = Task.FromResult(0);
 
         public static async Task TimeoutAfter(this Task task, TimeSpan timeout)
         {
             if (task == await Task.WhenAny(task, Task.Delay(timeout)).ConfigureAwait(false))
-                await task;
+            {
+                await task.ConfigureAwait(false);
+            }
             else
             {
                 Task supressErrorTask = task.ContinueWith(t => t.Exception.Handle(e => true), TaskContinuationOptions.OnlyOnFaulted);
@@ -27,7 +29,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    class SocketFrameHandler : IFrameHandler
+    internal class SocketFrameHandler : IFrameHandler
     {
         // Socket poll timeout in ms. If the socket does not
         // become writeable in this amount of time, we throw
@@ -144,7 +146,7 @@ namespace RabbitMQ.Client.Impl
                     {
                         _socket.Close();
                     }
-                    catch (Exception)
+                    catch
                     {
                         // ignore, we are closing anyway
                     }

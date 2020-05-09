@@ -38,14 +38,10 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
+using RabbitMQ.Client.Events;
 using System;
 using System.Text;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Impl;
-using RabbitMQ.Util;
 
 #pragma warning disable 0618
 
@@ -54,24 +50,26 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestRecoverAfterCancel
     {
-        IConnection Connection;
-        IModel Channel;
-        string Queue;
-        int callbackCount;
+        private IConnection Connection;
+        private IModel Channel;
+        private string Queue;
+        private int callbackCount;
 
         public int ModelNumber(IModel model)
         {
             return ((ModelBase)model).Session.ChannelNumber;
         }
 
-        [SetUp] public void Connect()
+        [SetUp]
+        public void Connect()
         {
             Connection = new ConnectionFactory().CreateConnection();
             Channel = Connection.CreateModel();
             Queue = Channel.QueueDeclare("", false, true, false, null);
         }
 
-        [TearDown] public void Disconnect()
+        [TearDown]
+        public void Disconnect()
         {
             Connection.Abort();
         }
@@ -110,7 +108,7 @@ namespace RabbitMQ.Client.Unit
             Assert.AreEqual(1, callbackCount);
         }
 
-        void IncrCallback(object sender, EventArgs args)
+        private void IncrCallback(object sender, EventArgs args)
         {
             callbackCount++;
         }

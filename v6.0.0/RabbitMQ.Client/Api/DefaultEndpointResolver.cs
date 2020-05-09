@@ -16,7 +16,7 @@ namespace RabbitMQ.Client
 
         public IEnumerable<AmqpTcpEndpoint> All()
         {
-            return _endpoints.OrderBy(item => _rnd.Next());
+            return _endpoints.OrderBy(_ => _rnd.Next());
         }
     }
 }

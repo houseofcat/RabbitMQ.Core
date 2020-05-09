@@ -38,12 +38,8 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 using NUnit.Framework;
-
-using RabbitMQ.Client;
-using RabbitMQ.Client.Impl;
+using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Unit
 {

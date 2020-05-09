@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    abstract class ModelBase : IFullModel, IRecoverable
+    internal abstract class ModelBase : IFullModel, IRecoverable
     {
         public readonly IDictionary<string, IBasicConsumer> m_consumers = new Dictionary<string, IBasicConsumer>();
 
@@ -40,7 +40,7 @@ namespace RabbitMQ.Client.Impl
         private bool _onlyAcksReceived = true;
         private ulong _nextPublishSeqNo;
 
-        public IConsumerDispatcher ConsumerDispatcher { get; private set; }
+        public IConsumerDispatcher ConsumerDispatcher { get; }
 
         public ModelBase(ISession session)
             : this(session, session.Connection.ConsumerWorkService)
@@ -296,7 +296,9 @@ namespace RabbitMQ.Client.Impl
         public void HandleCommand(ISession session, Command cmd)
         {
             if (!DispatchAsynchronous(cmd))// Was asynchronous. Already processed. No need to process further.
+            {
                 _continuationQueue.Next().HandleCommand(cmd);
+            }
         }
 
         public MethodBase ModelRpc(MethodBase method, ContentHeaderBase header, byte[] body)
@@ -497,7 +499,9 @@ namespace RabbitMQ.Client.Impl
                 }
             }
             else
+            {
                 return false;
+            }
         }
 
         public override string ToString()
@@ -736,7 +740,7 @@ namespace RabbitMQ.Client.Impl
 
         public void HandleConnectionBlocked(string reason)
         {
-            var cb = (Connection)Session.Connection;
+            var cb = Session.Connection;
 
             cb.HandleConnectionBlocked(reason);
         }
@@ -753,7 +757,7 @@ namespace RabbitMQ.Client.Impl
                 methodId);
             try
             {
-                ((Connection)Session.Connection).InternalClose(reason);
+                Session.Connection.InternalClose(reason);
                 _Private_ConnectionCloseOk();
                 SetCloseReason(Session.Connection.CloseReason);
             }
@@ -800,7 +804,7 @@ namespace RabbitMQ.Client.Impl
                     new ShutdownEventArgs(ShutdownInitiator.Library,
                         Constants.CommandInvalid,
                         "Unexpected Connection.Start");
-                ((Connection)Session.Connection).Close(reason);
+                Session.Connection.Close(reason);
             }
             var details = new ConnectionStartDetails
             {
@@ -833,7 +837,7 @@ namespace RabbitMQ.Client.Impl
 
         public void HandleConnectionUnblocked()
         {
-            var cb = (Connection)Session.Connection;
+            var cb = Session.Connection;
 
             cb.HandleConnectionUnblocked();
         }

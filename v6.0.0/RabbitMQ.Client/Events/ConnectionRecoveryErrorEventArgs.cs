@@ -9,6 +9,6 @@ namespace RabbitMQ.Client.Events
             Exception = ex;
         }
 
-        public Exception Exception { get; private set; }
+        public Exception Exception { get; }
     }
 }

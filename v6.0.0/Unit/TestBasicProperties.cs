@@ -44,7 +44,7 @@ namespace RabbitMQ.Client.Unit
 {
 
     [TestFixture]
-    class TestBasicProperties
+    internal class TestBasicProperties
     {
         [Test]
         public void TestPersistentPropertyChangesDeliveryMode_PersistentTrueDelivery2()

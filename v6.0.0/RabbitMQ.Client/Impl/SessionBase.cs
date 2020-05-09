@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    abstract class SessionBase : ISession
+    internal abstract class SessionBase : ISession
     {
         private readonly object _shutdownLock = new object();
         private EventHandler<ShutdownEventArgs> _sessionShutdown;
@@ -51,10 +51,10 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        public int ChannelNumber { get; private set; }
+        public int ChannelNumber { get; }
         public ShutdownEventArgs CloseReason { get; set; }
         public Action<ISession, Command> CommandReceived { get; set; }
-        public Connection Connection { get; private set; }
+        public Connection Connection { get; }
 
         public bool IsOpen
         {

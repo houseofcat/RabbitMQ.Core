@@ -38,9 +38,8 @@
 //  Copyright (c) 2011-2020 VMware, Inc. or its affiliates.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -52,7 +51,7 @@ namespace RabbitMQ.Client.Unit
         [Test, Category("MonoBug")]
         public void TestAmqpUriParseFail()
         {
-            if(IsRunningOnMono() == false)
+            if (IsRunningOnMono() == false)
             {
                 /* Various failure cases */
                 ParseFailWith<ArgumentException>("https://www.rabbitmq.com");
@@ -76,7 +75,7 @@ namespace RabbitMQ.Client.Unit
         [Test, Category("MonoBug")]
         public void TestAmqpUriParseSucceed()
         {
-            if(IsRunningOnMono() == false)
+            if (IsRunningOnMono() == false)
             {
                 /* From the spec */
                 ParseSuccess("amqp://user:pass@host:10000/vhost",
@@ -207,11 +206,11 @@ namespace RabbitMQ.Client.Unit
 
         public static bool IsRunningOnMono()
         {
-            #if NETCOREAPP
+#if NETCOREAPP
             return false;
-            #else
+#else
             return Type.GetType("Mono.Runtime") != null;
-            #endif
+#endif
         }
     }
 }

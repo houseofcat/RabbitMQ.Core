@@ -30,13 +30,13 @@ namespace RabbitMQ.Client.Impl
             return Task.CompletedTask;
         }
 
-        class WorkPool
+        private class WorkPool
         {
-            readonly ConcurrentQueue<Work> _workQueue;
-            readonly CancellationTokenSource _tokenSource;
-            readonly ModelBase _model;
-            readonly CancellationTokenRegistration _tokenRegistration;
-            volatile TaskCompletionSource<bool> _syncSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly ConcurrentQueue<Work> _workQueue;
+            private readonly CancellationTokenSource _tokenSource;
+            private readonly ModelBase _model;
+            private readonly CancellationTokenRegistration _tokenRegistration;
+            private TaskCompletionSource<bool> _syncSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             private Task _worker;
 
             public WorkPool(ModelBase model)
@@ -58,7 +58,7 @@ namespace RabbitMQ.Client.Impl
                 _syncSource.TrySetResult(true);
             }
 
-            async Task Loop()
+            private async Task Loop()
             {
                 while (!_tokenSource.IsCancellationRequested)
                 {

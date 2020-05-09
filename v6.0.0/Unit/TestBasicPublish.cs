@@ -1,8 +1,8 @@
+using NUnit.Framework;
+using RabbitMQ.Client.Events;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
-using RabbitMQ.Client.Events;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -13,8 +13,8 @@ namespace RabbitMQ.Client.Unit
         public void TestBasicRoundtripArray()
         {
             var cf = new ConnectionFactory();
-            using(IConnection c = cf.CreateConnection())
-            using(IModel m = c.CreateModel())
+            using (IConnection c = cf.CreateConnection())
+            using (IModel m = c.CreateModel())
             {
                 QueueDeclareOk q = m.QueueDeclare();
                 IBasicProperties bp = m.CreateBasicProperties();
@@ -43,8 +43,8 @@ namespace RabbitMQ.Client.Unit
         public void TestBasicRoundtripReadOnlyMemory()
         {
             var cf = new ConnectionFactory();
-            using(IConnection c = cf.CreateConnection())
-            using(IModel m = c.CreateModel())
+            using (IConnection c = cf.CreateConnection())
+            using (IModel m = c.CreateModel())
             {
                 QueueDeclareOk q = m.QueueDeclare();
                 IBasicProperties bp = m.CreateBasicProperties();

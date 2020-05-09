@@ -38,21 +38,20 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
+using RabbitMQ.Client.Events;
 using System;
 using System.Threading;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Events;
 
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    public class TestMainLoop : IntegrationFixture {
+    public class TestMainLoop : IntegrationFixture
+    {
 
         private class FaultyConsumer : DefaultBasicConsumer
         {
-            public FaultyConsumer(IModel model) : base(model) {}
+            public FaultyConsumer(IModel model) : base(model) { }
 
             public override void HandleBasicDeliver(string consumerTag,
                                                ulong deliveryTag,
@@ -77,7 +76,8 @@ namespace RabbitMQ.Client.Unit
             m.QueueDeclare(q, false, false, false, null);
 
             CallbackExceptionEventArgs ea = null;
-            m.CallbackException += (_, evt) => {
+            m.CallbackException += (_, evt) =>
+            {
                 ea = evt;
                 c.Close();
                 Monitor.PulseAll(o);

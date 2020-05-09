@@ -1,14 +1,13 @@
-﻿using System;
+﻿using RabbitMQ.Client.Events;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using RabbitMQ.Client.Events;
-
 namespace RabbitMQ.Client.Impl
 {
-    sealed class BasicCancel : Work
+    internal sealed class BasicCancel : Work
     {
-        readonly string _consumerTag;
+        private readonly string _consumerTag;
 
         public BasicCancel(IBasicConsumer consumer, string consumerTag) : base(consumer)
         {

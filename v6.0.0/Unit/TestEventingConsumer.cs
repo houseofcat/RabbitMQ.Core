@@ -38,16 +38,15 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System.Threading;
-
 using NUnit.Framework;
-
 using RabbitMQ.Client.Events;
+using System.Threading;
 
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    public class TestEventingConsumer : IntegrationFixture {
+    public class TestEventingConsumer : IntegrationFixture
+    {
 
         [Test]
         public void TestEventingConsumerRegistrationEvents()

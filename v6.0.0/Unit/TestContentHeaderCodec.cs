@@ -38,17 +38,13 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-
 using NUnit.Framework;
-
-using RabbitMQ.Client.Impl;
-using RabbitMQ.Util;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    class TestContentHeaderCodec
+    internal class TestContentHeaderCodec
     {
         public void Check(ReadOnlyMemory<byte> actual, ReadOnlyMemory<byte> expected)
         {

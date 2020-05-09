@@ -39,18 +39,15 @@
 //---------------------------------------------------------------------------
 
 
+using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-using NUnit.Framework;
-
-using RabbitMQ.Client.Impl;
-
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
-    class TestFieldTableFormattingGeneric : WireFormattingFixture
+    internal class TestFieldTableFormattingGeneric : WireFormattingFixture
     {
         [Test]
         public void TestStandardTypes()

@@ -38,12 +38,9 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
 using System;
 using System.Threading;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Impl;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -55,7 +52,8 @@ namespace RabbitMQ.Client.Unit
         {
             var latch = new ManualResetEvent(false);
 
-            Model.ModelShutdown += (model, args) => {
+            Model.ModelShutdown += (model, args) =>
+            {
                 latch.Set();
             };
             Conn.Close();

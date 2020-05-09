@@ -38,16 +38,12 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-using System.IO;
-
 using NUnit.Framework;
-
-using RabbitMQ.Util;
+using System;
 
 namespace RabbitMQ.Client.Unit
 {
-    class WireFormattingFixture
+    internal class WireFormattingFixture
     {
         public void Check(byte[] actual, byte[] expected)
         {

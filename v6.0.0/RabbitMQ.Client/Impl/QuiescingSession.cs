@@ -3,7 +3,7 @@ using RabbitMQ.Client.Framing.Impl;
 namespace RabbitMQ.Client.Impl
 {
     ///<summary>Small ISession implementation used during channel quiescing.</summary>
-    class QuiescingSession : SessionBase
+    internal class QuiescingSession : SessionBase
     {
         public ShutdownEventArgs m_reason;
 

@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    struct ContentHeaderPropertyWriter
+    internal struct ContentHeaderPropertyWriter
     {
         private int _bitCount;
         private ushort _flagWord;
         public int Offset { get; private set; }
-        public Memory<byte> Memory { get; private set; }
+        public Memory<byte> Memory { get; }
 
         public ContentHeaderPropertyWriter(Memory<byte> memory)
         {

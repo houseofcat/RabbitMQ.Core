@@ -1,14 +1,13 @@
-﻿using System;
+﻿using RabbitMQ.Client.Events;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using RabbitMQ.Client.Events;
-
 namespace RabbitMQ.Client.Impl
 {
-    sealed class BasicConsumeOk : Work
+    internal sealed class BasicConsumeOk : Work
     {
-        readonly string _consumerTag;
+        private readonly string _consumerTag;
 
         public BasicConsumeOk(IBasicConsumer consumer, string consumerTag) : base(consumer)
         {

@@ -32,7 +32,7 @@ namespace RabbitMQ.Client
         /// <summary>
         /// Unix time.
         /// </summary>
-        public long UnixTime { get; private set; }
+        public long UnixTime { get; }
 
         /// <summary>
         /// Provides a debugger-friendly display.

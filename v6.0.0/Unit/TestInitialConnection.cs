@@ -38,11 +38,9 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 using NUnit.Framework;
-
 using RabbitMQ.Client.Exceptions;
+using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -68,7 +66,8 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithHostnameListWithOnlyUnreachableHosts()
         {
-            Assert.Throws<BrokerUnreachableException>(() => {
+            Assert.Throws<BrokerUnreachableException>(() =>
+            {
                 CreateAutorecoveringConnection(new List<string>() {
                     "191.72.44.22",
                     "145.23.22.18",

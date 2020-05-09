@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    class Command : IDisposable
+    internal class Command : IDisposable
     {
         // EmptyFrameSize, 8 = 1 + 2 + 4 + 1
         // - 1 byte of frame type
@@ -41,11 +41,11 @@ namespace RabbitMQ.Client.Impl
             Body = _body?.Memory.Slice(0, bodySize) ?? s_emptyByteArray;
         }
 
-        public ReadOnlyMemory<byte> Body { get; private set; }
+        public ReadOnlyMemory<byte> Body { get; }
 
-        internal ContentHeaderBase Header { get; private set; }
+        internal ContentHeaderBase Header { get; }
 
-        internal MethodBase Method { get; private set; }
+        internal MethodBase Method { get; }
 
         public static void CheckEmptyFrameSize()
         {

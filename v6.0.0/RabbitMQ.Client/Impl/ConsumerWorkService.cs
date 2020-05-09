@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    class ConsumerWorkService
+    internal class ConsumerWorkService
     {
         private readonly ConcurrentDictionary<IModel, WorkPool> _workPools = new ConcurrentDictionary<IModel, WorkPool>();
 
@@ -44,12 +44,12 @@ namespace RabbitMQ.Client.Impl
             return Task.CompletedTask;
         }
 
-        class WorkPool
+        private class WorkPool
         {
-            readonly ConcurrentQueue<Action> _actions;
-            readonly CancellationTokenSource _tokenSource;
-            readonly CancellationTokenRegistration _tokenRegistration;
-            volatile TaskCompletionSource<bool> _syncSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly ConcurrentQueue<Action> _actions;
+            private readonly CancellationTokenSource _tokenSource;
+            private readonly CancellationTokenRegistration _tokenRegistration;
+            private TaskCompletionSource<bool> _syncSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             private Task _worker;
 
             public WorkPool()
@@ -70,7 +70,7 @@ namespace RabbitMQ.Client.Impl
                 _syncSource.TrySetResult(true);
             }
 
-            async Task Loop()
+            private async Task Loop()
             {
                 while (!_tokenSource.IsCancellationRequested)
                 {

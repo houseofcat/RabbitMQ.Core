@@ -1,14 +1,13 @@
+using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using RabbitMQ.Client.Events;
-
 namespace RabbitMQ.Client.Impl
 {
-    sealed class ModelShutdown : Work
+    internal sealed class ModelShutdown : Work
     {
-        readonly ShutdownEventArgs _reason;
+        private readonly ShutdownEventArgs _reason;
 
         public ModelShutdown(IBasicConsumer consumer, ShutdownEventArgs reason) : base(consumer)
         {

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
-    class SessionManager
+    internal class SessionManager
     {
         public readonly ushort ChannelMax;
         private readonly IntAllocator _ints;
@@ -72,7 +72,7 @@ namespace RabbitMQ.Client.Impl
                         // we would suffer a deadlock as the connection thread
                         // would be blocking waiting for its own mainloop
                         // to reply to it.
-                        Task.Run((Action)AutoCloseConnection).Wait();
+                        Task.Run(AutoCloseConnection).Wait();
                     }
                 }
             }

@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace RabbitMQ.Client.Impl
 {
-    enum AssemblyState
+    internal enum AssemblyState
     {
         ExpectingMethod,
         ExpectingContentHeader,
@@ -13,7 +13,7 @@ namespace RabbitMQ.Client.Impl
         Complete
     }
 
-    class CommandAssembler
+    internal class CommandAssembler
     {
         private const int MaxArrayOfBytesSize = 2_147_483_591;
 

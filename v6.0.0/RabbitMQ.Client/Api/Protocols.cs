@@ -1,3 +1,5 @@
+using RabbitMQ.Client.Framing;
+
 namespace RabbitMQ.Client
 {
     ///<summary>
@@ -10,7 +12,7 @@ namespace RabbitMQ.Client
         ///</summary>
         public static IProtocol AMQP_0_9_1
         {
-            get { return (IProtocol)new RabbitMQ.Client.Framing.Protocol(); }
+            get { return new Protocol(); }
         }
 
         ///<summary>

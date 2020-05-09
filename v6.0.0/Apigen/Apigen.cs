@@ -46,8 +46,6 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
-using RabbitMQ.Client.Apigen.Attributes;
-
 namespace RabbitMQ.Client.Apigen
 {
     public static class ApigenExtensions
@@ -1167,7 +1165,7 @@ $@"namespace {ApiNamespaceBase}
                     }
                 }
             }
-        stopSearching:
+            stopSearching:
 
             // If an explicit mapping was provided as an attribute,
             // then use that instead, whether the autodetect worked or

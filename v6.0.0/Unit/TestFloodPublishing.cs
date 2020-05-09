@@ -77,7 +77,7 @@ namespace RabbitMQ.Client.Unit
                     bool shouldStop = false;
                     DateTime now = DateTime.Now;
                     DateTime stopTime = DateTime.Now.Add(_tenSeconds);
-                    for (int i = 0; i < 65535*64; i++)
+                    for (int i = 0; i < 65535 * 64; i++)
                     {
                         if (i % 65536 == 0)
                         {

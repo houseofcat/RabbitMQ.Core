@@ -38,14 +38,11 @@
 //  Copyright (c) 2007-2020 VMware, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using NUnit.Framework;
+using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-
-using NUnit.Framework;
-
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Framing;
 
 namespace RabbitMQ.Client.Unit
 {
@@ -83,7 +80,7 @@ namespace RabbitMQ.Client.Unit
 
         private class CollectingConsumer : DefaultBasicConsumer
         {
-            public List<ulong> DeliveryTags { get; private set; }
+            public List<ulong> DeliveryTags { get; }
 
             public CollectingConsumer(IModel model)
                 : base(model)
@@ -180,8 +177,8 @@ namespace RabbitMQ.Client.Unit
 
         private class ShutdownLatchConsumer : DefaultBasicConsumer
         {
-            public ManualResetEvent Latch { get; private set; }
-            public ManualResetEvent DuplicateLatch { get; private set; }
+            public ManualResetEvent Latch { get; }
+            public ManualResetEvent DuplicateLatch { get; }
 
             public ShutdownLatchConsumer(ManualResetEvent latch, ManualResetEvent duplicateLatch)
             {
@@ -192,9 +189,12 @@ namespace RabbitMQ.Client.Unit
             public override void HandleModelShutdown(object model, ShutdownEventArgs reason)
             {
                 // keep track of duplicates
-                if (Latch.WaitOne(0)){
+                if (Latch.WaitOne(0))
+                {
                     DuplicateLatch.Set();
-                } else {
+                }
+                else
+                {
                     Latch.Set();
                 }
             }

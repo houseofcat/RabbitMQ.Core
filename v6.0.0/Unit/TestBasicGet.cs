@@ -50,13 +50,13 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicGetWithClosedChannel()
         {
-            WithNonEmptyQueue( (_, q) =>
-                {
-                    WithClosedModel(cm =>
-                    {
-                        Assert.Throws(Is.InstanceOf<AlreadyClosedException>(), () => cm.BasicGet(q, true));
-                    });
-                });
+            WithNonEmptyQueue((_, q) =>
+               {
+                   WithClosedModel(cm =>
+                   {
+                       Assert.Throws(Is.InstanceOf<AlreadyClosedException>(), () => cm.BasicGet(q, true));
+                   });
+               });
         }
 
         [Test]
