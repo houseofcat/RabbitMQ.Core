@@ -692,7 +692,9 @@ namespace RabbitMQ.Client.Unit
         }
     }
 
+#pragma warning disable RCS1102 // Make class static.
     public class TimingFixture
+#pragma warning restore RCS1102 // Make class static.
     {
         public static readonly TimeSpan TimingInterval = TimeSpan.FromMilliseconds(300);
         public static readonly TimeSpan TimingInterval_2X = TimeSpan.FromMilliseconds(600);

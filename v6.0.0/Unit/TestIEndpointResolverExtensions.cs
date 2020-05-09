@@ -23,6 +23,14 @@ namespace RabbitMQ.Client.Unit
         public TestEndpointException(string message) : base(message)
         {
         }
+
+        public TestEndpointException() : base()
+        {
+        }
+
+        public TestEndpointException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 
     public class TestIEndpointResolverExtensions
