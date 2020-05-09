@@ -15,6 +15,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected MalformedFrameException() : base()
+        {
+        }
+
+        protected MalformedFrameException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         public override ushort ReplyCode
         {
             get { return Constants.FrameError; }

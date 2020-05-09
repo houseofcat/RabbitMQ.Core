@@ -17,6 +17,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected ChannelErrorException() : base()
+        {
+        }
+
+        protected ChannelErrorException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>The channel number concerned.</summary>
         public int Channel { get; }
 

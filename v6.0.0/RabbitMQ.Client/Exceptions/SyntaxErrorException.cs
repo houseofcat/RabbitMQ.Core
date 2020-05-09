@@ -10,6 +10,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected SyntaxErrorException() : base()
+        {
+        }
+
+        protected SyntaxErrorException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         public override ushort ReplyCode
         {
             get { return Constants.SyntaxError; }

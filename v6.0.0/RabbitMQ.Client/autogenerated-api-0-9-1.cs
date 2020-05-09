@@ -587,20 +587,20 @@ namespace RabbitMQ.Client.Framing
         private string _appId;
         private string _clusterId;
 
-        private bool _contentType_present = false;
-        private bool _contentEncoding_present = false;
-        private bool _headers_present = false;
-        private bool _deliveryMode_present = false;
-        private bool _priority_present = false;
-        private bool _correlationId_present = false;
-        private bool _replyTo_present = false;
-        private bool _expiration_present = false;
-        private bool _messageId_present = false;
-        private bool _timestamp_present = false;
-        private bool _type_present = false;
-        private bool _userId_present = false;
-        private bool _appId_present = false;
-        private bool _clusterId_present = false;
+        private bool _contentType_present;
+        private bool _contentEncoding_present;
+        private bool _headers_present;
+        private bool _deliveryMode_present;
+        private bool _priority_present;
+        private bool _correlationId_present;
+        private bool _replyTo_present;
+        private bool _expiration_present;
+        private bool _messageId_present;
+        private bool _timestamp_present;
+        private bool _type_present;
+        private bool _userId_present;
+        private bool _appId_present;
+        private bool _clusterId_present;
 
         public override string ContentType
         {
@@ -893,20 +893,20 @@ namespace RabbitMQ.Client.Framing
         public override void AppendPropertyDebugStringTo(StringBuilder sb)
         {
             sb.Append("(");
-            sb.Append("content-type="); sb.Append(_contentType_present ? (_contentType == null ? "(null)" : _contentType) : "_"); sb.Append(", ");
-            sb.Append("content-encoding="); sb.Append(_contentEncoding_present ? (_contentEncoding == null ? "(null)" : _contentEncoding) : "_"); sb.Append(", ");
+            sb.Append("content-type="); sb.Append(_contentType_present ? (_contentType ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("content-encoding="); sb.Append(_contentEncoding_present ? (_contentEncoding ?? "(null)") : "_"); sb.Append(", ");
             sb.Append("headers="); sb.Append(_headers_present ? (_headers == null ? "(null)" : _headers.ToString()) : "_"); sb.Append(", ");
             sb.Append("delivery-mode="); sb.Append(_deliveryMode_present ? _deliveryMode.ToString() : "_"); sb.Append(", ");
             sb.Append("priority="); sb.Append(_priority_present ? _priority.ToString() : "_"); sb.Append(", ");
-            sb.Append("correlation-id="); sb.Append(_correlationId_present ? (_correlationId == null ? "(null)" : _correlationId) : "_"); sb.Append(", ");
-            sb.Append("reply-to="); sb.Append(_replyTo_present ? (_replyTo == null ? "(null)" : _replyTo) : "_"); sb.Append(", ");
-            sb.Append("expiration="); sb.Append(_expiration_present ? (_expiration == null ? "(null)" : _expiration) : "_"); sb.Append(", ");
-            sb.Append("message-id="); sb.Append(_messageId_present ? (_messageId == null ? "(null)" : _messageId) : "_"); sb.Append(", ");
+            sb.Append("correlation-id="); sb.Append(_correlationId_present ? (_correlationId ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("reply-to="); sb.Append(_replyTo_present ? (_replyTo ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("expiration="); sb.Append(_expiration_present ? (_expiration ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("message-id="); sb.Append(_messageId_present ? (_messageId ?? "(null)") : "_"); sb.Append(", ");
             sb.Append("timestamp="); sb.Append(_timestamp_present ? _timestamp.ToString() : "_"); sb.Append(", ");
-            sb.Append("type="); sb.Append(_type_present ? (_type == null ? "(null)" : _type) : "_"); sb.Append(", ");
-            sb.Append("user-id="); sb.Append(_userId_present ? (_userId == null ? "(null)" : _userId) : "_"); sb.Append(", ");
-            sb.Append("app-id="); sb.Append(_appId_present ? (_appId == null ? "(null)" : _appId) : "_"); sb.Append(", ");
-            sb.Append("cluster-id="); sb.Append(_clusterId_present ? (_clusterId == null ? "(null)" : _clusterId) : "_");
+            sb.Append("type="); sb.Append(_type_present ? (_type ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("user-id="); sb.Append(_userId_present ? (_userId ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("app-id="); sb.Append(_appId_present ? (_appId ?? "(null)") : "_"); sb.Append(", ");
+            sb.Append("cluster-id="); sb.Append(_clusterId_present ? (_clusterId ?? "(null)") : "_");
             sb.Append(")");
         }
     }
@@ -1534,9 +1534,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -1610,9 +1610,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -1693,9 +1693,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -1958,9 +1958,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2086,9 +2086,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2182,9 +2182,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2293,9 +2293,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2404,9 +2404,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2658,9 +2658,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -2762,9 +2762,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -3867,9 +3867,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -3956,9 +3956,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -3990,9 +3990,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -4024,9 +4024,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -4058,9 +4058,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -4092,9 +4092,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -4126,9 +4126,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 
@@ -4202,9 +4202,9 @@ namespace RabbitMQ.Client.Framing.Impl
         {
         }
 
+        private const int bufferSize = 0;
         public override int GetRequiredBufferSize()
         {
-            int bufferSize = 0;
             return bufferSize;
         }
 

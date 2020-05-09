@@ -369,6 +369,7 @@ namespace RabbitMQ.Client.Apigen.Attributes
 {
     ///<summary>Base class for attributes for controlling the API
     ///autogeneration process.</summary>
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal abstract class AmqpApigenAttribute : Attribute
     {
         ///<summary>The specification namespace (i.e. version) that
@@ -487,6 +488,7 @@ namespace RabbitMQ.Client.Apigen.Attributes
     ///causes the method to be interpreted as a factory method
     ///producing a protocol-specific implementation of a common
     ///content header interface.</summary>
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal class AmqpContentHeaderFactoryAttribute : Attribute
     {
         public string m_contentClass;
@@ -500,6 +502,7 @@ namespace RabbitMQ.Client.Apigen.Attributes
     ///<summary>This attribute, if placed on a parameter in a
     ///content-carrying IModel method, causes it to be sent as part of
     ///the content header frame.</summary>
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal class AmqpContentHeaderMappingAttribute : Attribute
     {
     }
@@ -507,6 +510,7 @@ namespace RabbitMQ.Client.Apigen.Attributes
     ///<summary>This attribute, if placed on a parameter in a
     ///content-carrying IModel method, causes it to be sent as part of
     ///the content body frame.</summary>
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal class AmqpContentBodyMappingAttribute : Attribute
     {
     }
@@ -516,6 +520,7 @@ namespace RabbitMQ.Client.Apigen.Attributes
     ///as if it were oneway, with ModelSend. The assumption that this
     ///is for a custom continuation (e.g. for BasicConsume/BasicCancel
     ///etc.)</summary>
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal class AmqpForceOneWayAttribute : Attribute
     {
     }

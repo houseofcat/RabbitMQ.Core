@@ -24,8 +24,8 @@ namespace RabbitMQ.Client.Framing.Impl
 
         private readonly ManualResetEvent _appContinuation = new ManualResetEvent(false);
 
-        private volatile ShutdownEventArgs _closeReason = null;
-        private volatile bool _closed = false;
+        private volatile ShutdownEventArgs _closeReason;
+        private volatile bool _closed;
 
         private EventHandler<ShutdownEventArgs> _connectionShutdown;
 
@@ -44,7 +44,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         private TimeSpan _heartbeat = TimeSpan.Zero;
         private TimeSpan _heartbeatTimeSpan = TimeSpan.FromSeconds(0);
-        private int _missedHeartbeats = 0;
+        private int _missedHeartbeats;
 
         private Timer _heartbeatWriteTimer;
         private Timer _heartbeatReadTimer;

@@ -528,7 +528,7 @@ namespace RabbitMQ.Client
                 string[] userPass = userInfo.Split(':');
                 if (userPass.Length > 2)
                 {
-                    throw new ArgumentException("Bad user info in AMQP " + "URI: " + userInfo);
+                    throw new ArgumentException($"Bad user info in AMQP URI: {userInfo}");
                 }
                 UserName = UriDecode(userPass[0]);
                 if (userPass.Length == 2)

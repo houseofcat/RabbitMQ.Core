@@ -19,6 +19,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected UnknownClassOrMethodException() : base()
+        {
+        }
+
+        protected UnknownClassOrMethodException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>The AMQP content-class ID.</summary>
         public ushort ClassId { get; }
 

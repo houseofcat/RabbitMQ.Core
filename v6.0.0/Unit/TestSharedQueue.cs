@@ -51,7 +51,7 @@ namespace RabbitMQ.Client.Unit
         //wrapper to work around C#'s lack of local volatiles
         public class VolatileInt
         {
-            public volatile int v = 0;
+            public volatile int v;
         }
 
         public class DelayedEnqueuer

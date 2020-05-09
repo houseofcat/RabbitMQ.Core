@@ -18,6 +18,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected UnexpectedFrameException() : base()
+        {
+        }
+
+        protected UnexpectedFrameException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         internal Frame Frame { get; }
 
         public override ushort ReplyCode

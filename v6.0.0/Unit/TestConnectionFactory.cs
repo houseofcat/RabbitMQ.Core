@@ -230,7 +230,7 @@ namespace RabbitMQ.Client.Unit
                 AddressFamily = System.Net.Sockets.AddressFamily.InterNetwork
             };
             cf.Endpoint = ep;
-            using (IConnection conn = cf.CreateConnection()) { };
+            using (IConnection conn = cf.CreateConnection()) { }
         }
 
         [Test]
@@ -250,7 +250,7 @@ namespace RabbitMQ.Client.Unit
             var cf = new ConnectionFactory();
             var invalidEp = new AmqpTcpEndpoint("not_localhost");
             var ep = new AmqpTcpEndpoint("localhost");
-            using (IConnection conn = cf.CreateConnection(new List<AmqpTcpEndpoint> { invalidEp, ep })) { };
+            using (IConnection conn = cf.CreateConnection(new List<AmqpTcpEndpoint> { invalidEp, ep })) { }
         }
     }
 }

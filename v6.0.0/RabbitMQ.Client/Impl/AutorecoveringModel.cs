@@ -19,8 +19,8 @@ namespace RabbitMQ.Client.Impl
 
         private ushort _prefetchCountConsumer = 0;
         private ushort _prefetchCountGlobal = 0;
-        private bool _usesPublisherConfirms = false;
-        private bool _usesTransactions = false;
+        private bool _usesPublisherConfirms;
+        private bool _usesTransactions;
 
         public IConsumerDispatcher ConsumerDispatcher
         {
@@ -238,7 +238,7 @@ namespace RabbitMQ.Client.Impl
         {
             try
             {
-                _delegate.Close(reason, abort).GetAwaiter().GetResult(); ;
+                _delegate.Close(reason, abort).GetAwaiter().GetResult();
             }
             finally
             {

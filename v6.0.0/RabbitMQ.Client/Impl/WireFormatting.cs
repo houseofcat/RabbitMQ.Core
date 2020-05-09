@@ -208,7 +208,7 @@ namespace RabbitMQ.Client.Impl
                 int bytesWritten = 0;
                 foreach (object entry in val)
                 {
-                    bytesWritten += WriteFieldValue(memory.Slice(4 + bytesWritten), entry); ;
+                    bytesWritten += WriteFieldValue(memory.Slice(4 + bytesWritten), entry);
                 }
 
                 NetworkOrderSerializer.WriteUInt32(memory, (uint)bytesWritten);

@@ -12,7 +12,6 @@ namespace RabbitMQ.Client.Impl
         /// </summary>
         /// <typeparam name="T">Element item type</typeparam>
         /// <param name="list">Input list</param>
-        /// <returns></returns>
         public static T RandomItem<T>(this IList<T> list)
         {
             int n = list.Count;
@@ -22,7 +21,7 @@ namespace RabbitMQ.Client.Impl
             }
 
             int hashCode = Math.Abs(Guid.NewGuid().GetHashCode());
-            return list.ElementAt<T>(hashCode % n);
+            return list[hashCode % n];
         }
 
         internal static ArraySegment<byte> GetBufferSegment(this MemoryStream ms)

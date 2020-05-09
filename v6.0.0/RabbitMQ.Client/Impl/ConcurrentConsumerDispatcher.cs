@@ -149,7 +149,7 @@ namespace RabbitMQ.Client.Impl
                         {"context",  "HandleModelShutdown"}
                     };
                 _model.OnCallbackException(CallbackExceptionEventArgs.Build(e, details));
-            };
+            }
         }
 
         private void UnlessShuttingDown(Action fn)

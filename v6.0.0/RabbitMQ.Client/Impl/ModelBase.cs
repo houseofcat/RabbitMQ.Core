@@ -20,7 +20,7 @@ namespace RabbitMQ.Client.Impl
 
         ///<summary>Only used to kick-start a connection open
         ///sequence. See <see cref="Connection.Open"/> </summary>
-        public BlockingCell<ConnectionStartDetails> m_connectionStartCell = null;
+        public BlockingCell<ConnectionStartDetails> m_connectionStartCell;
 
         private TimeSpan _handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
         private TimeSpan _continuationTimeout = TimeSpan.FromSeconds(20);
@@ -470,7 +470,7 @@ namespace RabbitMQ.Client.Impl
             SetCloseReason(reason);
             OnModelShutdown(reason);
             BroadcastShutdownToConsumers(m_consumers, reason);
-            ConsumerDispatcher.Shutdown(this).GetAwaiter().GetResult(); ;
+            ConsumerDispatcher.Shutdown(this).GetAwaiter().GetResult();
         }
 
         protected void BroadcastShutdownToConsumers(IDictionary<string, IBasicConsumer> cs, ShutdownEventArgs reason)

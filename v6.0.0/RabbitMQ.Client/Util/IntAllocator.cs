@@ -12,7 +12,7 @@ namespace RabbitMQ.Util
     {
         private readonly int[] _unsorted;
         private IntervalList _base;
-        private int _unsortedCount = 0;
+        private int _unsortedCount;
 
         /**
      * A class representing a list of inclusive intervals
