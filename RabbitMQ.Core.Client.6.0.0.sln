@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apigen", "v6.0.0\Apigen\Apigen.csproj", "{48BB5307-C756-487A-BA6C-CA94EDB78255}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unit", "v6.0.0\Unit\Unit.csproj", "{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{AD8563BE-8480-4B9D-B957-A7A3C26232C8}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		Build.v6.0.0.bat = Build.v6.0.0.bat
+		LICENSE = LICENSE
+		PIVOTAL_LICENSE = PIVOTAL_LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client", "v6.0.0\RabbitMQ.Client\RabbitMQ.Client.csproj", "{72E577F3-6023-4E61-A1FD-0B1F035E6B04}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{48BB5307-C756-487A-BA6C-CA94EDB78255}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48BB5307-C756-487A-BA6C-CA94EDB78255}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E121270-3B87-41CD-93E5-39ED1ED1ECF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72E577F3-6023-4E61-A1FD-0B1F035E6B04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72E577F3-6023-4E61-A1FD-0B1F035E6B04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72E577F3-6023-4E61-A1FD-0B1F035E6B04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72E577F3-6023-4E61-A1FD-0B1F035E6B04}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1B108FBE-E95C-4B9D-A19D-182D2232ED5F}
+	EndGlobalSection
+EndGlobal
