@@ -44,7 +44,7 @@ namespace RabbitMQ.Client.Impl
             return Source.GetHashCode() ^
                    Destination.GetHashCode() ^
                    RoutingKey.GetHashCode() ^
-                   (Arguments != null ? Arguments.GetHashCode() : 0);
+                   (Arguments?.GetHashCode() ?? 0);
         }
 
         public virtual void Recover()

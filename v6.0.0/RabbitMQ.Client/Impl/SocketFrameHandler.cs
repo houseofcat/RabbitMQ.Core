@@ -23,7 +23,7 @@ namespace RabbitMQ.Client.Impl
             }
             else
             {
-                Task supressErrorTask = task.ContinueWith(t => t.Exception.Handle(e => true), TaskContinuationOptions.OnlyOnFaulted);
+                Task supressErrorTask = task.ContinueWith(t => t.Exception.Handle(_ => true), TaskContinuationOptions.OnlyOnFaulted);
                 throw new TimeoutException();
             }
         }
@@ -163,7 +163,6 @@ namespace RabbitMQ.Client.Impl
             return RabbitMQ.Client.Impl.InboundFrame.ReadFrom(_reader);
         }
 
-        private static readonly byte[] s_amqp = Encoding.ASCII.GetBytes("AMQP");
         public void SendHeader()
         {
             byte[] headerBytes = new byte[8];

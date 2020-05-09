@@ -158,7 +158,7 @@ namespace RabbitMQ.Client.Unit
         internal void TestConcurrentChannelOperations(Action<IConnection> actions,
             int iterations, TimeSpan timeout)
         {
-            Task[] tasks = Enumerable.Range(0, Threads).Select(x =>
+            Task[] tasks = Enumerable.Range(0, Threads).Select(_ =>
             {
                 return Task.Run(() =>
                 {

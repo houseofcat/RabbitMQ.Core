@@ -141,8 +141,6 @@ namespace RabbitMQ.Client
         /// Amount of time client will wait for before re-trying  to recover connection.
         /// </summary>
         public TimeSpan NetworkRecoveryInterval { get; set; } = TimeSpan.FromSeconds(5);
-        private TimeSpan _handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
-        private TimeSpan _continuationTimeout = TimeSpan.FromSeconds(20);
 
         // just here to hold the value that was set through the setter
         private Uri _uri;
@@ -151,21 +149,13 @@ namespace RabbitMQ.Client
         /// Amount of time protocol handshake operations are allowed to take before
         /// timing out.
         /// </summary>
-        public TimeSpan HandshakeContinuationTimeout
-        {
-            get { return _handshakeContinuationTimeout; }
-            set { _handshakeContinuationTimeout = value; }
-        }
+        public TimeSpan HandshakeContinuationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
         /// <summary>
         /// Amount of time protocol  operations (e.g. <code>queue.declare</code>) are allowed to take before
         /// timing out.
         /// </summary>
-        public TimeSpan ContinuationTimeout
-        {
-            get { return _continuationTimeout; }
-            set { _continuationTimeout = value; }
-        }
+        public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
         /// <summary>
         /// Factory function for creating the <see cref="IEndpointResolver"/>
@@ -256,11 +246,6 @@ namespace RabbitMQ.Client
         /// Heartbeat timeout to use when negotiating with the server.
         /// </summary>
         public TimeSpan RequestedHeartbeat { get; set; } = DefaultHeartbeat;
-
-        /// <summary>
-        /// When set to true, background thread will be used for the I/O loop.
-        /// </summary>
-        public bool UseBackgroundThreadsForIO { get; set; }
 
         /// <summary>
         /// Username to use when authenticating to the server.
@@ -453,7 +438,7 @@ namespace RabbitMQ.Client
                 else
                 {
                     var protocol = new RabbitMQ.Client.Framing.Protocol();
-                    conn = protocol.CreateConnection(this, false, endpointResolver.SelectOne(CreateFrameHandler), clientProvidedName);
+                    conn = protocol.CreateConnection(this, endpointResolver.SelectOne(CreateFrameHandler), clientProvidedName);
                 }
             }
             catch (Exception e)

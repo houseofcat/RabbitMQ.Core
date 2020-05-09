@@ -90,7 +90,7 @@ namespace RabbitMQ.Client.Impl
                         {
                             action();
                         }
-                        catch (Exception)
+                        catch
                         {
                             // ignored
                         }

@@ -21,7 +21,7 @@
         <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
         <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <FileVersion>1.0.600.0</FileVersion>
+        <FileVersion>1.0.601.0</FileVersion>
         <PackageReleaseNotes>The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x</PackageReleaseNotes>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -31,7 +31,7 @@
         <RepositoryType>Library</RepositoryType>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <Authors>HouseofCat.io</Authors>
-        <Version>1.0.600</Version>
+        <Version>1.0.601</Version>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     </PropertyGroup>
 

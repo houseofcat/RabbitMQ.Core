@@ -541,11 +541,7 @@ namespace RabbitMQ.Client.Unit
 
         public static bool IsRunningOnMonoOrDotNetCore()
         {
-#if NETCOREAPP
             return true;
-#else
-            return Type.GetType("Mono.Runtime") != null;
-#endif
         }
 
         //

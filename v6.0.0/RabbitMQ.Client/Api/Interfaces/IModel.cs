@@ -26,28 +26,31 @@ namespace RabbitMQ.Client
         /// </summary>
         ShutdownEventArgs CloseReason { get; }
 
-        /// <summary>Signalled when an unexpected message is delivered
-        ///
+        /// <summary><para>Signalled when an unexpected message is delivered</para>
+        /// <para>
         /// Under certain circumstances it is possible for a channel to receive a
         /// message delivery which does not match any consumer which is currently
         /// set up via basicConsume(). This will occur after the following sequence
         /// of events:
-        ///
+        /// </para>
+        /// <para>
         /// ctag = basicConsume(queue, consumer); // i.e. with explicit acks
         /// // some deliveries take place but are not acked
         /// basicCancel(ctag);
         /// basicRecover(false);
-        ///
+        /// </para>
+        /// <para>
         /// Since requeue is specified to be false in the basicRecover, the spec
         /// states that the message must be redelivered to "the original recipient"
         /// - i.e. the same channel / consumer-tag. But the consumer is no longer
         /// active.
-        ///
+        /// </para>
+        /// <para>
         /// In these circumstances, you can register a default consumer to handle
         /// such deliveries. If no default consumer is registered an
         /// InvalidOperationException will be thrown when such a delivery arrives.
-        ///
-        /// Most people will not need to use this.</summary>
+        /// </para>
+        /// <para>Most people will not need to use this.</para></summary>
         IBasicConsumer DefaultConsumer { get; set; }
 
         /// <summary>
@@ -92,11 +95,12 @@ namespace RabbitMQ.Client
         event EventHandler<BasicReturnEventArgs> BasicReturn;
 
         /// <summary>
-        /// Signalled when an exception occurs in a callback invoked by the model.
-        ///
+        /// <para>Signalled when an exception occurs in a callback invoked by the model.</para>
+        /// <para>
         /// Examples of cases where this event will be signalled
         /// include exceptions thrown in <see cref="IBasicConsumer"/> methods, or
         /// exceptions thrown in <see cref="ModelShutdown"/> delegates etc.
+        /// </para>
         /// </summary>
         event EventHandler<CallbackExceptionEventArgs> CallbackException;
 

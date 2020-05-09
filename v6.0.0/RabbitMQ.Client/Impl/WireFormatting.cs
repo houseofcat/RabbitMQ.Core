@@ -105,10 +105,10 @@ namespace RabbitMQ.Client.Impl
                     bytesRead += arrayBytesRead;
                     return arrayResult;
                 case 'B':
-                    bytesRead += 1;
+                    bytesRead++;
                     return slice.Span[0];
                 case 'b':
-                    bytesRead += 1;
+                    bytesRead++;
                     return (sbyte)slice.Span[0];
                 case 'd':
                     bytesRead += 8;
@@ -123,7 +123,7 @@ namespace RabbitMQ.Client.Impl
                     bytesRead += 2;
                     return NetworkOrderDeserializer.ReadInt16(slice);
                 case 't':
-                    bytesRead += 1;
+                    bytesRead++;
                     return slice.Span[0] != 0;
                 case 'x':
                     byte[] binaryTableResult = ReadLongstr(slice);

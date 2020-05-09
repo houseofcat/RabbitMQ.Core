@@ -81,13 +81,11 @@ namespace RabbitMQ.Client.Apigen
         /// <returns>renamed string</returns>
         private static string xmlStringMapper(string xmlString)
         {
-            switch (xmlString)
+            return xmlString switch
             {
-                case "no-wait":
-                    return "nowait";
-                default:
-                    return xmlString;
-            }
+                "no-wait" => "nowait",
+                _ => xmlString,
+            };
         }
 
         ///////////////////////////////////////////////////////////////////////////
@@ -121,7 +119,7 @@ namespace RabbitMQ.Client.Apigen
             StringBuilder sb = new StringBuilder();
             foreach (string s in IdentifierParts(name))
             {
-                sb.Append(char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant());
+                sb.Append(char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
             }
             return sb.ToString();
         }
@@ -134,7 +132,7 @@ namespace RabbitMQ.Client.Apigen
             {
                 if (useUpper)
                 {
-                    sb.Append(char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant());
+                    sb.Append(char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
                 }
                 else
                 {
@@ -256,10 +254,8 @@ namespace RabbitMQ.Client.Apigen
             Console.WriteLine("* Loading spec from '" + m_inputXmlFilename + "'");
             m_spec = new XmlDocument();
 
-            using (var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read))
-            {
-                m_spec.Load(stream);
-            }
+            using var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read);
+            m_spec.Load(stream);
         }
 
         public void ParseSpec()
@@ -331,14 +327,12 @@ namespace RabbitMQ.Client.Apigen
                 Directory.CreateDirectory(directory);
             }
 
-            using (var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write))
-            {
-                m_outputFile = new StreamWriter(stream);
-                EmitPrelude();
-                EmitPublic();
-                EmitPrivate();
-                m_outputFile.Dispose();
-            }
+            using var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write);
+            m_outputFile = new StreamWriter(stream);
+            EmitPrelude();
+            EmitPublic();
+            EmitPrivate();
+            m_outputFile.Dispose();
         }
 
         public void Emit(object o)
@@ -950,8 +944,7 @@ $@"namespace {ApiNamespaceBase}
             {
                 foreach (MethodInfo method in t.GetMethods())
                 {
-                    if (method.DeclaringType.Namespace != null &&
-                        method.DeclaringType.Namespace.StartsWith("RabbitMQ.Client"))
+                    if (method.DeclaringType.Namespace?.StartsWith("RabbitMQ.Client") == true)
                     {
                         if (method.Name.StartsWith("Handle") ||
                             (Attribute(method, typeof(AmqpAsynchronousHandlerAttribute)) != null))
@@ -1033,25 +1026,18 @@ $@"namespace {ApiNamespaceBase}
                 return "ReadOnlyMemory<byte>";
             }
 
-            switch (t.FullName)
+            return t.FullName switch
             {
-                case "System.Boolean":
-                    return "bool";
-                case "System.Byte[]":
-                    return "byte[]";
-                case "System.String":
-                    return "string";
-                case "System.UInt16":
-                    return "ushort";
-                case "System.UInt32":
-                    return "uint";
-                case "System.UInt64":
-                    return "ulong";
-                case "System.Void":
-                    return "void";
-                default:
-                    return t.FullName;
+                "System.Boolean" => "bool",
+                "System.Byte[]" => "byte[]",
+                "System.String" => "string",
+                "System.UInt16" => "ushort",
+                "System.UInt32" => "uint",
+                "System.UInt64" => "ulong",
+                "System.Void" => "void",
+                _ => t.FullName,
             };
+            ;
         }
 
         public void EmitModelMethodPreamble(MethodInfo method)

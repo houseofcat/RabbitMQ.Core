@@ -22,9 +22,6 @@ namespace RabbitMQ.Client.Impl
         ///sequence. See <see cref="Connection.Open"/> </summary>
         public BlockingCell<ConnectionStartDetails> m_connectionStartCell;
 
-        private TimeSpan _handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
-        private TimeSpan _continuationTimeout = TimeSpan.FromSeconds(20);
-
         private readonly RpcContinuationQueue _continuationQueue = new RpcContinuationQueue();
         private readonly ManualResetEvent _flowControlBlock = new ManualResetEvent(true);
 
@@ -69,17 +66,9 @@ namespace RabbitMQ.Client.Impl
             Session.SessionShutdown += OnSessionShutdown;
         }
 
-        public TimeSpan HandshakeContinuationTimeout
-        {
-            get { return _handshakeContinuationTimeout; }
-            set { _handshakeContinuationTimeout = value; }
-        }
+        public TimeSpan HandshakeContinuationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        public TimeSpan ContinuationTimeout
-        {
-            get { return _continuationTimeout; }
-            set { _continuationTimeout = value; }
-        }
+        public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
         public event EventHandler<BasicAckEventArgs> BasicAcks;
         public event EventHandler<BasicNackEventArgs> BasicNacks;
@@ -166,26 +155,14 @@ namespace RabbitMQ.Client.Impl
                 k.Wait(TimeSpan.FromMilliseconds(10000));
                 await ConsumerDispatcher.Shutdown(this).ConfigureAwait(false);
             }
-            catch (AlreadyClosedException)
+            catch (AlreadyClosedException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (IOException)
+            catch (IOException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (Exception)
+            catch (Exception) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
         }
 
@@ -287,10 +264,7 @@ namespace RabbitMQ.Client.Impl
             {
                 Session.Close(CloseReason);
             }
-            if (m_connectionStartCell != null)
-            {
-                m_connectionStartCell.ContinueWithValue(null);
-            }
+            m_connectionStartCell?.ContinueWithValue(null);
         }
 
         public void HandleCommand(ISession session, Command cmd)
@@ -673,7 +647,7 @@ namespace RabbitMQ.Client.Impl
         public void HandleBasicRecoverOk()
         {
             var k = (SimpleBlockingRpcContinuation)_continuationQueue.Next();
-            OnBasicRecoverOk(new EventArgs());
+            OnBasicRecoverOk(EventArgs.Empty);
             k.HandleCommand(null);
         }
 

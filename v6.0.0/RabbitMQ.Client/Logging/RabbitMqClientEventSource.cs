@@ -10,16 +10,10 @@ namespace RabbitMQ.Client.Logging
         {
             public const EventKeywords Log = (EventKeywords)1;
         }
-#if NET452
-        public RabbitMqClientEventSource() : base()
-        {
 
-        }
-#else
         public RabbitMqClientEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
-#endif
 
         public static RabbitMqClientEventSource Log = new RabbitMqClientEventSource();
 
@@ -40,14 +34,7 @@ namespace RabbitMQ.Client.Logging
                 WriteEvent(2, message);
             }
         }
-#if NET452
-        [Event(3, Message = "ERROR", Keywords = Keywords.Log, Level = EventLevel.Error)]
-        public void Error(string message, string detail)
-        {
-            if(IsEnabled())
-                this.WriteEvent(3, message, detail);
-        }
-#else
+
         [Event(3, Message = "ERROR", Keywords = Keywords.Log, Level = EventLevel.Error)]
         public void Error(string message, RabbitMqExceptionDetail ex)
         {
@@ -56,16 +43,11 @@ namespace RabbitMQ.Client.Logging
                 WriteEvent(3, message, ex);
             }
         }
-#endif
 
         [NonEvent]
         public void Error(string message, Exception ex)
         {
-#if NET452
-            Error(message, ex.ToString());
-#else
             Error(message, new RabbitMqExceptionDetail(ex));
-#endif
         }
     }
 }

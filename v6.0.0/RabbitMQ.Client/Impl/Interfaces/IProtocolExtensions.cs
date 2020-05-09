@@ -7,7 +7,9 @@ namespace RabbitMQ.Client.Framing.Impl
     public static class IProtocolExtensions
     {
         public static IFrameHandler CreateFrameHandler(
+#pragma warning disable RCS1175 // Unused this parameter.
             this IProtocol protocol,
+#pragma warning restore RCS1175 // Unused this parameter.
             AmqpTcpEndpoint endpoint,
             Func<AddressFamily, ITcpClient> socketFactory,
             TimeSpan connectionTimeout,

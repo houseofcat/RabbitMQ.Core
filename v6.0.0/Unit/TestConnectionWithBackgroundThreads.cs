@@ -8,10 +8,7 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestWithBackgroundThreadsEnabled()
         {
-            ConnectionFactory connFactory = new ConnectionFactory
-            {
-                UseBackgroundThreadsForIO = true
-            };
+            ConnectionFactory connFactory = new ConnectionFactory();
 
             IConnection conn = connFactory.CreateConnection();
             IModel ch = conn.CreateModel();

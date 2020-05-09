@@ -175,17 +175,11 @@ namespace RabbitMQ.Client.Impl
                     throw new EndOfStreamException("Reached the end of the stream. Possible authentication failure.");
                 }
             }
-            catch (IOException ioe)
+            catch (IOException ioe) when
+                (ioe.InnerException != null
+                && (ioe.InnerException is SocketException)
+                && ((SocketException)ioe.InnerException).SocketErrorCode == SocketError.TimedOut)
             {
-                // If it's a WSAETIMEDOUT SocketException, unwrap it.
-                // This might happen when the limit of half-open connections is
-                // reached.
-                if (ioe.InnerException == null ||
-                    !(ioe.InnerException is SocketException) ||
-                    ((SocketException)ioe.InnerException).SocketErrorCode != SocketError.TimedOut)
-                {
-                    throw;
-                }
                 throw ioe.InnerException;
             }
 
@@ -206,7 +200,7 @@ namespace RabbitMQ.Client.Impl
             {
                 while (bytesRead < payloadSize)
                 {
-                    bytesRead += reader.Read(payload.Memory.Slice(bytesRead, payloadSize - bytesRead));
+                    bytesRead += reader.Read(payload.Memory[bytesRead..payloadSize]);
                 }
             }
             catch (Exception)

@@ -33,11 +33,11 @@ namespace RabbitMQ.Client.Impl
 
             var sslStream = new SslStream(tcpStream, false, remoteCertValidator, localCertSelector);
 
-            Action<SslOption> TryAuthenticating = (SslOption opts) =>
+            void TryAuthenticating(SslOption opts)
             {
                 sslStream.AuthenticateAsClientAsync(opts.ServerName, opts.Certs, opts.Version,
                                                     opts.CheckCertificateRevocation).GetAwaiter().GetResult();
-            };
+            }
             try
             {
                 TryAuthenticating(options);
@@ -57,8 +57,8 @@ namespace RabbitMQ.Client.Impl
         private X509Certificate CertificateSelectionCallback(object sender, string targetHost,
             X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
-            if (acceptableIssuers != null && acceptableIssuers.Length > 0 &&
-                localCertificates != null && localCertificates.Count > 0)
+            if (acceptableIssuers?.Length > 0 &&
+                localCertificates?.Count > 0)
             {
                 foreach (X509Certificate certificate in localCertificates)
                 {
@@ -68,7 +68,7 @@ namespace RabbitMQ.Client.Impl
                     }
                 }
             }
-            if (localCertificates != null && localCertificates.Count > 0)
+            if (localCertificates?.Count > 0)
             {
                 return localCertificates[0];
             }

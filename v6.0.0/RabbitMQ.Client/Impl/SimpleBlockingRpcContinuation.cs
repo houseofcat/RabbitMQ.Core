@@ -11,29 +11,23 @@ namespace RabbitMQ.Client.Impl
         public virtual Command GetReply()
         {
             Either<Command, ShutdownEventArgs> result = m_cell.WaitForValue();
-            switch (result.Alternative)
+            return result.Alternative switch
             {
-                case EitherAlternative.Left:
-                    return result.LeftValue;
-                case EitherAlternative.Right:
-                    throw new OperationInterruptedException(result.RightValue);
-                default:
-                    return null;
-            }
+                EitherAlternative.Left => result.LeftValue,
+                EitherAlternative.Right => throw new OperationInterruptedException(result.RightValue),
+                _ => null,
+            };
         }
 
         public virtual Command GetReply(TimeSpan timeout)
         {
             Either<Command, ShutdownEventArgs> result = m_cell.WaitForValue(timeout);
-            switch (result.Alternative)
+            return result.Alternative switch
             {
-                case EitherAlternative.Left:
-                    return result.LeftValue;
-                case EitherAlternative.Right:
-                    throw new OperationInterruptedException(result.RightValue);
-                default:
-                    return null;
-            }
+                EitherAlternative.Left => result.LeftValue,
+                EitherAlternative.Right => throw new OperationInterruptedException(result.RightValue),
+                _ => null,
+            };
         }
 
         public virtual void HandleCommand(Command cmd)

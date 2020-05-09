@@ -61,7 +61,7 @@ namespace RabbitMQ.Client.Framing.Impl
         // errors, otherwise as read timeouts
         public ConsumerWorkService ConsumerWorkService { get; }
 
-        public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, string clientProvidedName = null)
+        public Connection(IConnectionFactory factory, IFrameHandler frameHandler, string clientProvidedName = null)
         {
             ClientProvidedName = clientProvidedName;
             KnownHosts = null;
@@ -82,8 +82,8 @@ namespace RabbitMQ.Client.Framing.Impl
             _session0 = new MainSession(this) { Handler = NotifyReceivedCloseOk };
             _model0 = (ModelBase)Protocol.CreateModel(_session0);
 
-            StartMainLoop(factory.UseBackgroundThreadsForIO);
-            Open(insist);
+            StartMainLoop();
+            Open();
         }
 
         public Guid Id { get { return _id; } }
@@ -258,13 +258,8 @@ namespace RabbitMQ.Client.Framing.Impl
                     // Wait for CloseOk in the MainLoop
                     _session0.Transmit(ConnectionCloseWrapper(reason.ReplyCode, reason.ReplyText));
                 }
-                catch (AlreadyClosedException)
-                {
-                    if (!abort)
-                    {
-                        throw;
-                    }
-                }
+                catch (AlreadyClosedException) when (abort)
+                { }
 #pragma warning disable 0168
                 catch (NotSupportedException nse)
                 {
@@ -659,7 +654,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        public void Open(bool insist)
+        public void Open()
         {
             StartAndTune();
             _model0.ConnectionOpen(_factory.VirtualHost, string.Empty, false);
@@ -776,7 +771,7 @@ entry.ToString());
             }
         }
 
-        public void StartMainLoop(bool useBackgroundThread)
+        public void StartMainLoop()
         {
             _mainLoopTask = Task.Run(MainLoop);
         }
@@ -1087,7 +1082,7 @@ entry.ToString());
             }
             catch (OperationInterruptedException e)
             {
-                if (e.ShutdownReason != null && e.ShutdownReason.ReplyCode == Constants.AccessRefused)
+                if (e.ShutdownReason?.ReplyCode == Constants.AccessRefused)
                 {
                     throw new AuthenticationFailureException(e.ShutdownReason.ReplyText);
                 }

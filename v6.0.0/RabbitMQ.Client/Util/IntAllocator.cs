@@ -7,7 +7,6 @@ namespace RabbitMQ.Util
    * A class for allocating integer IDs in a given range.
    */
 
-
     public class IntAllocator
     {
         private readonly int[] _unsorted;
@@ -137,7 +136,6 @@ namespace RabbitMQ.Util
             }
         }
 
-
         public class IntervalList
         {
             public int End;
@@ -163,8 +161,7 @@ namespace RabbitMQ.Util
                 IntervalList result = null;
                 IntervalList current = null;
 
-                int i = 0;
-                while (i < length)
+                for (int i = 0; i < length; i++)
                 {
                     int start = i;
                     while ((i < length - 1) && (xs[i + 1] == xs[i] + 1))
@@ -184,7 +181,6 @@ namespace RabbitMQ.Util
                         current.Next = interval;
                         current = interval;
                     }
-                    i++;
                 }
                 return result;
             }
