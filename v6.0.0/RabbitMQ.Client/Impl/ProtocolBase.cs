@@ -61,8 +61,8 @@ namespace RabbitMQ.Client.Framing.Impl
             replyMethodId = ConnectionMethodConstants.CloseOk;
         }
 
-        public abstract ContentHeaderBase DecodeContentHeaderFrom(ushort classId);
-        public abstract MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> reader);
+        internal abstract ContentHeaderBase DecodeContentHeaderFrom(ushort classId);
+        internal abstract MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> reader);
 
         public override bool Equals(object obj)
         {

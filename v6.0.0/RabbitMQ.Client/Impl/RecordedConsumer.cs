@@ -1,8 +1,9 @@
+// This source code is dual-licensed under the Apache License, version
 using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    public class RecordedConsumer : RecordedEntity
+    internal class RecordedConsumer : RecordedEntity
     {
         public RecordedConsumer(AutorecoveringModel model, string queue) : base(model)
         {

@@ -1,6 +1,7 @@
 #pragma warning disable 2002
 
 using NUnit.Framework;
+using RabbitMQ.Client.Framing;
 using RabbitMQ.Client.Framing.Impl;
 using System;
 using System.Collections.Generic;
@@ -468,7 +469,7 @@ namespace RabbitMQ.Client.Unit
             catch (Exception e)
             {
                 ReportExecFailure("rabbitmqctl", args, e.Message);
-                throw e;
+                throw;
             }
         }
 
@@ -529,7 +530,7 @@ namespace RabbitMQ.Client.Unit
             catch (Exception e)
             {
                 ReportExecFailure(cmd, args, e.Message);
-                throw e;
+                throw;
             }
         }
 

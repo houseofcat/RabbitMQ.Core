@@ -155,14 +155,14 @@ namespace RabbitMQ.Client.Apigen
         public string m_inputXmlFilename;
         public string m_outputFilename;
 
-        public XmlDocument m_spec;
-        public TextWriter m_outputFile;
+        public XmlDocument m_spec = null;
+        public TextWriter m_outputFile = null;
 
         public int m_majorVersion;
         public int m_minorVersion;
-        public int m_revision;
+        public int m_revision = 0;
         public string m_apiName;
-        public bool m_emitComments;
+        public bool m_emitComments = false;
 
         public Type m_modelType = typeof(RabbitMQ.Client.Impl.IFullModel);
         public IList<Type> m_modelTypes = new List<Type>();
@@ -256,8 +256,10 @@ namespace RabbitMQ.Client.Apigen
             Console.WriteLine("* Loading spec from '" + m_inputXmlFilename + "'");
             m_spec = new XmlDocument();
 
-            using var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read);
-            m_spec.Load(stream);
+            using (var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read))
+            {
+                m_spec.Load(stream);
+            }
         }
 
         public void ParseSpec()
@@ -329,12 +331,14 @@ namespace RabbitMQ.Client.Apigen
                 Directory.CreateDirectory(directory);
             }
 
-            using var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write);
-            m_outputFile = new StreamWriter(stream);
-            EmitPrelude();
-            EmitPublic();
-            EmitPrivate();
-            m_outputFile.Dispose();
+            using (var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write))
+            {
+                m_outputFile = new StreamWriter(stream);
+                EmitPrelude();
+                EmitPublic();
+                EmitPrivate();
+                m_outputFile.Dispose();
+            }
         }
 
         public void Emit(object o)
@@ -591,7 +595,7 @@ $@"namespace {ApiNamespaceBase}
             EmitLine($"    public override ushort ProtocolClassId => {c.Index};");
             EmitLine($"    public override string ProtocolClassName => \"{c.Name}\";");
             EmitLine("");
-            EmitLine("    public override void ReadPropertiesFrom(ref Client.Impl.ContentHeaderPropertyReader reader)");
+            EmitLine("    internal override void ReadPropertiesFrom(ref Client.Impl.ContentHeaderPropertyReader reader)");
             EmitLine("    {");
             foreach (AmqpField f in c.m_Fields)
             {
@@ -614,7 +618,7 @@ $@"namespace {ApiNamespaceBase}
             }
             EmitLine("    }");
             EmitLine("");
-            EmitLine("    public override void WritePropertiesTo(ref Client.Impl.ContentHeaderPropertyWriter writer)");
+            EmitLine("    internal override void WritePropertiesTo(ref Client.Impl.ContentHeaderPropertyWriter writer)");
             EmitLine("    {");
             foreach (AmqpField f in c.m_Fields)
             {
@@ -883,7 +887,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitMethodArgumentReader()
         {
-            EmitLine("    public override Client.Impl.MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> memory)");
+            EmitLine("    internal override Client.Impl.MethodBase DecodeMethodFrom(ReadOnlyMemory<byte> memory)");
             EmitLine("    {");
             EmitLine("      ushort classId = Util.NetworkOrderDeserializer.ReadUInt16(memory);");
             EmitLine("      ushort methodId = Util.NetworkOrderDeserializer.ReadUInt16(memory.Slice(2));");
@@ -917,7 +921,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitContentHeaderReader()
         {
-            EmitLine("    public override Client.Impl.ContentHeaderBase DecodeContentHeaderFrom(ushort classId)");
+            EmitLine("    internal override Client.Impl.ContentHeaderBase DecodeContentHeaderFrom(ushort classId)");
             EmitLine("    {");
             EmitLine("      switch (classId)");
             EmitLine("      {");
@@ -980,7 +984,7 @@ $@"namespace {ApiNamespaceBase}
 
         public void EmitModelImplementation()
         {
-            EmitLine("  public class Model: Client.Impl.ModelBase {");
+            EmitLine("  internal class Model: Client.Impl.ModelBase {");
             EmitLine("    public Model(Client.Impl.ISession session): base(session) {}");
             EmitLine("    public Model(Client.Impl.ISession session, ConsumerWorkService workService): base(session, workService) {}");
             IList<MethodInfo> asynchronousHandlers = new List<MethodInfo>();
@@ -1089,7 +1093,7 @@ $@"namespace {ApiNamespaceBase}
                     return "void";
                 default:
                     return t.FullName;
-            }
+            };
         }
 
         public void EmitModelMethodPreamble(MethodInfo method)

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Framing.Impl
 {
-    public sealed class AutorecoveringConnection : IAutorecoveringConnection
+    internal sealed class AutorecoveringConnection : IAutorecoveringConnection
     {
         private readonly object _eventLock = new object();
 
@@ -129,7 +129,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public event EventHandler<ConsumerTagChangedAfterRecoveryEventArgs> ConsumerTagChangeAfterRecovery;
         public event EventHandler<QueueNameChangedAfterRecoveryEventArgs> QueueNameChangeAfterRecovery;
 
-        public string ClientProvidedName { get; }
+        public string ClientProvidedName { get; private set; }
 
         public ushort ChannelMax
         {
@@ -256,10 +256,8 @@ namespace RabbitMQ.Client.Framing.Impl
         public RecoveryAwareModel CreateNonRecoveringModel()
         {
             ISession session = _delegate.CreateSession();
-            var result = new RecoveryAwareModel(session)
-            {
-                ContinuationTimeout = _factory.ContinuationTimeout
-            };
+            var result = new RecoveryAwareModel(session);
+            result.ContinuationTimeout = _factory.ContinuationTimeout;
             result._Private_ChannelOpen("");
             return result;
         }
@@ -565,7 +563,7 @@ namespace RabbitMQ.Client.Framing.Impl
             _delegate.HandleConnectionUnblocked();
         }
 
-        public int RecordedExchangesCount
+        internal int RecordedExchangesCount
         {
             get
             {
@@ -576,7 +574,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        public int RecordedQueuesCount
+        internal int RecordedQueuesCount
         {
             get
             {
@@ -909,7 +907,6 @@ namespace RabbitMQ.Client.Framing.Impl
             PerformAutomaticRecovery
         }
 
-
         private enum RecoveryConnectionState
         {
             /// <summary>
@@ -923,7 +920,7 @@ namespace RabbitMQ.Client.Framing.Impl
         }
 
         private Task _recoveryTask;
-        private RecoveryConnectionState _recoveryLoopState;
+        private RecoveryConnectionState _recoveryLoopState = RecoveryConnectionState.Connected;
 
         private readonly AsyncConcurrentQueue<RecoveryCommand> _recoveryLoopCommandQueue = new AsyncConcurrentQueue<RecoveryCommand>();
         private readonly CancellationTokenSource _recoveryCancellationToken = new CancellationTokenSource();

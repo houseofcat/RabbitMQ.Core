@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    public sealed class AutorecoveringModel : IFullModel, IRecoverable
+    internal sealed class AutorecoveringModel : IFullModel, IRecoverable
     {
         private readonly object _eventLock = new object();
         private AutorecoveringConnection _connection;
@@ -19,8 +19,8 @@ namespace RabbitMQ.Client.Impl
 
         private ushort _prefetchCountConsumer = 0;
         private ushort _prefetchCountGlobal = 0;
-        private bool _usesPublisherConfirms;
-        private bool _usesTransactions;
+        private bool _usesPublisherConfirms = false;
+        private bool _usesTransactions = false;
 
         public IConsumerDispatcher ConsumerDispatcher
         {
@@ -238,7 +238,7 @@ namespace RabbitMQ.Client.Impl
         {
             try
             {
-                _delegate.Close(reason, abort).GetAwaiter().GetResult();
+                _delegate.Close(reason, abort).GetAwaiter().GetResult(); ;
             }
             finally
             {

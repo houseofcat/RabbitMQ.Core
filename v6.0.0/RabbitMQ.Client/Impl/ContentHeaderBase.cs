@@ -35,8 +35,8 @@ namespace RabbitMQ.Client.Impl
             return bodySize;
         }
 
-        public abstract void ReadPropertiesFrom(ref ContentHeaderPropertyReader reader);
-        public abstract void WritePropertiesTo(ref ContentHeaderPropertyWriter writer);
+        internal abstract void ReadPropertiesFrom(ref ContentHeaderPropertyReader reader);
+        internal abstract void WritePropertiesTo(ref ContentHeaderPropertyWriter writer);
 
         private const ushort ZERO = 0;
 

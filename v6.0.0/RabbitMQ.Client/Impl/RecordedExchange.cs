@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
-    public class RecordedExchange : RecordedNamedEntity
+    internal class RecordedExchange : RecordedNamedEntity
     {
         public RecordedExchange(AutorecoveringModel model, string name) : base(model, name)
         {
