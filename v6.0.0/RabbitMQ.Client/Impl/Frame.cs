@@ -102,7 +102,7 @@ namespace RabbitMQ.Client.Impl
     internal abstract class OutboundFrame : Frame
     {
         public int ByteCount { get; private set; } = 0;
-        public OutboundFrame(FrameType type, int channel) : base(type, channel)
+        protected OutboundFrame(FrameType type, int channel) : base(type, channel)
         {
         }
 
@@ -124,7 +124,7 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-    internal class InboundFrame : Frame, IDisposable
+    internal sealed class InboundFrame : Frame, IDisposable
     {
         private readonly IMemoryOwner<byte> _payload;
         private InboundFrame(FrameType type, int channel, IMemoryOwner<byte> payload, int payloadSize) : base(type, channel, payload.Memory.Slice(0, payloadSize))
@@ -184,7 +184,7 @@ namespace RabbitMQ.Client.Impl
                     !(ioe.InnerException is SocketException) ||
                     ((SocketException)ioe.InnerException).SocketErrorCode != SocketError.TimedOut)
                 {
-                    throw ioe;
+                    throw;
                 }
                 throw ioe.InnerException;
             }
@@ -195,35 +195,33 @@ namespace RabbitMQ.Client.Impl
                 ProcessProtocolHeader(reader);
             }
 
-            using (IMemoryOwner<byte> headerMemory = MemoryPool<byte>.Shared.Rent(6))
+            using IMemoryOwner<byte> headerMemory = MemoryPool<byte>.Shared.Rent(6);
+            Memory<byte> headerSlice = headerMemory.Memory.Slice(0, 6);
+            reader.Read(headerSlice);
+            int channel = NetworkOrderDeserializer.ReadUInt16(headerSlice);
+            int payloadSize = NetworkOrderDeserializer.ReadInt32(headerSlice.Slice(2)); // FIXME - throw exn on unreasonable value
+            IMemoryOwner<byte> payload = MemoryPool<byte>.Shared.Rent(payloadSize);
+            int bytesRead = 0;
+            try
             {
-                Memory<byte> headerSlice = headerMemory.Memory.Slice(0, 6);
-                reader.Read(headerSlice);
-                int channel = NetworkOrderDeserializer.ReadUInt16(headerSlice);
-                int payloadSize = NetworkOrderDeserializer.ReadInt32(headerSlice.Slice(2)); // FIXME - throw exn on unreasonable value
-                IMemoryOwner<byte> payload = MemoryPool<byte>.Shared.Rent(payloadSize);
-                int bytesRead = 0;
-                try
+                while (bytesRead < payloadSize)
                 {
-                    while (bytesRead < payloadSize)
-                    {
-                        bytesRead += reader.Read(payload.Memory.Slice(bytesRead, payloadSize - bytesRead));
-                    }
+                    bytesRead += reader.Read(payload.Memory.Slice(bytesRead, payloadSize - bytesRead));
                 }
-                catch (Exception)
-                {
-                    // Early EOF.
-                    throw new MalformedFrameException($"Short frame - expected to read {payloadSize} bytes, only got {bytesRead} bytes");
-                }
-
-                int frameEndMarker = reader.ReadByte();
-                if (frameEndMarker != Constants.FrameEnd)
-                {
-                    throw new MalformedFrameException("Bad frame end marker: " + frameEndMarker);
-                }
-
-                return new InboundFrame((FrameType)type, channel, payload, payloadSize);
             }
+            catch (Exception)
+            {
+                // Early EOF.
+                throw new MalformedFrameException($"Short frame - expected to read {payloadSize} bytes, only got {bytesRead} bytes");
+            }
+
+            int frameEndMarker = reader.ReadByte();
+            if (frameEndMarker != Constants.FrameEnd)
+            {
+                throw new MalformedFrameException("Bad frame end marker: " + frameEndMarker);
+            }
+
+            return new InboundFrame((FrameType)type, channel, payload, payloadSize);
         }
 
         public void Dispose()
@@ -292,5 +290,4 @@ namespace RabbitMQ.Client.Impl
         FrameEnd = 206,
         FrameMinSize = 4096
     }
-
 }

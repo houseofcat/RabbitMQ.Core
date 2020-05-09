@@ -46,7 +46,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestPublishValidation : IntegrationFixture
     {
-
         [Test]
         public void TestNullRoutingKeyIsRejected()
         {

@@ -134,39 +134,33 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithHostnameList()
         {
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection(new List<string> { "127.0.0.1", "localhost" }))
-            {
-                Assert.IsTrue(c.IsOpen);
-                CloseAndWaitForRecovery(c);
-                Assert.IsTrue(c.IsOpen);
-            }
+            using AutorecoveringConnection c = CreateAutorecoveringConnection(new List<string> { "127.0.0.1", "localhost" });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
         }
 
         [Test]
         public void TestBasicConnectionRecoveryWithHostnameListAndUnreachableHosts()
         {
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection(new List<string> { "191.72.44.22", "127.0.0.1", "localhost" }))
-            {
-                Assert.IsTrue(c.IsOpen);
-                CloseAndWaitForRecovery(c);
-                Assert.IsTrue(c.IsOpen);
-            }
+            using AutorecoveringConnection c = CreateAutorecoveringConnection(new List<string> { "191.72.44.22", "127.0.0.1", "localhost" });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
         }
 
         [Test]
         public void TestBasicConnectionRecoveryWithEndpointList()
         {
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection(
+            using AutorecoveringConnection c = CreateAutorecoveringConnection(
                         new List<AmqpTcpEndpoint>
                         {
                             new AmqpTcpEndpoint("127.0.0.1"),
                             new AmqpTcpEndpoint("localhost")
-                        }))
-            {
-                Assert.IsTrue(c.IsOpen);
-                CloseAndWaitForRecovery(c);
-                Assert.IsTrue(c.IsOpen);
-            }
+                        });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
         }
 
         [Test]
@@ -190,18 +184,16 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestBasicConnectionRecoveryWithEndpointListAndUnreachableHosts()
         {
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection(
+            using AutorecoveringConnection c = CreateAutorecoveringConnection(
                         new List<AmqpTcpEndpoint>
                         {
                             new AmqpTcpEndpoint("191.72.44.22"),
                             new AmqpTcpEndpoint("127.0.0.1"),
                             new AmqpTcpEndpoint("localhost")
-                        }))
-            {
-                Assert.IsTrue(c.IsOpen);
-                CloseAndWaitForRecovery(c);
-                Assert.IsTrue(c.IsOpen);
-            }
+                        });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
         }
 
         [Test]
@@ -298,66 +290,62 @@ namespace RabbitMQ.Client.Unit
         [Test]
         public void TestConsumerWorkServiceRecovery()
         {
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection())
-            {
-                IModel m = c.CreateModel();
-                string q = m.QueueDeclare("dotnet-client.recovery.consumer_work_pool1",
-                    false, false, false, null).QueueName;
-                var cons = new EventingBasicConsumer(m);
-                m.BasicConsume(q, true, cons);
-                AssertConsumerCount(m, q, 1);
+            using AutorecoveringConnection c = CreateAutorecoveringConnection();
+            IModel m = c.CreateModel();
+            string q = m.QueueDeclare("dotnet-client.recovery.consumer_work_pool1",
+                false, false, false, null).QueueName;
+            var cons = new EventingBasicConsumer(m);
+            m.BasicConsume(q, true, cons);
+            AssertConsumerCount(m, q, 1);
 
-                CloseAndWaitForRecovery(c);
+            CloseAndWaitForRecovery(c);
 
-                Assert.IsTrue(m.IsOpen);
-                var latch = new ManualResetEvent(false);
-                cons.Received += (s, args) => latch.Set();
+            Assert.IsTrue(m.IsOpen);
+            var latch = new ManualResetEvent(false);
+            cons.Received += (s, args) => latch.Set();
 
-                m.BasicPublish("", q, null, encoding.GetBytes("msg"));
-                Wait(latch);
+            m.BasicPublish("", q, null, encoding.GetBytes("msg"));
+            Wait(latch);
 
-                m.QueueDelete(q);
-            }
+            m.QueueDelete(q);
         }
 
         [Test]
         public void TestConsumerRecoveryOnClientNamedQueueWithOneRecovery()
         {
             string q0 = "dotnet-client.recovery.queue1";
-            using (AutorecoveringConnection c = CreateAutorecoveringConnection())
-            {
-                IModel m = c.CreateModel();
-                string q1 = m.QueueDeclare(q0, false, false, false, null).QueueName;
-                Assert.AreEqual(q0, q1);
+            using AutorecoveringConnection c = CreateAutorecoveringConnection();
+            IModel m = c.CreateModel();
+            string q1 = m.QueueDeclare(q0, false, false, false, null).QueueName;
+            Assert.AreEqual(q0, q1);
 
-                var cons = new EventingBasicConsumer(m);
-                m.BasicConsume(q1, true, cons);
-                AssertConsumerCount(m, q1, 1);
+            var cons = new EventingBasicConsumer(m);
+            m.BasicConsume(q1, true, cons);
+            AssertConsumerCount(m, q1, 1);
 
-                bool queueNameChangeAfterRecoveryCalled = false;
+            bool queueNameChangeAfterRecoveryCalled = false;
 
-                c.QueueNameChangeAfterRecovery += (source, ea) => { queueNameChangeAfterRecoveryCalled = true; };
+            c.QueueNameChangeAfterRecovery += (source, ea) => { queueNameChangeAfterRecoveryCalled = true; };
 
-                CloseAndWaitForRecovery(c);
-                AssertConsumerCount(m, q1, 1);
-                Assert.False(queueNameChangeAfterRecoveryCalled);
+            CloseAndWaitForRecovery(c);
+            AssertConsumerCount(m, q1, 1);
+            Assert.False(queueNameChangeAfterRecoveryCalled);
 
-                CloseAndWaitForRecovery(c);
-                AssertConsumerCount(m, q1, 1);
-                Assert.False(queueNameChangeAfterRecoveryCalled);
+            CloseAndWaitForRecovery(c);
+            AssertConsumerCount(m, q1, 1);
+            Assert.False(queueNameChangeAfterRecoveryCalled);
 
-                CloseAndWaitForRecovery(c);
-                AssertConsumerCount(m, q1, 1);
-                Assert.False(queueNameChangeAfterRecoveryCalled);
+            CloseAndWaitForRecovery(c);
+            AssertConsumerCount(m, q1, 1);
+            Assert.False(queueNameChangeAfterRecoveryCalled);
 
-                var latch = new ManualResetEvent(false);
-                cons.Received += (s, args) => latch.Set();
+            var latch = new ManualResetEvent(false);
+            cons.Received += (s, args) => latch.Set();
 
-                m.BasicPublish("", q1, null, encoding.GetBytes("msg"));
-                Wait(latch);
+            m.BasicPublish("", q1, null, encoding.GetBytes("msg"));
+            Wait(latch);
 
-                m.QueueDelete(q1);
-            }
+            m.QueueDelete(q1);
         }
 
         [Test]

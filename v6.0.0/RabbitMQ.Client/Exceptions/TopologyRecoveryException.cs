@@ -7,5 +7,13 @@ namespace RabbitMQ.Client.Exceptions
         public TopologyRecoveryException(string message, Exception cause) : base(message, cause)
         {
         }
+
+        protected TopologyRecoveryException() : base()
+        {
+        }
+
+        protected TopologyRecoveryException(string message) : base(message)
+        {
+        }
     }
 }

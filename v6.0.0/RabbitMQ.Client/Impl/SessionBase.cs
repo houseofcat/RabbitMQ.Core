@@ -10,7 +10,7 @@ namespace RabbitMQ.Client.Impl
         private readonly object _shutdownLock = new object();
         private EventHandler<ShutdownEventArgs> _sessionShutdown;
 
-        public SessionBase(Connection connection, int channelNumber)
+        protected SessionBase(Connection connection, int channelNumber)
         {
             CloseReason = null;
             Connection = connection;

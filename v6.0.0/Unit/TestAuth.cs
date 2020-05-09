@@ -47,7 +47,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestAuth
     {
-
         [Test]
         public void TestAuthFailure()
         {

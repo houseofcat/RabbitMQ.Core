@@ -16,5 +16,21 @@ namespace RabbitMQ.Client.Exceptions
             : base(reason, "Already closed")
         {
         }
+
+        public AlreadyClosedException(ShutdownEventArgs reason, string prefix) : base(reason, prefix)
+        {
+        }
+
+        protected AlreadyClosedException() : base()
+        {
+        }
+
+        protected AlreadyClosedException(string message) : base(message)
+        {
+        }
+
+        protected AlreadyClosedException(string message, Exception inner) : base(message, inner)
+        {
+        }
     }
 }

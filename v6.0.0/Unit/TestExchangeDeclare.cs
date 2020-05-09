@@ -48,7 +48,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestExchangeDeclare : IntegrationFixture
     {
-
         [Test]
         [Category("RequireSMP")]
         public void TestConcurrentExchangeDeclare()

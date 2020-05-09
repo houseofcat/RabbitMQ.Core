@@ -52,7 +52,6 @@ using System.Threading;
 
 namespace RabbitMQ.Client.Unit
 {
-
     public class IntegrationFixture
     {
         internal IConnectionFactory ConnFactory;

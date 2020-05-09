@@ -42,7 +42,6 @@ using NUnit.Framework;
 
 namespace RabbitMQ.Client.Unit
 {
-
     [TestFixture]
     internal class TestBasicProperties
     {
@@ -52,7 +51,6 @@ namespace RabbitMQ.Client.Unit
             // Arrange
             var subject = new Framing.BasicProperties
             {
-
                 // Act
                 Persistent = true
             };
@@ -68,7 +66,6 @@ namespace RabbitMQ.Client.Unit
             // Arrange
             var subject = new Framing.BasicProperties
             {
-
                 // Act
                 Persistent = false
             };
@@ -88,7 +85,6 @@ namespace RabbitMQ.Client.Unit
             // Arrange
             var subject = new Framing.BasicProperties
             {
-
                 // Act
                 ClusterId = clusterId,
                 CorrelationId = correlationId,

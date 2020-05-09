@@ -46,7 +46,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestInvalidAck : IntegrationFixture
     {
-
         [Test]
         public void TestAckWithUnknownConsumerTagAndMultipleFalse()
         {

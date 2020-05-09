@@ -121,7 +121,6 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public event EventHandler<EventArgs> ConnectionUnblocked;
 
-
         public string ClientProvidedName { get; }
 
         public ushort ChannelMax
@@ -259,11 +258,11 @@ namespace RabbitMQ.Client.Framing.Impl
                     // Wait for CloseOk in the MainLoop
                     _session0.Transmit(ConnectionCloseWrapper(reason.ReplyCode, reason.ReplyText));
                 }
-                catch (AlreadyClosedException ace)
+                catch (AlreadyClosedException)
                 {
                     if (!abort)
                     {
-                        throw ace;
+                        throw;
                     }
                 }
 #pragma warning disable 0168
@@ -279,7 +278,7 @@ namespace RabbitMQ.Client.Framing.Impl
                     {
                         if (!abort)
                         {
-                            throw ioe;
+                            throw;
                         }
                         else
                         {
@@ -517,53 +516,51 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public void MainLoopIteration()
         {
-            using (InboundFrame frame = _frameHandler.ReadFrame())
+            using InboundFrame frame = _frameHandler.ReadFrame();
+            NotifyHeartbeatListener();
+            // We have received an actual frame.
+            if (frame.IsHeartbeat())
             {
-                NotifyHeartbeatListener();
-                // We have received an actual frame.
-                if (frame.IsHeartbeat())
-                {
-                    // Ignore it: we've already just reset the heartbeat
-                    // latch.
-                    return;
-                }
+                // Ignore it: we've already just reset the heartbeat
+                // latch.
+                return;
+            }
 
-                if (frame.Channel == 0)
+            if (frame.Channel == 0)
+            {
+                // In theory, we could get non-connection.close-ok
+                // frames here while we're quiescing (m_closeReason !=
+                // null). In practice, there's a limited number of
+                // things the server can ask of us on channel 0 -
+                // essentially, just connection.close. That, combined
+                // with the restrictions on pipelining, mean that
+                // we're OK here to handle channel 0 traffic in a
+                // quiescing situation, even though technically we
+                // should be ignoring everything except
+                // connection.close-ok.
+                _session0.HandleFrame(frame);
+            }
+            else
+            {
+                // If we're still m_running, but have a m_closeReason,
+                // then we must be quiescing, which means any inbound
+                // frames for non-zero channels (and any inbound
+                // commands on channel zero that aren't
+                // Connection.CloseOk) must be discarded.
+                if (_closeReason == null)
                 {
-                    // In theory, we could get non-connection.close-ok
-                    // frames here while we're quiescing (m_closeReason !=
-                    // null). In practice, there's a limited number of
-                    // things the server can ask of us on channel 0 -
-                    // essentially, just connection.close. That, combined
-                    // with the restrictions on pipelining, mean that
-                    // we're OK here to handle channel 0 traffic in a
-                    // quiescing situation, even though technically we
-                    // should be ignoring everything except
-                    // connection.close-ok.
-                    _session0.HandleFrame(frame);
-                }
-                else
-                {
-                    // If we're still m_running, but have a m_closeReason,
-                    // then we must be quiescing, which means any inbound
-                    // frames for non-zero channels (and any inbound
-                    // commands on channel zero that aren't
-                    // Connection.CloseOk) must be discarded.
-                    if (_closeReason == null)
+                    // No close reason, not quiescing the
+                    // connection. Handle the frame. (Of course, the
+                    // Session itself may be quiescing this particular
+                    // channel, but that's none of our concern.)
+                    ISession session = _sessionManager.Lookup(frame.Channel);
+                    if (session == null)
                     {
-                        // No close reason, not quiescing the
-                        // connection. Handle the frame. (Of course, the
-                        // Session itself may be quiescing this particular
-                        // channel, but that's none of our concern.)
-                        ISession session = _sessionManager.Lookup(frame.Channel);
-                        if (session == null)
-                        {
-                            throw new ChannelErrorException(frame.Channel);
-                        }
-                        else
-                        {
-                            session.HandleFrame(frame);
-                        }
+                        throw new ChannelErrorException(frame.Channel);
+                    }
+                    else
+                    {
+                        session.HandleFrame(frame);
                     }
                 }
             }
@@ -878,9 +875,9 @@ entry.ToString());
             _heartbeatWriteTimer?.Dispose();
         }
 
-        ///<remarks>
+        ///<summary>
         /// May be called more than once. Should therefore be idempotent.
-        ///</remarks>
+        ///</summary>
         public void TerminateMainloop()
         {
             MaybeStopHeartbeatTimers();

@@ -7,5 +7,13 @@ namespace RabbitMQ.Client.Exceptions
         protected HardProtocolException(string message) : base(message)
         {
         }
+
+        protected HardProtocolException() : base()
+        {
+        }
+
+        protected HardProtocolException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
     }
 }

@@ -43,7 +43,6 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Unit
 {
-
     [TestFixture]
     public class TestIModelAllocation
     {
@@ -66,7 +65,6 @@ namespace RabbitMQ.Client.Unit
         {
             _c.Close();
         }
-
 
         [Test]
         public void AllocateInOrder()

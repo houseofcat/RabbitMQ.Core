@@ -45,7 +45,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestConfirmSelect : IntegrationFixture
     {
-
         [Test]
         public void TestConfirmSelectIdempotency()
         {

@@ -56,7 +56,6 @@ namespace RabbitMQ.Client.Unit
             Unblock();
         }
 
-
         public void HandleUnblocked(object sender, EventArgs ea)
         {
             lock (_lockObject)

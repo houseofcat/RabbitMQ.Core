@@ -102,7 +102,7 @@ namespace RabbitMQ.Client.Impl
             return result;
         }
 
-        /// <returns>A type of <seealso cref="System.Collections.Generic.IDictionary{TKey,TValue}"/>.</returns>
+        /// <summary>A type of <seealso cref="System.Collections.Generic.IDictionary{TKey,TValue}"/>.</summary>
         public IDictionary<string, object> ReadTable()
         {
             IDictionary<string, object> result = WireFormatting.ReadTable(_memory.Slice(_memoryOffset), out int bytesRead);

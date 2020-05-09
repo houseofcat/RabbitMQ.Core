@@ -594,7 +594,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 {
                     Abort();
                 }
-                catch (Exception)
+                catch
                 {
                     // TODO: log
                 }

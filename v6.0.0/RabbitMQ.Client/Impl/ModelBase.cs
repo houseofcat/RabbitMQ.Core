@@ -42,11 +42,11 @@ namespace RabbitMQ.Client.Impl
 
         public IConsumerDispatcher ConsumerDispatcher { get; }
 
-        public ModelBase(ISession session)
+        protected ModelBase(ISession session)
             : this(session, session.Connection.ConsumerWorkService)
         { }
 
-        public ModelBase(ISession session, ConsumerWorkService workService)
+        protected ModelBase(ISession session, ConsumerWorkService workService)
         {
             if (workService is AsyncConsumerWorkService asyncConsumerWorkService)
             {
@@ -1050,7 +1050,6 @@ namespace RabbitMQ.Client.Impl
 
         internal void AllocatatePublishSeqNos(int count)
         {
-
             lock (_confirmLock)
             {
                 if (_nextPublishSeqNo > 0)
@@ -1153,7 +1152,6 @@ namespace RabbitMQ.Client.Impl
         {
             return new BasicPublishBatch(this);
         }
-
 
         public void ExchangeBind(string destination,
             string source,
@@ -1397,10 +1395,7 @@ namespace RabbitMQ.Client.Impl
                     Monitor.Pulse(_confirmLock);
                 }
             }
-
         }
-
-
 
         private QueueDeclareOk QueueDeclare(string queue, bool passive, bool durable, bool exclusive,
             bool autoDelete, IDictionary<string, object> arguments)
@@ -1414,7 +1409,6 @@ namespace RabbitMQ.Client.Impl
             }
             return k.m_result;
         }
-
 
         public class BasicConsumerRpcContinuation : SimpleBlockingRpcContinuation
         {

@@ -6,7 +6,7 @@ namespace RabbitMQ.Client.Events
     public abstract class BaseExceptionEventArgs : EventArgs
     {
         ///<summary>Wrap an exception thrown by a callback.</summary>
-        public BaseExceptionEventArgs(Exception exception)
+        protected BaseExceptionEventArgs(Exception exception)
         {
             Detail = new Dictionary<string, object>();
             Exception = exception;
@@ -28,7 +28,6 @@ namespace RabbitMQ.Client.Events
             return Detail;
         }
     }
-
 
     ///<summary>Describes an exception that was thrown during the
     ///library's invocation of an application-supplied callback

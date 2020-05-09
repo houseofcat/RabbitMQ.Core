@@ -2,7 +2,7 @@ namespace RabbitMQ.Client.Impl
 {
     internal abstract class RecordedEntity
     {
-        public RecordedEntity(AutorecoveringModel model)
+        protected RecordedEntity(AutorecoveringModel model)
         {
             Model = model;
         }

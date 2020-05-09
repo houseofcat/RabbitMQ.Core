@@ -23,6 +23,14 @@ namespace RabbitMQ.Client.Exceptions
             Offender = offender;
         }
 
+        public WireFormattingException(string message, Exception inner) : base(message, inner)
+        {
+        }
+
+        public WireFormattingException() : base()
+        {
+        }
+
         ///<summary>Object which this exception is complaining about;
         ///may be null if no particular offender exists</summary>
         public object Offender { get; }

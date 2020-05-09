@@ -12,5 +12,13 @@ namespace RabbitMQ.Client.Exceptions
         public AuthenticationFailureException(string msg) : base(msg)
         {
         }
+
+        public AuthenticationFailureException(string msg, Exception inner) : base(msg, inner)
+        {
+        }
+
+        protected AuthenticationFailureException() : base()
+        {
+        }
     }
 }

@@ -18,10 +18,9 @@ namespace RabbitMQ.Util
         }
 
         ///<summary>Print a hex dump of the supplied bytes to the supplied TextWriter.</summary>
+        private const int rowlen = 16;
         public static void Dump(byte[] bytes, TextWriter writer)
         {
-            int rowlen = 16;
-
             for (int count = 0; count < bytes.Length; count += rowlen)
             {
                 int thisRow = Math.Min(bytes.Length - count, rowlen);

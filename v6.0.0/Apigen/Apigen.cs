@@ -295,10 +295,8 @@ namespace RabbitMQ.Client.Apigen
             Console.WriteLine("* Loading spec from '" + m_inputXmlFilename + "'");
             m_spec = new XmlDocument();
 
-            using (var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read))
-            {
-                m_spec.Load(stream);
-            }
+            using var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read);
+            m_spec.Load(stream);
         }
 
         public void ParseSpec()
@@ -370,14 +368,12 @@ namespace RabbitMQ.Client.Apigen
                 Directory.CreateDirectory(directory);
             }
 
-            using (var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write))
-            {
-                m_outputFile = new StreamWriter(stream);
-                EmitPrelude();
-                EmitPublic();
-                EmitPrivate();
-                m_outputFile.Dispose();
-            }
+            using var stream = new FileStream(m_outputFilename, FileMode.Create, FileAccess.Write);
+            m_outputFile = new StreamWriter(stream);
+            EmitPrelude();
+            EmitPublic();
+            EmitPrivate();
+            m_outputFile.Dispose();
         }
 
         public void Emit(object o)
@@ -601,7 +597,6 @@ $@"namespace {ApiNamespaceBase}
                     if (IsReferenceType(f))
                     {
                         EmitLine($"        _{MangleMethod(f.Name)}_present = value != null;");
-
                     }
                     else
                     {

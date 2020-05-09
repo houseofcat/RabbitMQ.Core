@@ -10,6 +10,18 @@ namespace RabbitMQ.Client.Exceptions
             Channel = channelNumber;
         }
 
+        protected SoftProtocolException(string message) : base(message)
+        {
+        }
+
+        protected SoftProtocolException() : base()
+        {
+        }
+
+        protected SoftProtocolException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         public int Channel { get; }
     }
 }

@@ -48,7 +48,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestMainLoop : IntegrationFixture
     {
-
         private class FaultyConsumer : DefaultBasicConsumer
         {
             public FaultyConsumer(IModel model) : base(model) { }

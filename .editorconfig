@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# RCS1079: Throwing of new NotImplementedException.
+dotnet_diagnostic.RCS1079.severity = none

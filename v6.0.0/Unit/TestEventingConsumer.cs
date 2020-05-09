@@ -47,7 +47,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestEventingConsumer : IntegrationFixture
     {
-
         [Test]
         public void TestEventingConsumerRegistrationEvents()
         {

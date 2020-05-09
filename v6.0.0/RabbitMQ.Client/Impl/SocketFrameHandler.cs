@@ -189,19 +189,17 @@ namespace RabbitMQ.Client.Impl
         public void WriteFrame(OutboundFrame frame, bool flush = true)
         {
             int bufferSize = frame.GetMinimumBufferSize();
-            using (IMemoryOwner<byte> memory = MemoryPool<byte>.Shared.Rent(bufferSize))
+            using IMemoryOwner<byte> memory = MemoryPool<byte>.Shared.Rent(bufferSize);
+            Memory<byte> slice = memory.Memory.Slice(0, bufferSize);
+            frame.WriteTo(slice);
+            _socket.Client.Poll(_writeableStateTimeoutMicroSeconds, SelectMode.SelectWrite);
+            if (MemoryMarshal.TryGetArray(slice.Slice(0, frame.ByteCount), out ArraySegment<byte> segment))
             {
-                Memory<byte> slice = memory.Memory.Slice(0, bufferSize);
-                frame.WriteTo(slice);
-                _socket.Client.Poll(_writeableStateTimeoutMicroSeconds, SelectMode.SelectWrite);
-                if (MemoryMarshal.TryGetArray(slice.Slice(0, frame.ByteCount), out ArraySegment<byte> segment))
-                {
-                    Write(segment, flush);
-                    return;
-                }
-
-                throw new InvalidOperationException("Unable to get array segment from memory.");
+                Write(segment, flush);
+                return;
             }
+
+            throw new InvalidOperationException("Unable to get array segment from memory.");
         }
 
         public void WriteFrameSet(IList<OutboundFrame> frames)
@@ -257,10 +255,10 @@ namespace RabbitMQ.Client.Impl
                 ConnectOrFail(socket, endpoint, timeout);
                 return socket;
             }
-            catch (ConnectFailureException e)
+            catch (ConnectFailureException)
             {
                 socket.Dispose();
-                throw e;
+                throw;
             }
         }
 

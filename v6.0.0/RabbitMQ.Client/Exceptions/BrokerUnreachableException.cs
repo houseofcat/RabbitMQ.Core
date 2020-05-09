@@ -16,5 +16,21 @@ namespace RabbitMQ.Client.Exceptions
             : base("None of the specified endpoints were reachable", Inner)
         {
         }
+
+        public BrokerUnreachableException() : base()
+        {
+        }
+
+        public BrokerUnreachableException(string message) : base(message)
+        {
+        }
+
+        public BrokerUnreachableException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        public BrokerUnreachableException(string message, int hresult) : base(message, hresult)
+        {
+        }
     }
 }

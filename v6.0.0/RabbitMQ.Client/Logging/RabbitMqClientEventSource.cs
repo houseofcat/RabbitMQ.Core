@@ -61,7 +61,6 @@ namespace RabbitMQ.Client.Logging
         [NonEvent]
         public void Error(string message, Exception ex)
         {
-
 #if NET452
             Error(message, ex.ToString());
 #else

@@ -167,7 +167,6 @@ namespace RabbitMQ.Client.Unit
             Assert.AreEqual(0x89ABCDEF, NetworkOrderDeserializer.ReadUInt32(new byte[] { 0x89, 0xAB, 0xCD, 0xEF }.AsSpan()));
         }
 
-
         [Test]
         public void TestWriteInt64_positive()
         {

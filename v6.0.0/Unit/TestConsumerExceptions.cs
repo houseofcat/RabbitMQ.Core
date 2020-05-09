@@ -120,7 +120,6 @@ namespace RabbitMQ.Client.Unit
             bool notified = false;
             string q = Model.QueueDeclare();
 
-
             Model.CallbackException += (m, evt) =>
             {
                 notified = true;

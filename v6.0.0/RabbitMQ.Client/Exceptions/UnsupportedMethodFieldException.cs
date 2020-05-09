@@ -17,6 +17,18 @@ namespace RabbitMQ.Client.Exceptions
             FieldName = fieldName;
         }
 
+        public UnsupportedMethodFieldException() : base()
+        {
+        }
+
+        public UnsupportedMethodFieldException(string message) : base(message)
+        {
+        }
+
+        public UnsupportedMethodFieldException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>The name of the unsupported field.</summary>
         public string FieldName { get; }
 

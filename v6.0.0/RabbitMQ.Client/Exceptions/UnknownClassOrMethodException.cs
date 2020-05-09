@@ -15,6 +15,10 @@ namespace RabbitMQ.Client.Exceptions
             MethodId = methodId;
         }
 
+        protected UnknownClassOrMethodException(string message) : base(message)
+        {
+        }
+
         ///<summary>The AMQP content-class ID.</summary>
         public ushort ClassId { get; }
 
@@ -26,11 +30,14 @@ namespace RabbitMQ.Client.Exceptions
             get { return Constants.NotImplemented; }
         }
 
+#pragma warning disable IDE0071 // Simplify interpolation
         public override string ToString()
         {
             return MethodId == 0
                 ? $"{base.ToString()}<{ClassId}>"
+
                 : $"{base.ToString()}<{ClassId}.{MethodId}>";
         }
+#pragma warning restore IDE0071 // Simplify interpolation
     }
 }

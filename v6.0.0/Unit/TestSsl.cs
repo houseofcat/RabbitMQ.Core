@@ -50,25 +50,23 @@ namespace RabbitMQ.Client.Unit
     {
         public void SendReceive(ConnectionFactory cf)
         {
-            using (IConnection conn = cf.CreateConnection())
-            {
-                IModel ch = conn.CreateModel();
+            using IConnection conn = cf.CreateConnection();
+            IModel ch = conn.CreateModel();
 
-                ch.ExchangeDeclare("Exchange_TestSslEndPoint", ExchangeType.Direct);
-                string qName = ch.QueueDeclare();
-                ch.QueueBind(qName, "Exchange_TestSslEndPoint", "Key_TestSslEndpoint", null);
+            ch.ExchangeDeclare("Exchange_TestSslEndPoint", ExchangeType.Direct);
+            string qName = ch.QueueDeclare();
+            ch.QueueBind(qName, "Exchange_TestSslEndPoint", "Key_TestSslEndpoint", null);
 
-                string message = "Hello C# SSL Client World";
-                byte[] msgBytes = System.Text.Encoding.UTF8.GetBytes(message);
-                ch.BasicPublish("Exchange_TestSslEndPoint", "Key_TestSslEndpoint", null, msgBytes);
+            string message = "Hello C# SSL Client World";
+            byte[] msgBytes = System.Text.Encoding.UTF8.GetBytes(message);
+            ch.BasicPublish("Exchange_TestSslEndPoint", "Key_TestSslEndpoint", null, msgBytes);
 
-                bool autoAck = false;
-                BasicGetResult result = ch.BasicGet(qName, autoAck);
-                byte[] body = result.Body.ToArray();
-                string resultMessage = System.Text.Encoding.UTF8.GetString(body);
+            bool autoAck = false;
+            BasicGetResult result = ch.BasicGet(qName, autoAck);
+            byte[] body = result.Body.ToArray();
+            string resultMessage = System.Text.Encoding.UTF8.GetString(body);
 
-                Assert.AreEqual(message, resultMessage);
-            }
+            Assert.AreEqual(message, resultMessage);
         }
 
         [Test]

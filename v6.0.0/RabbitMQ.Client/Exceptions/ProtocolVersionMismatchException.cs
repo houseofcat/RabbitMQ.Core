@@ -23,6 +23,18 @@ namespace RabbitMQ.Client.Exceptions
             ServerMinor = serverMinor;
         }
 
+        public ProtocolVersionMismatchException(string message) : base(message)
+        {
+        }
+
+        public ProtocolVersionMismatchException(string message, Exception inner) : base(message, inner)
+        {
+        }
+
+        public ProtocolVersionMismatchException() : base()
+        {
+        }
+
         ///<summary>The client's AMQP specification major version.</summary>
         public int ClientMajor { get; }
 

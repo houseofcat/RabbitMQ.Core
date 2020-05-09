@@ -45,7 +45,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestConnectionWithBackgroundThreads
     {
-
         [Test]
         public void TestWithBackgroundThreadsEnabled()
         {

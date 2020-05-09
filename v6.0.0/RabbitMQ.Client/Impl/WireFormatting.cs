@@ -436,7 +436,7 @@ namespace RabbitMQ.Client.Impl
                 int bytesWritten = 0;
                 foreach (KeyValuePair<string, object> entry in val)
                 {
-                    bytesWritten += WriteShortstr(slice.Slice(bytesWritten), entry.Key.ToString());
+                    bytesWritten += WriteShortstr(slice.Slice(bytesWritten), entry.Key);
                     bytesWritten += WriteFieldValue(slice.Slice(bytesWritten), entry.Value);
                 }
 
@@ -472,7 +472,7 @@ namespace RabbitMQ.Client.Impl
 
             foreach (KeyValuePair<string, object> entry in val)
             {
-                byteCount += Encoding.UTF8.GetByteCount(entry.Key.ToString()) + 1;
+                byteCount += Encoding.UTF8.GetByteCount(entry.Key) + 1;
                 byteCount += GetFieldValueByteCount(entry.Value);
             }
 

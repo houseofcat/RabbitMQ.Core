@@ -80,6 +80,5 @@ namespace RabbitMQ.Client.Unit
                 queue.Enqueue(inputContinuation1);
             });
         }
-
     }
 }

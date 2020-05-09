@@ -28,6 +28,18 @@ namespace RabbitMQ.Client.Exceptions
             ServerMinor = serverMinor;
         }
 
+        protected PacketNotRecognizedException() : base()
+        {
+        }
+
+        protected PacketNotRecognizedException(string message) : base(message)
+        {
+        }
+
+        protected PacketNotRecognizedException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>The peer's AMQP specification major version.</summary>
         public int ServerMajor { get; }
 
