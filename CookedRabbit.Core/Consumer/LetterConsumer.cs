@@ -331,7 +331,7 @@ namespace CookedRabbit.Core
         /// <para>AutoAcks message.</para>
         /// </summary>
         /// <param name="queueName"></param>
-        public async Task<byte[]> GetAsync(string queueName)
+        public async Task<ReadOnlyMemory<byte>?> GetAsync(string queueName)
         {
             var chanHost = await ChannelPool
                 .GetChannelAsync()
@@ -379,7 +379,7 @@ namespace CookedRabbit.Core
                 .ReturnChannelAsync(chanHost, error)
                 .ConfigureAwait(false);
 
-            return result != null ? JsonSerializer.Deserialize<T>(result.Body) : default;
+            return result != null ? JsonSerializer.Deserialize<T>(result.Body.ToArray()) : default;
         }
 
         public ChannelReader<ReceivedLetter> GetConsumerLetterBuffer() => LetterBuffer.Reader;
@@ -421,78 +421,6 @@ namespace CookedRabbit.Core
             return list;
         }
 
-#if CORE2
-        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task> workAsync)
-        {
-            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
-                    {
-                        try
-                        {
-                            await workAsync(receivedLetter)
-                                .ConfigureAwait(false);
-
-                            receivedLetter.AckMessage();
-                        }
-                        catch
-                        { receivedLetter.NackMessage(true); }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        public async Task ExecutionEngineAsync(Func<ReceivedLetter, Task<bool>> workAsync)
-        {
-            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
-                    {
-                        try
-                        {
-                            if (await workAsync(receivedLetter).ConfigureAwait(false))
-                            { receivedLetter.AckMessage(); }
-                            else
-                            { receivedLetter.NackMessage(true); }
-                        }
-                        catch
-                        { receivedLetter.NackMessage(true); }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedLetter, TOptions, Task<bool>> workAsync, TOptions options)
-        {
-            while (await LetterBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (LetterBuffer.Reader.TryRead(out var receivedLetter))
-                    {
-                        try
-                        {
-                            if (await workAsync(receivedLetter, options).ConfigureAwait(false))
-                            { receivedLetter.AckMessage(); }
-                            else
-                            { receivedLetter.NackMessage(true); }
-                        }
-                        catch
-                        { receivedLetter.NackMessage(true); }
-                    }
-                }
-                catch { }
-            }
-        }
-#endif
-
-#if CORE3
         public async IAsyncEnumerable<ReceivedLetter> StreamOutLettersUntilEmptyAsync()
         {
             if (!await LetterBuffer
@@ -583,7 +511,6 @@ namespace CookedRabbit.Core
                 }
             }
         }
-#endif
 
         private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
 

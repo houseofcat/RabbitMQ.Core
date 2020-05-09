@@ -36,10 +36,6 @@ namespace CookedRabbit.Core
         /// RabbitMQ option to specify which secure SSL protocols to use/allow. Not Readable by Json Config yet.
         /// <para>Recommend Tls12+ as the most recent/secure protocol.</para>
         /// </summary>
-#if CORE2
-        public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12;
-#elif CORE3
         public SslProtocols ProtocolVersions { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;
-#endif
     }
 }

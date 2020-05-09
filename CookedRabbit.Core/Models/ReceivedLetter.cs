@@ -20,7 +20,7 @@ namespace CookedRabbit.Core
         {
             Ackable = ackable;
             Channel = channel;
-            Letter = result.Body != null ? JsonSerializer.Deserialize<Letter>(result.Body) : null;
+            Letter = JsonSerializer.Deserialize<Letter>(result.Body.ToArray());
             DeliveryTag = result.DeliveryTag;
             MessageId = result.BasicProperties.MessageId;
 
@@ -34,7 +34,7 @@ namespace CookedRabbit.Core
         {
             Ackable = ackable;
             Channel = channel;
-            Letter = args.Body != null ? JsonSerializer.Deserialize<Letter>(args.Body) : null;
+            Letter = JsonSerializer.Deserialize<Letter>(args.Body.ToArray());
             DeliveryTag = args.DeliveryTag;
             MessageId = args.BasicProperties.MessageId;
 

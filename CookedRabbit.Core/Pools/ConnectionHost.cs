@@ -17,17 +17,9 @@ namespace CookedRabbit.Core.Pools
             Connection = connection;
 
             Connection.ConnectionShutdown += ConnectionClosed;
-            Connection.ConnectionRecoveryError += ConnectionRecoveryError;
         }
 
         public bool Dead { get; private set; }
-
-        private void ConnectionRecoveryError(object sender, ConnectionRecoveryErrorEventArgs e)
-        {
-            hostLock.Wait();
-            Dead = true;
-            hostLock.Release();
-        }
 
         public bool Closed { get; private set; }
 

@@ -36,10 +36,9 @@ namespace CookedRabbit.Core.Pools
                 TopologyRecoveryEnabled = Config.FactorySettings.TopologyRecovery,
                 NetworkRecoveryInterval = TimeSpan.FromSeconds(Config.FactorySettings.NetRecoveryTimeout),
                 ContinuationTimeout = TimeSpan.FromSeconds(Config.FactorySettings.ContinuationTimeout),
-                RequestedHeartbeat = Config.FactorySettings.HeartbeatInterval,
+                RequestedHeartbeat = TimeSpan.FromSeconds(Config.FactorySettings.HeartbeatInterval),
                 RequestedChannelMax = Config.FactorySettings.MaxChannelsPerConnection,
                 DispatchConsumersAsync = Config.FactorySettings.EnableDispatchConsumersAsync,
-                UseBackgroundThreadsForIO = Config.FactorySettings.UseBackgroundThreadsForIO,
             };
 
             if (Config.FactorySettings.SslSettings.EnableSsl)

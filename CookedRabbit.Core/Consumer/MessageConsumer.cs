@@ -291,7 +291,7 @@ namespace CookedRabbit.Core
         /// <para>AutoAcks message.</para>
         /// </summary>
         /// <param name="queueName"></param>
-        public async Task<byte[]> GetAsync(string queueName)
+        public async Task<ReadOnlyMemory<byte>?> GetAsync(string queueName)
         {
             var chanHost = await ChannelPool
                 .GetChannelAsync()
@@ -339,7 +339,7 @@ namespace CookedRabbit.Core
                 .ReturnChannelAsync(chanHost, error)
                 .ConfigureAwait(false);
 
-            return result != null ? JsonSerializer.Deserialize<T>(result.Body) : default;
+            return result != null ? JsonSerializer.Deserialize<T>(result.Body.ToArray()) : default;
         }
 
         public ChannelReader<ReceivedMessage> GetConsumerMessageBuffer() => MessageBuffer.Reader;
@@ -381,87 +381,6 @@ namespace CookedRabbit.Core
             return list;
         }
 
-#if CORE2
-        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task> workAsync)
-        {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
-                    {
-                        if (receivedMessage != null)
-                        {
-                            try
-                            {
-                                await workAsync(receivedMessage)
-                                    .ConfigureAwait(false);
-
-                                receivedMessage.AckMessage();
-                            }
-                            catch
-                            { receivedMessage.NackMessage(true); }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync)
-        {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
-                    {
-                        if (receivedMessage != null)
-                        {
-                            try
-                            {
-                                if (await workAsync(receivedMessage).ConfigureAwait(false))
-                                { receivedMessage.AckMessage(); }
-                                else
-                                { receivedMessage.NackMessage(true); }
-                            }
-                            catch
-                            { receivedMessage.NackMessage(true); }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedMessage, TOptions, Task<bool>> workAsync, TOptions options)
-        {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                try
-                {
-                    while (MessageBuffer.Reader.TryRead(out var receivedMessage))
-                    {
-                        if (receivedMessage != null)
-                        {
-                            try
-                            {
-                                if (await workAsync(receivedMessage, options).ConfigureAwait(false))
-                                { receivedMessage.AckMessage(); }
-                                else
-                                { receivedMessage.NackMessage(true); }
-                            }
-                            catch
-                            { receivedMessage.NackMessage(true); }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-#endif
-
-#if CORE3
         public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilEmptyAsync()
         {
             if (!await MessageBuffer
@@ -552,7 +471,6 @@ namespace CookedRabbit.Core
                 }
             }
         }
-#endif
 
         private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
 

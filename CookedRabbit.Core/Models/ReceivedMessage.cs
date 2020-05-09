@@ -11,7 +11,7 @@ namespace CookedRabbit.Core
     {
         public bool Ackable { get; }
         private IModel Channel { get; set; }
-        public byte[] Body { get; private set; }
+        public ReadOnlyMemory<byte> Body { get; private set; }
         public ulong DeliveryTag { get; }
         public long Timestamp { get; }
         public string MessageId { get; }
@@ -101,12 +101,12 @@ namespace CookedRabbit.Core
         /// Convert internal Body to type <see cref="{T}" />.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Body);
+        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Body.ToArray());
 
         /// <summary>
         /// Convert internal Body to type <see cref="Letter" />.
         /// </summary>
-        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Body);
+        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Body.ToArray());
 
         /// <summary>
         /// Convert internal Body as a Stream asynchronously to type <see cref="{T}" />.
@@ -114,7 +114,7 @@ namespace CookedRabbit.Core
         /// <typeparam name="T"></typeparam>
         public async Task<T> ConvertJsonBodyAsync<T>() =>
             await JsonSerializer
-            .DeserializeAsync<T>(new MemoryStream(Body))
+            .DeserializeAsync<T>(new MemoryStream(Body.ToArray()))
             .ConfigureAwait(false);
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace CookedRabbit.Core
         /// </summary>
         public async Task<Letter> ConvertJsonBodyToLetterAsync() =>
             await JsonSerializer
-            .DeserializeAsync<Letter>(new MemoryStream(Body))
+            .DeserializeAsync<Letter>(new MemoryStream(Body.ToArray()))
             .ConfigureAwait(false);
 
         /// <summary>
@@ -138,7 +138,6 @@ namespace CookedRabbit.Core
         public void Dispose()
         {
             if (Channel != null) { Channel = null; }
-            if (Body != null) { Body = null; }
 
             CompletionSource.Task.Dispose();
         }

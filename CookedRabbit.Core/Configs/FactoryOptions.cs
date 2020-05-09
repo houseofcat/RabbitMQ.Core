@@ -45,11 +45,6 @@ namespace CookedRabbit.Core
         /// </summary>
         public bool EnableDispatchConsumersAsync { get; set; }
 
-        /// <summary>
-        /// ConnectionFactory (RabbitMQ) specify the use of background threads for IO.
-        /// <para>Becareful with this - it might have unintended side effects.</para>
-        /// </summary>
-        public bool UseBackgroundThreadsForIO { get; set; }
 
         /// <summary>
         /// Class to hold settings for ChannelFactory/SSL (RabbitMQ) settings.
