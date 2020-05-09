@@ -9,8 +9,8 @@ https://github.com/houseofcat/CookedRabbit/tree/develop/NetCore/CookedRabbit.Cor
 
 ### Development Details
 
- * RabbitMQ Server v3.8.2
- * Erlang 22.1
+ * RabbitMQ Server v3.8.3
+ * Erlang 22.3
  * NetCore 3.1 (Primarily)
  * C# 8.0 w/ Visual Studio 2019 Enterprise
 
