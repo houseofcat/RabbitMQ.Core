@@ -12,15 +12,15 @@ v1.0.6xx - Future development based on v6.0.0 official client (NetCore v3.1)
  
  * RabbitMQ.Core.Client [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/v6.0.0)  
  
-### CookedRabbit.Core NetCore (2.2, 3.0, 3.1)
+### CookedRabbit.Core NetCore (3.1)
 [![NuGet](https://img.shields.io/nuget/dt/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)   
 [![NuGet](https://img.shields.io/nuget/v/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)  
 
 #### Versions Explained
 
 v1.x.x - Legacy development with only official RabbitMQ.Client - hotfix only.   
-v2.0.x - Modern development based on RabbitMQ.Core.Client v5.1.2 - all new work.   
-v2.6.x - Future development based on RabbitMQ.Core.Client v6.0.0 - all new work.   
+v2.0.x - Modern development based on RabbitMQ.Core.Client v5.1.2 - all new work (NetCore 2.2-3.1).   
+v2.6.x - Future development based on RabbitMQ.Core.Client v6.0.0 - all new work (NetCore 3.1).   
 
  * CookedRabbit.Core [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core)  
 
