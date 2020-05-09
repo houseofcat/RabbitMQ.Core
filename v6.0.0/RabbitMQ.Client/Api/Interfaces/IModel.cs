@@ -263,7 +263,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void ExchangeBind(string destination, string source, string routingKey, IDictionary<string, object> arguments);
 
@@ -274,7 +274,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void ExchangeBindNoWait(string destination, string source, string routingKey,
             IDictionary<string, object> arguments);
 
@@ -348,7 +348,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void QueueBind(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
@@ -357,7 +357,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void QueueBindNoWait(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
         /// <summary> Declare a queue.</summary>
@@ -432,7 +432,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void QueueUnbind(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
         /// <summary>

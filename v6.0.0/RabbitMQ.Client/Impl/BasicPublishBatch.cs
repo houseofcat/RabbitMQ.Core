@@ -1,4 +1,5 @@
 using RabbitMQ.Client.Framing.Impl;
+using System;
 using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
@@ -7,12 +8,13 @@ namespace RabbitMQ.Client.Impl
     {
         private readonly List<Command> _commands = new List<Command>();
         private readonly ModelBase _model;
+
         public BasicPublishBatch(ModelBase model)
         {
             _model = model;
         }
 
-        public void Add(string exchange, string routingKey, bool mandatory, IBasicProperties basicProperties, byte[] body)
+        public void Add(string exchange, string routingKey, bool mandatory, IBasicProperties basicProperties, ReadOnlyMemory<byte> body)
         {
             IBasicProperties bp = basicProperties ?? _model.CreateBasicProperties();
             var method = new BasicPublish
