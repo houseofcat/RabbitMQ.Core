@@ -10,16 +10,16 @@
     <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
     <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.6.0.0</AssemblyVersion>
-    <FileVersion>2.6.0.0</FileVersion>
-    <Version>2.6.0</Version>
+    <AssemblyVersion>2.6.1.0</AssemblyVersion>
+    <FileVersion>2.6.1.0</FileVersion>
+    <Version>2.6.1</Version>
     <Authors>HouseofCat.io</Authors>
     <Description>CookedRabbit.Core is a C# RabbitMQ wrapper for NetCore.</Description>
     <Copyright>Copyright © 2018-2020</Copyright>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</RepositoryUrl>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>RabbitService tries to build all queues from the ConsumerConfig on startup.</PackageReleaseNotes>
+    <PackageReleaseNotes>Tightening up Pipelines.</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
