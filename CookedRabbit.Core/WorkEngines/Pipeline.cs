@@ -12,13 +12,19 @@ namespace CookedRabbit.Core.WorkEngines
 
     public class Pipeline<TIn, TOut> : IPipeline<TIn, TOut>
     {
-        private readonly List<(IDataflowBlock Block, bool IsAsync)> pipelineSteps = new List<(IDataflowBlock Block, bool IsAsync)>();
+        private readonly List<PipelineStep> Steps = new List<PipelineStep>();
         public bool Ready { get; private set; }
         private readonly SemaphoreSlim pipeLock = new SemaphoreSlim(1, 1);
         private ExecutionDataflowBlockOptions ExecuteStepOptions { get; }
         private DataflowLinkOptions LinkStepOptions { get; }
         public int MaxDegreeOfParallelism { get; }
         public int? BufferSize { get; }
+        public int StepCount { get; private set; }
+
+        private const string NotFinalized = "Pipeline is not ready for receiving work as it has not been finalized yet.";
+        private const string AlreadyFinalized = "Pipeline is already finalized and ready for use.";
+        private const string CantFinalize = "Pipeline is can't finalize as no steps have been added.";
+        private const string InvalidAddError = "Pipeline is already finalized and you can no longer add steps.";
 
         public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
         {
@@ -33,39 +39,49 @@ namespace CookedRabbit.Core.WorkEngines
             ExecuteStepOptions.BoundedCapacity = bufferSize ?? ExecuteStepOptions.BoundedCapacity;
         }
 
-        public void AddStep<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut> stepFunc, int? localMaxDoP = null, int? bufferSizeOverride = null)
+        public void AddStep<TLocalIn, TLocalOut>(
+            Func<TLocalIn, TLocalOut> stepFunc,
+            int? localMaxDoP = null,
+            int? bufferSizeOverride = null)
         {
-            if (pipelineSteps.Count == 0)
+            if (Ready) throw new InvalidOperationException(InvalidAddError);
+
+            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var pipelineStep = new PipelineStep
             {
-                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
-                pipelineSteps.Add((new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options), IsAsync: false));
+                IsAsync = false,
+                StepIndex = StepCount++,
+            };
+
+            if (Steps.Count == 0)
+            {
+                pipelineStep.Block = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options);
+                Steps.Add(pipelineStep);
             }
             else
             {
-                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
-                var (Block, IsAsync) = pipelineSteps.Last();
-
-                if (!IsAsync)
+                var lastStep = Steps.Last();
+                if (lastStep.IsAsync)
                 {
-                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options);
+                    var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
+                        async (input) => stepFunc(await input),
+                        options);
 
-                    if (Block is ISourceBlock<TLocalIn> targetBlock)
+                    if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
                         targetBlock.LinkTo(step, LinkStepOptions);
-                        pipelineSteps.Add((step, IsAsync: false));
+                        pipelineStep.Block = step;
+                        Steps.Add(pipelineStep);
                     }
                 }
                 else
                 {
-                    var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                        async (input) =>
-                        stepFunc(await input.ConfigureAwait(false)),
-                        options);
-
-                    if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
+                    var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options);
+                    if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                     {
                         targetBlock.LinkTo(step, LinkStepOptions);
-                        pipelineSteps.Add((step, IsAsync: false));
+                        pipelineStep.Block = step;
+                        Steps.Add(pipelineStep);
                     }
                 }
             }
@@ -73,139 +89,154 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc, int? localMaxDoP = null, int? bufferSizeOverride = null)
         {
-            if (pipelineSteps.Count == 0)
-            {
-                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
-                var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
-                    async (input) =>
-                    await stepFunc(input).ConfigureAwait(false),
-                    options);
+            if (Ready) throw new InvalidOperationException(InvalidAddError);
 
-                pipelineSteps.Add((step, IsAsync: true));
+            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var pipelineStep = new PipelineStep
+            {
+                IsAsync = true,
+                StepIndex = StepCount++,
+            };
+
+            if (Steps.Count == 0)
+            {
+                pipelineStep.Block = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunc, options);
+                Steps.Add(pipelineStep);
             }
             else
             {
-                var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
-                var (Block, IsAsync) = pipelineSteps.Last();
-
-                if (IsAsync)
+                var lastStep = Steps.Last();
+                if (lastStep.IsAsync)
                 {
                     var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                        async (input) =>
-                        await stepFunc(await input.ConfigureAwait(false)).ConfigureAwait(false),
+                        async (input) => stepFunc(await input),
                         options);
 
-                    if (Block is ISourceBlock<Task<TLocalIn>> targetBlock)
+                    if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
                         targetBlock.LinkTo(step, LinkStepOptions);
-                        pipelineSteps.Add((step, IsAsync: true));
+                        pipelineStep.Block = step;
+                        Steps.Add(pipelineStep);
                     }
                 }
                 else
                 {
-                    var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(
-                        async (input) =>
-                        await stepFunc(input).ConfigureAwait(false),
-                        options);
+                    var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunc, options);
 
-                    if (Block is ISourceBlock<TLocalIn> targetBlock)
+                    if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                     {
                         targetBlock.LinkTo(step, LinkStepOptions);
-                        pipelineSteps.Add((step, IsAsync: true));
+                        pipelineStep.Block = step;
+                        Steps.Add(pipelineStep);
                     }
                 }
             }
         }
 
-        public async Task FinalizeAsync(Action<TOut> callBack = null)
+        public void Finalize(Action<TOut> finalizeStep = null)
         {
-            await pipeLock.WaitAsync().ConfigureAwait(false);
+            if (Ready) throw new InvalidOperationException(AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(CantFinalize);
 
-            try
+            if (finalizeStep != null)
             {
-                if (!Ready)
+                var pipelineStep = new PipelineStep
                 {
-                    if (callBack != null)
+                    IsAsync = false,
+                    StepIndex = StepCount++,
+                    IsLastStep = true,
+                };
+
+                var lastStep = Steps.Last();
+                if (lastStep.IsAsync)
+                {
+                    var step = new ActionBlock<Task<TOut>>(
+                        async t => finalizeStep(await t),
+                        ExecuteStepOptions);
+
+                    if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
                     {
-                        var (Block, IsAsync) = pipelineSteps.Last();
-                        if (IsAsync)
-                        {
-                            var callBackStep = new ActionBlock<Task<TOut>>(
-                                async t =>
-                                callBack(await t.ConfigureAwait(false)),
-                                ExecuteStepOptions);
-
-                            if (Block is ISourceBlock<Task<TOut>> targetBlock)
-                            {
-                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
-                            }
-                        }
-                        else
-                        {
-                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), ExecuteStepOptions);
-
-                            if (Block is ISourceBlock<TOut> targetBlock)
-                            {
-                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
-                            }
-                        }
+                        pipelineStep.Block = step;
+                        targetBlock.LinkTo(step, LinkStepOptions);
+                        Steps.Add(pipelineStep);
                     }
+                }
+                else
+                {
+                    var step = new ActionBlock<TOut>(
+                        t => finalizeStep(t),
+                        ExecuteStepOptions);
 
-                    Ready = true;
+                    if (lastStep.Block is ISourceBlock<TOut> targetBlock)
+                    {
+                        pipelineStep.Block = step;
+                        targetBlock.LinkTo(step, LinkStepOptions);
+                        Steps.Add(pipelineStep);
+                    }
                 }
             }
-            finally
-            { pipeLock.Release(); }
+            else
+            {
+                var lastStep = Steps.Last();
+                lastStep.IsLastStep = true;
+            }
+
+            Ready = true;
         }
 
-        public async Task FinalizeAsync(Func<TOut, Task> callBack)
+        public void Finalize(Func<TOut, Task> finalizeStep = null)
         {
-            await pipeLock.WaitAsync().ConfigureAwait(false);
+            if (Ready) throw new InvalidOperationException(AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(CantFinalize);
 
-            try
+            if (finalizeStep != null)
             {
-                if (!Ready)
+                var pipelineStep = new PipelineStep
                 {
-                    if (callBack != null)
+                    IsAsync = true,
+                    StepIndex = StepCount++,
+                    IsLastStep = true,
+                };
+
+                var lastStep = Steps.Last();
+                if (lastStep.IsAsync)
+                {
+                    var step = new ActionBlock<Task<TOut>>(
+                        async t => await finalizeStep(await t),
+                        ExecuteStepOptions);
+
+                    if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
                     {
-                        var (Block, IsAsync) = pipelineSteps.Last();
-                        if (IsAsync)
-                        {
-                            var callBackStep = new ActionBlock<Task<TOut>>(
-                                async t =>
-                                await callBack(await t.ConfigureAwait(false))
-                                .ConfigureAwait(false),
-                                ExecuteStepOptions);
-
-                            if (Block is ISourceBlock<Task<TOut>> targetBlock)
-                            {
-                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
-                            }
-                        }
-                        else
-                        {
-                            var callBackStep = new ActionBlock<TOut>(t => callBack(t), ExecuteStepOptions);
-
-                            if (Block is ISourceBlock<TOut> targetBlock)
-                            {
-                                targetBlock.LinkTo(callBackStep, LinkStepOptions);
-                            }
-                        }
+                        pipelineStep.Block = step;
+                        targetBlock.LinkTo(step, LinkStepOptions);
+                        Steps.Add(pipelineStep);
                     }
-
-                    Ready = true;
+                }
+                else
+                {
+                    var step = new ActionBlock<TOut>(t => finalizeStep(t), ExecuteStepOptions);
+                    if (lastStep.Block is ISourceBlock<TOut> targetBlock)
+                    {
+                        pipelineStep.Block = step;
+                        targetBlock.LinkTo(step, LinkStepOptions);
+                        Steps.Add(pipelineStep);
+                    }
                 }
             }
-            finally
-            { pipeLock.Release(); }
+            else
+            {
+                var lastStep = Steps.Last();
+                lastStep.IsLastStep = true;
+            }
+
+            Ready = true;
         }
 
         public async Task<bool> QueueForExecutionAsync(TIn input)
         {
-            if (!Ready || pipelineSteps.Count == 0)
-            { return false; }
+            if (!Ready) throw new InvalidOperationException(NotFinalized);
 
-            if (pipelineSteps[0].Block is ITargetBlock<TIn> firstStep)
+            if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
                 await firstStep.SendAsync(input).ConfigureAwait(false);
             }
@@ -215,16 +246,15 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task<bool> AwaitCompletionAsync()
         {
-            if (!Ready || pipelineSteps.Count == 0)
-            { return false; }
+            if (!Ready) throw new InvalidOperationException(NotFinalized);
 
-            if (pipelineSteps[0].Block is ITargetBlock<TIn> firstStep)
+            if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
                 // Tell the pipeline its finished.
                 firstStep.Complete();
 
                 // Await the last step.
-                if (pipelineSteps[pipelineSteps.Count - 1].Block is ITargetBlock<TIn> lastStep)
+                if (Steps[Steps.Count - 1].Block is ITargetBlock<TIn> lastStep)
                 {
                     await lastStep.Completion.ConfigureAwait(false);
                     return true;
@@ -239,9 +269,9 @@ namespace CookedRabbit.Core.WorkEngines
         /// </summary>
         public bool PipelineHasFault()
         {
-            foreach (var (Block, _) in pipelineSteps)
+            foreach (var step in Steps)
             {
-                if (Block.Completion.IsFaulted)
+                if (step.Block.Completion.IsFaulted)
                 {
                     return true;
                 }
@@ -255,11 +285,11 @@ namespace CookedRabbit.Core.WorkEngines
         /// </summary>
         public IReadOnlyCollection<Exception> GetPipelineFaults()
         {
-            foreach (var (Block, _) in pipelineSteps)
+            foreach (var step in Steps)
             {
-                if (Block.Completion.IsFaulted)
+                if (step.IsFaulted)
                 {
-                    return Block.Completion.Exception.InnerExceptions;
+                    return step.Block.Completion.Exception.InnerExceptions;
                 }
             }
 

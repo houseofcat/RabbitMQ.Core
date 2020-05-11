@@ -133,7 +133,7 @@ namespace CookedRabbit.Core.SimpleClient
                 var letter = letterTemplate.Clone();
                 letter.LetterId = i;
                 var sentMessage = new TestMessage { Message = "Sensitive Message" };
-                sentMessage.Message += $" {i.ToString()}";
+                sentMessage.Message += $" {i}";
                 letter.Body = JsonSerializer.Serialize(sentMessage);
                 await rabbitService
                     .AutoPublisher
@@ -172,7 +172,7 @@ namespace CookedRabbit.Core.SimpleClient
                 var letter = letterTemplate.Clone();
                 letter.LetterId = i;
                 var sentMessage = new TestMessage { Message = "Sensitive Message" };
-                sentMessage.Message += $" {i.ToString()}";
+                sentMessage.Message += $" {i}";
                 letter.Body = JsonSerializer.Serialize(sentMessage);
                 await rabbitService
                     .AutoPublisher

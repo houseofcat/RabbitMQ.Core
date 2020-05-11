@@ -1,7 +1,7 @@
 {
   "FactorySettings": {
     "Uri": "amqp://guest:guest@localhost:5672/",
-    "MaxChannelsPerConnection": 100,
+    "MaxChannelsPerConnection": 25,
     "HeartbeatInterval": 6,
     "AutoRecovery": true,
     "TopologyRecovery": true,
@@ -19,18 +19,18 @@
   },
   "PoolSettings": {
     "ConnectionPoolName": "PipelineClient",
-    "MaxConnections": 10,
-    "MaxChannels": 50,
-    "SleepOnErrorInterval": 1000
+    "MaxConnections": 5,
+    "MaxChannels": 25,
+    "SleepOnErrorInterval": 0
   },
   "PublisherSettings": {
-    "LetterQueueBufferSize": 10000,
+    "LetterQueueBufferSize": 100,
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
-    "AutoPublisherSleepInterval": 1000,
+    "AutoPublisherSleepInterval": 0,
     "CreatePublishReceipts": true,
-    "Compress": true,
-    "Encrypt": true
+    "Compress": false,
+    "Encrypt": false
   },
   "LetterConsumerSettings": {
     "ConsumerFromConfig": {
@@ -44,7 +44,7 @@
       "QosPrefetchCount": 5,
       "MessageBufferSize": 100,
       "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1000
+      "SleepOnIdleInterval": 0
     }
   }
 }

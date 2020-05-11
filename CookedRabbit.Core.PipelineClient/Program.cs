@@ -26,10 +26,10 @@ namespace CookedRabbit.Core.PipelineClient
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
-            const int maxDegreesOfParallelism = 4;
-            var workflow = await BuildPipelineAsync(maxDegreesOfParallelism).ConfigureAwait(false);
+            const int maxDegreesOfParallelism = 32;
+            var workflow = BuildPipeline(maxDegreesOfParallelism);
 
-            _ = Task.Run(() => consumer.PipelineExecutionEngineAsync(workflow, true));
+            _ = Task.Run(() => consumer.PipelineExecutionEngineAsync(workflow, false));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
@@ -54,7 +54,7 @@ namespace CookedRabbit.Core.PipelineClient
                 var letter = letterTemplate.Clone();
                 letter.LetterId = i;
                 var sentMessage = new Message { StringMessage = "Sensitive Message" };
-                sentMessage.StringMessage += $" {i.ToString()}";
+                sentMessage.StringMessage += $" {i}";
                 letter.Body = JsonSerializer.Serialize(sentMessage);
                 await rabbitService
                     .AutoPublisher
@@ -64,25 +64,24 @@ namespace CookedRabbit.Core.PipelineClient
             return rabbitService;
         }
 
-        public static async Task<Pipeline<ReceivedLetter, WorkState>> BuildPipelineAsync(int maxDegreesOfParallelism)
+        public static Pipeline<ReceivedLetter, WorkState> BuildPipeline(int maxDegreesOfParallelism)
         {
             var pipeline = new Pipeline<ReceivedLetter, WorkState>(maxDegreesOfParallelism);
             pipeline.AddStep<ReceivedLetter, WorkState>(DeserializeStep);
             pipeline.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
             pipeline.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
 
-            await pipeline
-                .FinalizeAsync((state) =>
+            pipeline
+                .Finalize((state) =>
                 {
                     if (state.AllStepsSuccess)
-                    { Console.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Finished pipeline successful."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished pipeline successful."); }
                     else
-                    { Console.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Finished pipeline unsuccesfully."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished pipeline unsuccesfully."); }
 
                     // Lastly mark the excution pipeline finished for this message.
                     state.ReceivedLetter.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
-                })
-                .ConfigureAwait(false);
+                });
 
             return pipeline;
         }
@@ -124,14 +123,14 @@ namespace CookedRabbit.Core.PipelineClient
         {
             await Console
                 .Out
-                .WriteLineAsync($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Deserialize Step Success? {state.DeserializeStepSuccess}")
+                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Deserialize Step Success? {state.DeserializeStepSuccess}")
                 .ConfigureAwait(false);
 
             if (state.DeserializeStepSuccess)
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Received: {state.Message.StringMessage}")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Received: {state.Message.StringMessage}")
                     .ConfigureAwait(false);
 
                 state.ProcessStepSuccess = true;
@@ -144,14 +143,14 @@ namespace CookedRabbit.Core.PipelineClient
         {
             await Console
                 .Out
-                .WriteLineAsync($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Process Step Success? {state.ProcessStepSuccess}")
+                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Process Step Success? {state.ProcessStepSuccess}")
                 .ConfigureAwait(false);
 
             if (state.ProcessStepSuccess)
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Acking message...")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Acking message...")
                     .ConfigureAwait(false);
 
                 if (state.ReceivedLetter.AckMessage())
@@ -161,7 +160,7 @@ namespace CookedRabbit.Core.PipelineClient
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff")} - LetterId: {state.LetterId} - Nacking message...")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Nacking message...")
                     .ConfigureAwait(false);
 
                 if (state.ReceivedLetter.NackMessage(true))
