@@ -23,7 +23,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         private const string NotFinalized = "Pipeline is not ready for receiving work as it has not been finalized yet.";
         private const string AlreadyFinalized = "Pipeline is already finalized and ready for use.";
-        private const string CantFinalize = "Pipeline is can't finalize as no steps have been added.";
+        private const string CantFinalize = "Pipeline can't finalize as no steps have been added.";
         private const string InvalidAddError = "Pipeline is already finalized and you can no longer add steps.";
 
         public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
