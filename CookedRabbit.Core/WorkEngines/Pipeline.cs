@@ -87,7 +87,10 @@ namespace CookedRabbit.Core.WorkEngines
             }
         }
 
-        public void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc, int? localMaxDoP = null, int? bufferSizeOverride = null)
+        public void AddAsyncStep<TLocalIn, TLocalOut>(
+            Func<TLocalIn, Task<TLocalOut>> stepFunc,
+            int? localMaxDoP = null,
+            int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(InvalidAddError);
 
@@ -151,7 +154,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (lastStep.IsAsync)
                 {
                     var step = new ActionBlock<Task<TOut>>(
-                        async t => finalizeStep(await t),
+                        async input => finalizeStep(await input),
                         ExecuteStepOptions);
 
                     if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
@@ -164,7 +167,7 @@ namespace CookedRabbit.Core.WorkEngines
                 else
                 {
                     var step = new ActionBlock<TOut>(
-                        t => finalizeStep(t),
+                        finalizeStep,
                         ExecuteStepOptions);
 
                     if (lastStep.Block is ISourceBlock<TOut> targetBlock)
@@ -176,10 +179,7 @@ namespace CookedRabbit.Core.WorkEngines
                 }
             }
             else
-            {
-                var lastStep = Steps.Last();
-                lastStep.IsLastStep = true;
-            }
+            { Steps.Last().IsLastStep = true; }
 
             Ready = true;
         }
