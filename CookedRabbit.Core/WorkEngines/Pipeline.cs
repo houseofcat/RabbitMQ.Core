@@ -26,6 +26,10 @@ namespace CookedRabbit.Core.WorkEngines
         private const string CantFinalize = "Pipeline can't finalize as no steps have been added.";
         private const string InvalidAddError = "Pipeline is already finalized and you can no longer add steps.";
 
+        private const string ChainingImpossible = "Pipelines can't be chained together as one, or both, pipelines have been finalized.";
+        private const string ChainingNotMatched = "Pipelines can't be chained together as the last step function and the first step function don't align with type input or asynchronicity.";
+        private const string NothingToChain = "Pipelines can't be chained together as one, or both, pipelines have no steps.";
+
         public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
         {
             MaxDegreeOfParallelism = maxDegreeOfParallelism;
@@ -448,6 +452,43 @@ namespace CookedRabbit.Core.WorkEngines
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Allows the chaining of steps from one type matched Pipeline to another.
+        /// <para>The pipeline steps get added to the parent pipeline for logical consistency.</para>
+        /// <para>TLocalIn refers to the output of the last step and input of the first step. They have to match, both in type and asynchrounous pattern.</para>
+        /// <para>Because we don't have the original StepFunction, the blocks have to have matching inputs/outputs therefore async can attach to async, sync to sync.</para>
+        /// </summary>
+        /// <typeparam name="TLocalIn"></typeparam>
+        /// <param name="pipeline"></param>
+        public void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline)
+        {
+            if (pipeline.Ready || Ready) throw new InvalidOperationException(ChainingImpossible);
+            if (Steps.Count == 0 || pipeline.Steps.Count == 0) throw new InvalidOperationException(NothingToChain);
+
+            var lastStepThisPipeline = Steps.Last();
+            var firstStepNewPipeline = pipeline.Steps.First();
+
+            if (lastStepThisPipeline.IsAsync
+                && firstStepNewPipeline.IsAsync
+                && lastStepThisPipeline.Block is ISourceBlock<Task<TLocalIn>> asyncLastBlock
+                && firstStepNewPipeline.Block is ITargetBlock<Task<TLocalIn>> asyncFirstBlock)
+            {
+                asyncLastBlock.LinkTo(asyncFirstBlock, LinkStepOptions);
+            }
+            else if (lastStepThisPipeline.Block is ISourceBlock<TLocalIn> lastBlock
+                && firstStepNewPipeline.Block is ITargetBlock<TLocalIn> firstBlock)
+            {
+                lastBlock.LinkTo(firstBlock, LinkStepOptions);
+            }
+            else
+            { throw new InvalidOperationException(ChainingNotMatched); }
+
+            foreach (var step in pipeline.Steps)
+            {
+                Steps.Add(step);
             }
         }
 
