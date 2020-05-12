@@ -194,6 +194,59 @@ namespace CookedRabbit.Core.WorkEngines
             }
         }
 
+        public void AddAsyncSteps<TLocalIn, TLocalOut>(
+            int? localMaxDoP = null,
+            int? bufferSizeOverride = null,
+            params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions)
+        {
+            if (Ready) throw new InvalidOperationException(InvalidAddError);
+
+            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+
+            for (int i = 0; i < stepFunctions.Length; i++)
+            {
+                var pipelineStep = new PipelineStep
+                {
+                    IsAsync = true,
+                    StepIndex = StepCount++,
+                };
+
+                if (Steps.Count == 0)
+                {
+                    pipelineStep.Block = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
+                    Steps.Add(pipelineStep);
+                }
+                else
+                {
+                    var lastStep = Steps.Last();
+                    if (lastStep.IsAsync)
+                    {
+                        var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
+                            async (input) => stepFunctions[i](await input),
+                            options);
+
+                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
+                        {
+                            targetBlock.LinkTo(step, LinkStepOptions);
+                            pipelineStep.Block = step;
+                            Steps.Add(pipelineStep);
+                        }
+                    }
+                    else
+                    {
+                        var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
+
+                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
+                        {
+                            targetBlock.LinkTo(step, LinkStepOptions);
+                            pipelineStep.Block = step;
+                            Steps.Add(pipelineStep);
+                        }
+                    }
+                }
+            }
+        }
+
         public void AddStep<TLocalIn, TLocalOut>(
             Func<TLocalIn, TLocalOut> stepFunc,
             int? localMaxDoP = null,
@@ -304,6 +357,58 @@ namespace CookedRabbit.Core.WorkEngines
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Count; i++)
+            {
+                var pipelineStep = new PipelineStep
+                {
+                    IsAsync = false,
+                    StepIndex = StepCount++,
+                };
+
+                if (Steps.Count == 0)
+                {
+                    pipelineStep.Block = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
+                    Steps.Add(pipelineStep);
+                }
+                else
+                {
+                    var lastStep = Steps.Last();
+                    if (lastStep.IsAsync)
+                    {
+                        var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
+                            async (input) => stepFunctions[i](await input),
+                            options);
+
+                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
+                        {
+                            targetBlock.LinkTo(step, LinkStepOptions);
+                            pipelineStep.Block = step;
+                            Steps.Add(pipelineStep);
+                        }
+                    }
+                    else
+                    {
+                        var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
+                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
+                        {
+                            targetBlock.LinkTo(step, LinkStepOptions);
+                            pipelineStep.Block = step;
+                            Steps.Add(pipelineStep);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void AddSteps<TLocalIn, TLocalOut>(
+            int? localMaxDoP = null,
+            int? bufferSizeOverride = null,
+            params Func<TLocalIn, TLocalOut>[] stepFunctions)
+        {
+            if (Ready) throw new InvalidOperationException(InvalidAddError);
+
+            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+
+            for (int i = 0; i < stepFunctions.Length; i++)
             {
                 var pipelineStep = new PipelineStep
                 {
