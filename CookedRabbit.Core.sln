@@ -5,15 +5,15 @@ VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core", "CookedRabbit.Core\CookedRabbit.Core.csproj", "{5808360B-AB56-4019-953B-185362B2D2AE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Benchmark", "CookedRabbit.Core.Benchmark\CookedRabbit.Core.Benchmark.csproj", "{7438CBE2-FDB9-43DF-A799-5858757BAF4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmarks", "Examples\Benchmarks\Benchmarks.csproj", "{7438CBE2-FDB9-43DF-A799-5858757BAF4C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.Tests", "CookedRabbit.Core.Tests\CookedRabbit.Core.Tests.csproj", "{C2B794EB-A8E4-4258-8B43-0D179C5D8A3E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.StressTestClient", "CookedRabbit.Core.StressAndStabilityConsole\CookedRabbit.Core.StressTestClient.csproj", "{CB15603F-0431-46EB-89DA-56A289B6AA82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StressTestClient", "Examples\StressTestClient\StressTestClient.csproj", "{CB15603F-0431-46EB-89DA-56A289B6AA82}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.SimpleClient", "CookedRabbit.Core.SimpleClient\CookedRabbit.Core.SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleClient", "Examples\SimpleClient\SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CookedRabbit.Core.PipelineClient", "CookedRabbit.Core.PipelineClient\CookedRabbit.Core.PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PipelineClient", "Examples\PipelineClient\PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5EDF225B-B61D-4B7E-8A82-11D326DF15BF}"
 	ProjectSection(SolutionItems) = preProject
@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CookedRabbit.Core\CookedRabbitArch.dgml = CookedRabbit.Core\CookedRabbitArch.dgml
 		CookedRabbit.Core\README.md = CookedRabbit.Core\README.md
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{55FD23B5-C75C-45E6-98D4-641EB5B04C43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +59,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7438CBE2-FDB9-43DF-A799-5858757BAF4C} = {55FD23B5-C75C-45E6-98D4-641EB5B04C43}
+		{CB15603F-0431-46EB-89DA-56A289B6AA82} = {55FD23B5-C75C-45E6-98D4-641EB5B04C43}
+		{B6A719DC-9780-48BD-92B2-7F585A6D8A8A} = {55FD23B5-C75C-45E6-98D4-641EB5B04C43}
+		{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4} = {55FD23B5-C75C-45E6-98D4-641EB5B04C43}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C8803D12-5B02-41FA-A02C-D63F83C524E8}

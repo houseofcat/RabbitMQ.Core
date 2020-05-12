@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CookedRabbit.Core\CookedRabbit.Core.csproj" />
+    <ProjectReference Include="..\..\CookedRabbit.Core\CookedRabbit.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
