@@ -10,16 +10,17 @@
     <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
     <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.6.2.0</AssemblyVersion>
-    <FileVersion>2.6.2.0</FileVersion>
-    <Version>2.6.2</Version>
+    <AssemblyVersion>2.6.3.0</AssemblyVersion>
+    <FileVersion>2.6.3.0</FileVersion>
+    <Version>2.6.3</Version>
     <Authors>HouseofCat.io</Authors>
     <Description>CookedRabbit.Core is a C# RabbitMQ wrapper for NetCore.</Description>
     <Copyright>Copyright © 2018-2020</Copyright>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</RepositoryUrl>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>Tightening up Pipelines.</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated ConsumerConfig to support multiple TargetQueues.
+Reverting ReadOnlyMemory to Byte[] on ReceivedMessage body.</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
