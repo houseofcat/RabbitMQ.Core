@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Channels;
 
 namespace CookedRabbit.Core
@@ -12,6 +14,7 @@ namespace CookedRabbit.Core
         public string ErrorQueueName => $"{ConsumerName}.{ErrorSuffix}";
 
         public string TargetQueueName { get; set; }
+        public IDictionary<string, string> TargetQueues { get; set; }
 
         public bool NoLocal { get; set; }
         public bool Exclusive { get; set; }
