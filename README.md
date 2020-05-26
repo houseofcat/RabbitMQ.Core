@@ -20,7 +20,8 @@ v1.0.6xx - Future development based on v6.0.0 official client (NetCore v3.1)
 
 v1.x.x - Legacy development with only official RabbitMQ.Client - hotfix only.   
 v2.0.x - Modern development based on RabbitMQ.Core.Client v5.1.2 - all new work (NetCore 2.2-3.1).   
-v2.6.x - Future development based on RabbitMQ.Core.Client v6.0.0 - all new work (NetCore 3.1).   
+v2.6.x - Modern development based on RabbitMQ.Core.Client v6.0.0 - all new work (NetCore 3.1).   
+v3.x.x - Future development.
 
  * CookedRabbit.Core [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core)  
 
