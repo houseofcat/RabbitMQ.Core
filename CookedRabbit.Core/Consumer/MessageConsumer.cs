@@ -1,26 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class MessageConsumer
+    public class MessageConsumer : IConsumer<ReceivedMessage>
     {
-        private Config Config { get; }
+        public Config Config { get; }
 
-        public ChannelPool ChannelPool { get; }
-        private Channel<ReceivedMessage> MessageBuffer { get; set; }
+        public IChannelPool ChannelPool { get; }
+        public Channel<ReceivedMessage> DataBuffer { get; set; }
 
-        private ChannelHost ConsumingChannelHost { get; set; }
+        private IChannelHost ConsumingChannelHost { get; set; }
 
         public ConsumerOptions ConsumerSettings { get; set; }
 
@@ -41,7 +40,7 @@ namespace CookedRabbit.Core
             ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
         }
 
-        public MessageConsumer(ChannelPool channelPool, string consumerName)
+        public MessageConsumer(IChannelPool channelPool, string consumerName)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
@@ -52,7 +51,7 @@ namespace CookedRabbit.Core
             ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
         }
 
-        public MessageConsumer(ChannelPool channelPool, ConsumerOptions consumerSettings)
+        public MessageConsumer(IChannelPool channelPool, ConsumerOptions consumerSettings)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNull(consumerSettings, nameof(consumerSettings));
@@ -77,13 +76,13 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    MessageBuffer = Channel.CreateBounded<ReceivedMessage>(
-                    new BoundedChannelOptions(ConsumerSettings.MessageBufferSize)
+                    DataBuffer = Channel.CreateBounded<ReceivedMessage>(
+                    new BoundedChannelOptions(ConsumerSettings.BufferSize)
                     {
                         FullMode = ConsumerSettings.BehaviorWhenFull
                     });
 
-                    await MessageBuffer
+                    await DataBuffer
                         .Writer
                         .WaitToWriteAsync()
                         .ConfigureAwait(false);
@@ -107,7 +106,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                MessageBuffer.Writer.Complete();
+                DataBuffer.Writer.Complete();
 
                 if (immediate)
                 {
@@ -115,7 +114,7 @@ namespace CookedRabbit.Core
                 }
                 else
                 {
-                    await MessageBuffer
+                    await DataBuffer
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
@@ -221,12 +220,12 @@ namespace CookedRabbit.Core
         {
             var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
-            if (await MessageBuffer
+            if (await DataBuffer
                     .Writer
                     .WaitToWriteAsync()
                     .ConfigureAwait(false))
             {
-                await MessageBuffer
+                await DataBuffer
                     .Writer
                     .WriteAsync(rabbitMessage);
             }
@@ -265,12 +264,12 @@ namespace CookedRabbit.Core
         {
             var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
-            if (await MessageBuffer
+            if (await DataBuffer
                 .Writer
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                await MessageBuffer
+                await DataBuffer
                     .Writer
                     .WriteAsync(rabbitMessage);
             }
@@ -286,67 +285,11 @@ namespace CookedRabbit.Core
             }
         }
 
-        /// <summary>
-        /// Simple retrieve message (byte[]) from queue. Null if nothing was available or on error. Exception possible when retrieving Channel.
-        /// <para>AutoAcks message.</para>
-        /// </summary>
-        /// <param name="queueName"></param>
-        public async Task<ReadOnlyMemory<byte>?> GetAsync(string queueName)
+        public ChannelReader<ReceivedMessage> GetConsumerBuffer() => DataBuffer.Reader;
+
+        public async ValueTask<ReceivedMessage> ReadAsync()
         {
-            var chanHost = await ChannelPool
-                .GetChannelAsync()
-                .ConfigureAwait(false);
-
-            BasicGetResult result = null;
-            var error = false;
-            try
-            {
-                result = chanHost
-                    .Channel
-                    .BasicGet(queueName, true);
-            }
-            catch { error = true; }
-
-            await ChannelPool
-                .ReturnChannelAsync(chanHost, error)
-                .ConfigureAwait(false);
-
-            return result?.Body;
-        }
-
-        /// <summary>
-        /// Simple retrieve message (byte[]) from queue and convert to <see cref="{T}" /> efficiently. Default (assumed null) if nothing was available (or on transmission error). Exception possible when retrieving Channel.
-        /// <para>AutoAcks message.</para>
-        /// </summary>
-        /// <param name="queueName"></param>
-        public async Task<T> GetAsync<T>(string queueName)
-        {
-            var chanHost = await ChannelPool
-                .GetChannelAsync()
-                .ConfigureAwait(false);
-
-            BasicGetResult result = null;
-            var error = false;
-            try
-            {
-                result = chanHost
-                    .Channel
-                    .BasicGet(queueName, true);
-            }
-            catch { error = true; }
-
-            await ChannelPool
-                .ReturnChannelAsync(chanHost, error)
-                .ConfigureAwait(false);
-
-            return result != null ? JsonSerializer.Deserialize<T>(result.Body.ToArray()) : default;
-        }
-
-        public ChannelReader<ReceivedMessage> GetConsumerMessageBuffer() => MessageBuffer.Reader;
-
-        public async ValueTask<ReceivedMessage> ReadMessageAsync()
-        {
-            if (!await MessageBuffer
+            if (!await DataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -354,15 +297,15 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            return await MessageBuffer
+            return await DataBuffer
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<ReceivedMessage>> ReadMessagesUntilEmptyAsync()
+        public async Task<IEnumerable<ReceivedMessage>> ReadUntilEmptyAsync()
         {
-            if (!await MessageBuffer
+            if (!await DataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -371,8 +314,8 @@ namespace CookedRabbit.Core
             }
 
             var list = new List<ReceivedMessage>();
-            await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (MessageBuffer.Reader.TryRead(out var message))
+            await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (DataBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 list.Add(message);
@@ -381,9 +324,9 @@ namespace CookedRabbit.Core
             return list;
         }
 
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilEmptyAsync()
+        public async IAsyncEnumerable<ReceivedMessage> StreamOutUntilEmptyAsync()
         {
-            if (!await MessageBuffer
+            if (!await DataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -391,17 +334,17 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (MessageBuffer.Reader.TryRead(out var message))
+            await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (DataBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 yield return message;
             }
         }
 
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutMessagesUntilClosedAsync()
+        public async IAsyncEnumerable<ReceivedMessage> StreamOutUntilClosedAsync()
         {
-            if (!await MessageBuffer
+            if (!await DataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -409,7 +352,7 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await foreach (var message in MessageBuffer.Reader.ReadAllAsync())
+            await foreach (var message in DataBuffer.Reader.ReadAllAsync())
             {
                 yield return message;
             }
@@ -417,9 +360,9 @@ namespace CookedRabbit.Core
 
         public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task> workAsync)
         {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
@@ -436,9 +379,9 @@ namespace CookedRabbit.Core
 
         public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync)
         {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
@@ -455,9 +398,9 @@ namespace CookedRabbit.Core
 
         public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedMessage, TOptions, Task<bool>> workAsync, TOptions options)
         {
-            while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in MessageBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
@@ -483,7 +426,7 @@ namespace CookedRabbit.Core
                 if (token.IsCancellationRequested)
                 { return; }
 
-                while (await MessageBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested)
                     { return; }
@@ -492,7 +435,7 @@ namespace CookedRabbit.Core
 
                     try
                     {
-                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
                         {
                             if (token.IsCancellationRequested)
                             { return; }
@@ -530,7 +473,7 @@ namespace CookedRabbit.Core
             finally { parallelExecLock.Release(); }
         }
 
-        private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1,1);
+        private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1, 1);
 
         public async Task DataflowExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
         {
@@ -543,14 +486,14 @@ namespace CookedRabbit.Core
 
                 var messageEngine = new MessageDataflowEngine(workBodyAsync, maxDoP);
 
-                while (await MessageBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested)
                     { return; }
 
                     try
                     {
-                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
                         {
                             if (receivedMessage != null)
                             {
@@ -573,7 +516,7 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task PipelineExecutionEngineAsync<TOut>(Pipeline<ReceivedMessage, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
+        public async Task PipelineExecutionEngineAsync<TOut>(IPipeline<ReceivedMessage, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
             await pipeExecLock
                 .WaitAsync(2000)
@@ -586,14 +529,14 @@ namespace CookedRabbit.Core
 
                 var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
 
-                while (await MessageBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested)
                     { return; }
 
                     try
                     {
-                        while (MessageBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
                         {
                             if (token.IsCancellationRequested)
                             { return; }

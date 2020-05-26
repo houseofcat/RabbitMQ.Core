@@ -1,7 +1,7 @@
 ﻿using CookedRabbit.Core.Service;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Utf8Json;
 
 namespace CookedRabbit.Core.SimpleClient
 {
@@ -14,14 +14,14 @@ namespace CookedRabbit.Core.SimpleClient
 
         public static async Task Main()
         {
-            //await RunSimpleClientWithEncryptionAsync()
-            //    .ConfigureAwait(false);
+            await RunSimpleClientWithEncryptionAsync()
+                .ConfigureAwait(false);
 
-            //await RunExecutionEngineAsync()
-            //    .ConfigureAwait(false);
+            await RunExecutionEngineAsync()
+                .ConfigureAwait(false);
 
-            //await RunParallelExecutionEngineAsync()
-            //    .ConfigureAwait(false);
+            await RunParallelExecutionEngineAsync()
+                .ConfigureAwait(false);
 
             await RunDataExecutionEngineAsync()
                 .ConfigureAwait(false);
@@ -32,7 +32,7 @@ namespace CookedRabbit.Core.SimpleClient
             await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption...").ConfigureAwait(false);
 
             var sentMessage = new TestMessage { Message = "Sensitive Message" };
-            var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.Serialize(sentMessage), new LetterMetadata());
+            var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), new LetterMetadata());
 
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
@@ -57,7 +57,7 @@ namespace CookedRabbit.Core.SimpleClient
 
             // Get Message From Consumer
             var receivedLetter = await consumer
-                .ReadLetterAsync()
+                .ReadAsync()
                 .ConfigureAwait(false);
 
             // Do work with message inside the receivedLetter
@@ -84,7 +84,7 @@ namespace CookedRabbit.Core.SimpleClient
             await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ExecutionEngine...").ConfigureAwait(false);
 
             var sentMessage = new TestMessage { Message = "Sensitive Message" };
-            var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.Serialize(sentMessage), new LetterMetadata());
+            var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), new LetterMetadata());
 
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
@@ -134,7 +134,7 @@ namespace CookedRabbit.Core.SimpleClient
                 letter.LetterId = i;
                 var sentMessage = new TestMessage { Message = "Sensitive Message" };
                 sentMessage.Message += $" {i}";
-                letter.Body = JsonSerializer.Serialize(sentMessage);
+                letter.Body = JsonSerializer.SerializeToUtf8Bytes(sentMessage);
                 await rabbitService
                     .AutoPublisher
                     .QueueLetterAsync(letter);
@@ -173,7 +173,7 @@ namespace CookedRabbit.Core.SimpleClient
                 letter.LetterId = i;
                 var sentMessage = new TestMessage { Message = "Sensitive Message" };
                 sentMessage.Message += $" {i}";
-                letter.Body = JsonSerializer.Serialize(sentMessage);
+                letter.Body = JsonSerializer.SerializeToUtf8Bytes(sentMessage);
                 await rabbitService
                     .AutoPublisher
                     .QueueLetterAsync(letter);

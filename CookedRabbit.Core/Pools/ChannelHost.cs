@@ -1,22 +1,32 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Pools
 {
-    public class ChannelHost
+    public interface IChannelHost
+    {
+        bool Ackable { get; }
+        IModel Channel { get; set; }
+        ulong ChannelId { get; set; }
+        bool Closed { get; }
+        ulong ConnectionId { get; set; }
+
+        void Close();
+        Task<bool> HealthyAsync();
+    }
+
+    public class ChannelHost : IChannelHost
     {
         public ulong ChannelId { get; set; }
         public ulong ConnectionId { get; set; }
         public IModel Channel { get; set; }
         public Func<Task<bool>> ConnectionHealthy;
-        private readonly SemaphoreSlim hostLock = new SemaphoreSlim(1, 1);
 
         public bool Ackable { get; }
         public bool Closed { get; private set; }
 
-        public ChannelHost(ulong channelId, ConnectionHost connHost, bool ackable)
+        public ChannelHost(ulong channelId, IConnectionHost connHost, bool ackable)
         {
             ChannelId = channelId;
             Channel = connHost
@@ -35,15 +45,12 @@ namespace CookedRabbit.Core.Pools
 
         private void ChannelClose(object sender, ShutdownEventArgs e)
         {
-            hostLock.Wait();
             Closed = true;
-            hostLock.Release();
         }
 
         public async Task<bool> HealthyAsync()
         {
-            var connHealthy = await ConnectionHealthy()
-                .ConfigureAwait(false);
+            var connHealthy = await ConnectionHealthy().ConfigureAwait(false);
 
             return connHealthy && !Closed && Channel.IsOpen;
         }
@@ -51,6 +58,14 @@ namespace CookedRabbit.Core.Pools
         private const int CloseCode = 200;
         private const string CloseMessage = "Manual close channel initiated.";
 
-        public void Close() => Channel.Close(CloseCode, CloseMessage);
+        public void Close()
+        {
+            if (!Closed || !Channel.IsOpen)
+            {
+                try
+                { Channel.Close(CloseCode, CloseMessage); }
+                catch { }
+            }
+        }
     }
 }

@@ -57,7 +57,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         private static async Task SetupWithSharedChannelPoolAsync()
         {
             var sw = Stopwatch.StartNew();
-            config = ConfigReader.ConfigFileRead("Config.json");
+            config = await ConfigReader.ConfigFileReadAsync("Config.json");
             topologer = new Topologer(config);
 
             await topologer
@@ -208,7 +208,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             {
                 while (messageCount + errorCount < count) // TODO: Possible Infinite loop on lost messages.
                 {
-                    await foreach (var message in consumer.StreamOutMessagesUntilEmptyAsync())
+                    await foreach (var message in consumer.StreamOutUntilEmptyAsync())
                     {
                         if (message.Ackable)
                         { message.AckMessage(); }

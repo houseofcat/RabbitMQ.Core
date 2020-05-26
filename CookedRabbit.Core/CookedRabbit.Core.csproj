@@ -10,17 +10,16 @@
     <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
     <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.6.3.0</AssemblyVersion>
-    <FileVersion>2.6.3.0</FileVersion>
-    <Version>2.6.3</Version>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+    <Version>3.0.0</Version>
     <Authors>HouseofCat.io</Authors>
     <Description>CookedRabbit.Core is a C# RabbitMQ wrapper for NetCore.</Description>
     <Copyright>Copyright © 2018-2020</Copyright>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core</RepositoryUrl>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>Updated ConsumerConfig to support multiple TargetQueues.
-Reverting ReadOnlyMemory to Byte[] on ReceivedMessage body.</PackageReleaseNotes>
+    <PackageReleaseNotes>Hardening and adding Interface (for IoC) support to all classes. Minor functions renamed in Consumers for simplification.</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
@@ -44,6 +43,7 @@ Reverting ReadOnlyMemory to Byte[] on ReceivedMessage body.</PackageReleaseNotes
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
     <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <DocumentationFile>C:\Github\houseofcat\RabbitMQ.Core\CookedRabbit.Core\CookedRabbit.Core.xml</DocumentationFile>
   </PropertyGroup>
   
   <ItemGroup>
@@ -55,9 +55,8 @@ Reverting ReadOnlyMemory to Byte[] on ReceivedMessage body.</PackageReleaseNotes
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCore" Version="1.8.6" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.2.1" />
-    <PackageReference Include="RabbitMQ.Core.Client" Version="1.0.601" />
+    <PackageReference Include="RabbitMQ.Core.Client" Version="1.0.602" />
     <PackageReference Include="System.Threading.Channels" Version="4.7.1" />
-    <PackageReference Include="Utf8Json" Version="1.3.7" />
   </ItemGroup>
 
 </Project>

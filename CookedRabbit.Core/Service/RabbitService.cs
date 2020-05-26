@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
@@ -10,39 +10,86 @@ using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Service
 {
+    public interface IRabbitService
+    {
+        IAutoPublisher AutoPublisher { get; }
+        IChannelPool ChannelPool { get; }
+        bool Initialized { get; }
+        ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; }
+        ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; }
+        ITopologer Topologer { get; }
+
+        Task ComcryptAsync(ReceivedLetter receivedLetter);
+        Task<bool> CompressAsync(ReceivedLetter receivedLetter);
+        Task DecomcryptAsync(ReceivedLetter receivedLetter);
+        Task<bool> DecompressAsync(ReceivedLetter receivedLetter);
+        bool Decrypt(ReceivedLetter receivedLetter);
+        bool Encrypt(ReceivedLetter receivedLetter);
+        Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
+        Task<T> GetAsync<T>(string queueName);
+        IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName);
+        IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName);
+        Task InitializeAsync();
+        Task InitializeAsync(string passphrase, string salt);
+        ValueTask ShutdownAsync(bool immediately);
+    }
+
     public class RabbitService : IRabbitService
     {
         private Config Config { get; }
         public bool Initialized { get; private set; }
         private readonly SemaphoreSlim serviceLock = new SemaphoreSlim(1, 1);
 
-        public ChannelPool ChannelPool { get; }
-        public AutoPublisher AutoPublisher { get; }
-        public Topologer Topologer { get; }
-        public ConcurrentDictionary<string, LetterConsumer> LetterConsumers { get; }
-        public ConcurrentDictionary<string, MessageConsumer> MessageConsumers { get; }
+        public IChannelPool ChannelPool { get; }
+        public IAutoPublisher AutoPublisher { get; }
+        public ITopologer Topologer { get; }
+        public ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedLetter>>();
+        public ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedMessage>>();
 
         private byte[] HashKey { get; set; }
         private const int KeySize = 32;
 
+        /// <summary>
+        /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
+        /// </summary>
+        /// <param name="fileNamePath"></param>
         public RabbitService(string fileNamePath)
         {
-            Config = ConfigReader.ConfigFileRead(fileNamePath);
+            Config = ConfigReader
+                .ConfigFileReadAsync(fileNamePath)
+                .GetAwaiter()
+                .GetResult();
+
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
-            LetterConsumers = new ConcurrentDictionary<string, LetterConsumer>();
-            MessageConsumers = new ConcurrentDictionary<string, MessageConsumer>();
         }
 
+        /// <summary>
+        /// Builds out a RabbitService with instantiated dependencies based on config settings.
+        /// </summary>
+        /// <param name="config"></param>
         public RabbitService(Config config)
         {
             Config = config;
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
-            LetterConsumers = new ConcurrentDictionary<string, LetterConsumer>();
-            MessageConsumers = new ConcurrentDictionary<string, MessageConsumer>();
+        }
+
+        /// <summary>
+        /// Use this constructor with DependencyInjection. Config's values are only used for RabbitService-esque settings and for building of Consumers.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="channelPool"></param>
+        /// <param name="autoPublisher"></param>
+        /// <param name="toploger"></param>
+        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger)
+        {
+            Config = config;
+            ChannelPool = channelPool;
+            AutoPublisher = autoPublisher;
+            Topologer = toploger;
         }
 
         public async Task InitializeAsync()
@@ -180,13 +227,13 @@ namespace CookedRabbit.Core.Service
             }
         }
 
-        public LetterConsumer GetLetterConsumer(string consumerName)
+        public IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName)
         {
             if (!LetterConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
             return LetterConsumers[consumerName];
         }
 
-        public MessageConsumer GetMessageConsumer(string consumerName)
+        public IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName)
         {
             if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
             return MessageConsumers[consumerName];
@@ -303,6 +350,78 @@ namespace CookedRabbit.Core.Service
             }
 
             return !receivedLetter.Letter.LetterMetadata.Compressed;
+        }
+
+        /// <summary>
+        /// Simple retrieve message (byte[]) from queue. Null if nothing was available or on error.
+        /// <para>AutoAcks message.</para>
+        /// </summary>
+        /// <param name="queueName"></param>
+        public async Task<ReadOnlyMemory<byte>?> GetAsync(string queueName)
+        {
+            IChannelHost chanHost;
+
+            try
+            {
+                chanHost = await ChannelPool
+                    .GetChannelAsync()
+                    .ConfigureAwait(false);
+            }
+            catch { return default; }
+
+            BasicGetResult result = null;
+            var error = false;
+            try
+            {
+                result = chanHost
+                    .Channel
+                    .BasicGet(queueName, true);
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(chanHost, error)
+                    .ConfigureAwait(false);
+            }
+
+            return result?.Body;
+        }
+
+        /// <summary>
+        /// Simple retrieve message (byte[]) from queue and convert to type T. /> efficiently. Default (assumed null) if nothing was available (or on transmission error).
+        /// <para>AutoAcks message.</para>
+        /// </summary>
+        /// <param name="queueName"></param>
+        public async Task<T> GetAsync<T>(string queueName)
+        {
+            IChannelHost chanHost;
+
+            try
+            {
+                chanHost = await ChannelPool
+                    .GetChannelAsync()
+                    .ConfigureAwait(false);
+            }
+            catch { return default; }
+
+            BasicGetResult result = null;
+            var error = false;
+            try
+            {
+                result = chanHost
+                    .Channel
+                    .BasicGet(queueName, true);
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(chanHost, error)
+                    .ConfigureAwait(false);
+            }
+
+            return result != null ? JsonSerializer.Deserialize<T>(result.Body.Span) : default;
         }
     }
 }

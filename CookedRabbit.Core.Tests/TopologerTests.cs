@@ -195,7 +195,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateTopologyFromFileAsync()
         {
-            var config = ConfigReader.ConfigFileRead("TestConfig.json");
+            var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             var top = new Topologer(config);
 
             await top
@@ -211,7 +211,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateTopologyFromPartialFileAsync()
         {
-            var config = ConfigReader.ConfigFileRead("TestConfig.json");
+            var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             var top = new Topologer(config);
 
             await top

@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Utils;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,16 +14,16 @@ namespace CookedRabbit.Core.Tests
         public ConsumerTests(ITestOutputHelper output)
         {
             this.output = output;
-            config = Utils.ConfigReader.ConfigFileRead("TestConfig.json");
+            config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
 
             topologer = new Topologer(config);
             topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
         }
 
         [Fact]
-        public void CreateConsumer()
+        public async Task CreateConsumer()
         {
-            var config = Utils.ConfigReader.ConfigFileRead("TestConfig.json");
+            var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             Assert.NotNull(config);
 
             var con = new MessageConsumer(config, "TestMessageConsumer");
@@ -32,7 +33,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateConsumerAndInitializeChannelPool()
         {
-            var config = Utils.ConfigReader.ConfigFileRead("TestConfig.json");
+            var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             Assert.NotNull(config);
 
             var con = new MessageConsumer(config, "TestMessageConsumer");

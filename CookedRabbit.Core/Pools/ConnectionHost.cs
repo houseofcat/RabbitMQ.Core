@@ -1,11 +1,21 @@
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
 namespace CookedRabbit.Core.Pools
 {
-    public class ConnectionHost
+    public interface IConnectionHost
+    {
+        bool Closed { get; }
+        IConnection Connection { get; set; }
+        ulong ConnectionId { get; set; }
+        bool Dead { get; }
+
+        void Close();
+        Task<bool> HealthyAsync();
+    }
+
+    public class ConnectionHost : IConnectionHost
     {
         public ulong ConnectionId { get; set; }
         public IConnection Connection { get; set; }

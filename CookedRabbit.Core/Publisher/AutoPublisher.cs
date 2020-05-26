@@ -7,10 +7,28 @@ using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core
 {
-    public class AutoPublisher
+    public interface IAutoPublisher
+    {
+        bool Compress { get; }
+        Config Config { get; }
+        bool CreatePublishReceipts { get; }
+        bool Encrypt { get; }
+        bool Initialized { get; }
+        IPublisher Publisher { get; }
+        bool Shutdown { get; }
+
+        ChannelReader<PublishReceipt> GetReceiptBufferReader();
+        ValueTask QueueLetterAsync(Letter letter, bool priority = false);
+        Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync);
+        Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject);
+        Task StartAsync(byte[] hashKey = null);
+        Task StopAsync(bool immediately = false);
+    }
+
+    public class AutoPublisher : IAutoPublisher
     {
         public Config Config { get; }
-        public Publisher Publisher { get; }
+        public IPublisher Publisher { get; }
         private Channel<Letter> LetterQueue { get; set; }
         private Channel<Letter> PriorityLetterQueue { get; set; }
         private Task PublishingTask { get; set; }
@@ -35,7 +53,7 @@ namespace CookedRabbit.Core
             Publisher = new Publisher(Config);
         }
 
-        public AutoPublisher(ChannelPool channelPool)
+        public AutoPublisher(IChannelPool channelPool)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 

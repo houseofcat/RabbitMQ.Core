@@ -7,7 +7,7 @@ namespace CookedRabbit.Core.Tests
 {
     public class RabbitServiceTests
     {
-        private readonly ITestOutputHelper output;
+        //private readonly ITestOutputHelper output;
         private readonly RabbitService rabbitService;
 
         public RabbitServiceTests(ITestOutputHelper output)

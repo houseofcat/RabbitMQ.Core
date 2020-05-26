@@ -1,18 +1,18 @@
+using System;
+using System.IO;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
-using System;
-using System.IO;
 
 namespace CookedRabbit.Core.Utils
 {
     public static class AesEncrypt
     {
-        public static Random Random { get; } = new Random();
-        public static int MacBitSize { get; } = 128;
-        public static int NonceSize { get; } = 12;
-        public static int KeySize { get; } = 32;
+        public static Random Random = new Random();
+        public const int MacBitSize = 128;
+        public const int NonceSize = 12;
+        public const int KeySize = 32;
 
         public static byte[] Encrypt(Span<byte> data, byte[] key)
         {
@@ -37,6 +37,7 @@ namespace CookedRabbit.Core.Utils
                 bw.Write(nonce);
                 bw.Write(cipherText);
             }
+
             return cs.ToArray();
         }
 

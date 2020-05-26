@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks.Dataflow;
 
 namespace CookedRabbit.Core.WorkEngines

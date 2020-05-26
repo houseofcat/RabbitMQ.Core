@@ -5,10 +5,19 @@ using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Service
 {
+    public interface IMaintenanceService
+    {
+        Task<bool> PurgeQueueAsync(IChannelPool channelPool, string queueName, bool deleteQueueAfter = false);
+        Task<bool> TransferAllMessagesAsync(IChannelPool originChannelPool, IChannelPool targetChannelPool, string originQueueName, string targetQueueName);
+        Task<bool> TransferAllMessagesAsync(IChannelPool channelPool, string originQueueName, string targetQueueName);
+        Task<bool> TransferMessageAsync(IChannelPool originChannelPool, IChannelPool targetChannelPool, string originQueueName, string targetQueueName);
+        Task<bool> TransferMessageAsync(IChannelPool channelPool, string originQueueName, string targetQueueName);
+    }
+
     public class MaintenanceService : IMaintenanceService
     {
         public async Task<bool> PurgeQueueAsync(
-            ChannelPool channelPool,
+            IChannelPool channelPool,
             string queueName,
             bool deleteQueueAfter = false)
         {
@@ -38,7 +47,7 @@ namespace CookedRabbit.Core.Service
         }
 
         public async Task<bool> TransferMessageAsync(
-            ChannelPool channelPool,
+            IChannelPool channelPool,
             string originQueueName,
             string targetQueueName)
         {
@@ -71,8 +80,8 @@ namespace CookedRabbit.Core.Service
         }
 
         public async Task<bool> TransferMessageAsync(
-            ChannelPool originChannelPool,
-            ChannelPool targetChannelPool,
+            IChannelPool originChannelPool,
+            IChannelPool targetChannelPool,
             string originQueueName,
             string targetQueueName)
         {
@@ -118,7 +127,7 @@ namespace CookedRabbit.Core.Service
         }
 
         public async Task<bool> TransferAllMessagesAsync(
-            ChannelPool channelPool,
+            IChannelPool channelPool,
             string originQueueName,
             string targetQueueName)
         {
@@ -157,8 +166,8 @@ namespace CookedRabbit.Core.Service
         }
 
         public async Task<bool> TransferAllMessagesAsync(
-            ChannelPool originChannelPool,
-            ChannelPool targetChannelPool,
+            IChannelPool originChannelPool,
+            IChannelPool targetChannelPool,
             string originQueueName,
             string targetQueueName)
         {

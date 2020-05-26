@@ -1,8 +1,8 @@
 ﻿using CookedRabbit.Core.Service;
 using CookedRabbit.Core.WorkEngines;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Utf8Json;
 
 namespace CookedRabbit.Core.PipelineClient
 {
@@ -55,7 +55,7 @@ namespace CookedRabbit.Core.PipelineClient
                 letter.LetterId = i;
                 var sentMessage = new Message { StringMessage = "Sensitive Message" };
                 sentMessage.StringMessage += $" {i}";
-                letter.Body = JsonSerializer.Serialize(sentMessage);
+                letter.Body = JsonSerializer.SerializeToUtf8Bytes(sentMessage);
                 await rabbitService
                     .AutoPublisher
                     .QueueLetterAsync(letter);
@@ -75,9 +75,9 @@ namespace CookedRabbit.Core.PipelineClient
                 .Finalize((state) =>
                 {
                     if (state.AllStepsSuccess)
-                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished pipeline successful."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished route successful."); }
                     else
-                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished pipeline unsuccesfully."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished route unsuccesfully."); }
 
                     // Lastly mark the excution pipeline finished for this message.
                     state.ReceivedLetter.Complete(); // This impacts wait to completion step in the WorkFlowEngine.

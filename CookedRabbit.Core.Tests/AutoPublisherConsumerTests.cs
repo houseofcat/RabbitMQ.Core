@@ -18,7 +18,7 @@ namespace CookedRabbit.Core.Tests
         public AutoPublisherConsumerTests(ITestOutputHelper output)
         {
             this.output = output;
-            config = ConfigReader.ConfigFileRead("TestConfig.json");
+            config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
 
             topologer = new Topologer(config);
             topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
@@ -113,7 +113,7 @@ namespace CookedRabbit.Core.Tests
             {
                 try
                 {
-                    var message = await consumer.ReadMessageAsync().ConfigureAwait(false);
+                    var message = await consumer.ReadAsync().ConfigureAwait(false);
                     messageCount++;
                 }
                 catch

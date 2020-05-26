@@ -8,12 +8,26 @@ using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Pools
 {
-    public class ConnectionPool
+    public interface IConnectionPool
+    {
+        Config Config { get; }
+        ConnectionFactory ConnectionFactory { get; set; }
+        ulong CurrentConnectionId { get; }
+        bool Initialized { get; }
+        bool Shutdown { get; }
+
+        void ConfigurePool();
+        ValueTask<IConnectionHost> GetConnectionAsync();
+        Task InitializeAsync();
+        Task ShutdownAsync();
+    }
+
+    public class ConnectionPool : IConnectionPool
     {
         public ConnectionFactory ConnectionFactory { get; set; }
 
         public ulong CurrentConnectionId { get; private set; }
-        private Channel<ConnectionHost> Connections { get; set; }
+        private Channel<IConnectionHost> Connections { get; set; }
 
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
@@ -82,7 +96,7 @@ namespace CookedRabbit.Core.Pools
 
         public void ConfigurePool()
         {
-            Connections = Channel.CreateBounded<ConnectionHost>(Config.PoolSettings.MaxConnections);
+            Connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
             ConnectionFactory = CreateConnectionFactory();
         }
 
@@ -95,9 +109,7 @@ namespace CookedRabbit.Core.Pools
                     var connection = ConnectionFactory.CreateConnection($"{Config.PoolSettings.ConnectionPoolName}:{i}");
                     await Connections
                         .Writer
-                        .WriteAsync(
-                            new ConnectionHost(CurrentConnectionId++, connection)
-                         );
+                        .WriteAsync(new ConnectionHost(CurrentConnectionId++, connection));
                 }
                 catch (Exception)
                 //catch (Exception ex) when (ex is ArgumentException || ex is ConnectFailureException || ex is BrokerUnreachableException)
@@ -110,7 +122,7 @@ namespace CookedRabbit.Core.Pools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask<ConnectionHost> GetConnectionAsync()
+        public async ValueTask<IConnectionHost> GetConnectionAsync()
         {
             if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ValidationMessage);
             if (!await Connections
@@ -149,8 +161,9 @@ namespace CookedRabbit.Core.Pools
 
                 Shutdown = true;
                 Initialized = false;
-                poolLock.Release();
             }
+
+            poolLock.Release();
         }
 
         private async Task CloseConnectionsAsync()
@@ -158,7 +171,7 @@ namespace CookedRabbit.Core.Pools
             Connections.Writer.Complete();
 
             await Connections.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (Connections.Reader.TryRead(out ConnectionHost connHost))
+            while (Connections.Reader.TryRead(out IConnectionHost connHost))
             {
                 try
                 { connHost.Close(); }

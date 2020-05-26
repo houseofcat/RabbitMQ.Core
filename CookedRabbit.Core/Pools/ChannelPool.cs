@@ -8,13 +8,53 @@ using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core.Pools
 {
-    public class ChannelPool
+    public interface IChannelPool
+    {
+        Config Config { get; }
+        IConnectionPool ConnectionPool { get; }
+        ulong CurrentChannelId { get; }
+        bool Initialized { get; }
+        bool Shutdown { get; }
+
+        /// <summary>
+        /// This pulls an ackable <see cref="IChannelHost"/> out of the <see cref="IChannelPool"/> for usage.
+        /// <para>If the <see cref="IChannelHost"/> was previously flagged on error, multi-attempts to recreate it before returning an open channel back to the user.
+        /// If you only remove channels and never add them, you will drain your <see cref="IChannelPool"/>.</para>
+        /// <para>Use <see cref="ReturnChannelAsync"/> to return Channels.</para>
+        /// <para><em>Note: During an outage event, you will pause here until a viable channel can be acquired.</em></para>
+        /// </summary>
+        /// <returns><see cref="IChannelHost"/></returns>
+        ValueTask<IChannelHost> GetAckChannelAsync();
+
+        /// <summary>
+        /// This pulls a <see cref="IChannelHost"/> out of the <see cref="IChannelPool"/> for usage.
+        /// <para>If the <see cref="IChannelHost"/> was previously flagged on error, multi-attempts to recreate it before returning an open channel back to the user.
+        /// If you only remove channels and never add them, you will drain your <see cref="IChannelPool"/>.</para>
+        /// <para>Use <see cref="ReturnChannelAsync"/> to return the <see cref="IChannelHost"/>.</para>
+        /// <para><em>Note: During an outage event, you will pause here until a viable channel can be acquired.</em></para>
+        /// </summary>
+        /// <returns><see cref="IChannelHost"/></returns>
+        ValueTask<IChannelHost> GetChannelAsync();
+
+        /// <summary>
+        /// <para>Gives user a transient <see cref="IChannelHost"/> is simply a channel not managed by this library.</para>
+        /// <para><em>Closing and disposing the <see cref="IChannelHost"/> is the responsiblity of the user.</em></para>
+        /// </summary>
+        /// <param name="ackable"></param>
+        /// <returns><see cref="IChannelHost"/></returns>
+        ValueTask<IChannelHost> GetTransientChannelAsync(bool ackable);
+        Task InitializeAsync();
+        ValueTask ReturnChannelAsync(IChannelHost chanHost, bool flagChannel = false);
+        Task ShutdownAsync();
+    }
+
+    public class ChannelPool : IChannelPool
     {
         public Config Config { get; }
-        public ConnectionPool ConnectionPool { get; }
+        public IConnectionPool ConnectionPool { get; }
 
-        private Channel<ChannelHost> Channels { get; set; }
-        private Channel<ChannelHost> AckChannels { get; set; }
+        private Channel<IChannelHost> Channels { get; set; }
+        private Channel<IChannelHost> AckChannels { get; set; }
         private ConcurrentDictionary<ulong, bool> FlaggedChannels { get; set; }
 
         // A 0 indicates TransientChannels.
@@ -24,10 +64,6 @@ namespace CookedRabbit.Core.Pools
 
         public bool Initialized { get; private set; }
         private readonly SemaphoreSlim poolLock = new SemaphoreSlim(1, 1);
-
-        private const string ValidationMessage = "ChannelPool is not initialized or is shutdown.";
-        private const string ShutdownValidationMessage = "ChannelPool is not initialized. Can't be Shutdown.";
-        private const string GetChannelError = "Threading.Channel used for reading RabbitMQ channels has been closed.";
 
         public ChannelPool(Config config)
         {
@@ -74,8 +110,8 @@ namespace CookedRabbit.Core.Pools
         private void ConfigurePool()
         {
             FlaggedChannels = new ConcurrentDictionary<ulong, bool>();
-            Channels = Channel.CreateBounded<ChannelHost>(Config.PoolSettings.MaxChannels);
-            AckChannels = Channel.CreateBounded<ChannelHost>(Config.PoolSettings.MaxChannels);
+            Channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
+            AckChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
         }
 
         private async Task CreateChannelsAsync()
@@ -103,16 +139,24 @@ namespace CookedRabbit.Core.Pools
             }
         }
 
+        /// <summary>
+        /// This pulls a <see cref="IChannelHost"/> out of the <see cref="IChannelPool"/> for usage.
+        /// <para>If the <see cref="IChannelHost"/> was previously flagged on error, multi-attempta to recreate it before returning an open channel back to the user.
+        /// If you only remove channels and never add them, you will drain your <see cref="IChannelPool"/>.</para>
+        /// <para>Use <see cref="ReturnChannelAsync"/> to return the <see cref="IChannelHost"/>.</para>
+        /// <para><em>Note: During an outage event, you will pause here until a viable channel can be acquired.</em></para>
+        /// </summary>
+        /// <returns><see cref="IChannelHost"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask<ChannelHost> GetChannelAsync()
+        public async ValueTask<IChannelHost> GetChannelAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ChannelPoolValidationMessage);
             if (!await Channels
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(GetChannelError);
+                throw new InvalidOperationException(Strings.ChannelPoolGetChannelError);
             }
 
             var chanHost = await Channels
@@ -124,6 +168,10 @@ namespace CookedRabbit.Core.Pools
             var flagged = FlaggedChannels.ContainsKey(chanHost.ChannelId) && FlaggedChannels[chanHost.ChannelId];
             if (flagged || !healthy)
             {
+                // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
+                // is they would like to replace it.
+                chanHost.Close();
+
                 chanHost = await CreateChannelAsync(chanHost.ChannelId, chanHost.Ackable)
                     .ConfigureAwait(false);
             }
@@ -131,16 +179,24 @@ namespace CookedRabbit.Core.Pools
             return chanHost;
         }
 
+        /// <summary>
+        /// This pulls an ackable <see cref="IChannelHost"/> out of the <see cref="IChannelPool"/> for usage.
+        /// <para>If the <see cref="IChannelHost"/> was previously flagged on error, multi-attempta to recreate it before returning an open channel back to the user.
+        /// If you only remove channels and never add them, you will drain your <see cref="IChannelPool"/>.</para>
+        /// <para>Use <see cref="ReturnChannelAsync"/> to return Channels.</para>
+        /// <para><em>Note: During an outage event, you will pause here until a viable channel can be acquired.</em></para>
+        /// </summary>
+        /// <returns><see cref="IChannelHost"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask<ChannelHost> GetAckChannelAsync()
+        public async ValueTask<IChannelHost> GetAckChannelAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ChannelPoolValidationMessage);
             if (!await AckChannels
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(GetChannelError);
+                throw new InvalidOperationException(Strings.ChannelPoolGetChannelError);
             }
 
             var chanHost = await AckChannels
@@ -152,6 +208,10 @@ namespace CookedRabbit.Core.Pools
             var flagged = FlaggedChannels.ContainsKey(chanHost.ChannelId) && FlaggedChannels[chanHost.ChannelId];
             if (flagged || !healthy)
             {
+                // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
+                // is they would like to replace it.
+                chanHost.Close();
+
                 chanHost = await CreateChannelAsync(chanHost.ChannelId, chanHost.Ackable)
                     .ConfigureAwait(false);
             }
@@ -160,17 +220,19 @@ namespace CookedRabbit.Core.Pools
         }
 
         /// <summary>
-        /// A Transient RabbitMQ Channel is simply a channel not managed by this library. Closing and disposing is the responsiblity of the end user.
+        /// <para>Gives user a transient <see cref="IChannelHost"/> is simply a channel not managed by this library.</para>
+        /// <para><em>Closing and disposing the <see cref="IChannelHost"/> is the responsiblity of the user.</em></para>
         /// </summary>
         /// <param name="ackable"></param>
+        /// <returns><see cref="IChannelHost"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask<ChannelHost> GetTransientChannelAsync(bool ackable) => await CreateChannelAsync(0, ackable).ConfigureAwait(false);
+        public async ValueTask<IChannelHost> GetTransientChannelAsync(bool ackable) => await CreateChannelAsync(0, ackable).ConfigureAwait(false);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task<ChannelHost> CreateChannelAsync(ulong channelId, bool ackable = false)
+        private async Task<IChannelHost> CreateChannelAsync(ulong channelId, bool ackable = false)
         {
-            ChannelHost chanHost = null;
-            ConnectionHost connHost = null;
+            IChannelHost chanHost = null;
+            IConnectionHost connHost = null;
 
             while (true)
             {
@@ -218,10 +280,19 @@ namespace CookedRabbit.Core.Pools
             return chanHost;
         }
 
+        /// <summary>
+        /// Returns the <see cref="ChannelHost"/> back to the <see cref="ChannelPool"/>.
+        /// <para>All Aqmp IModel Channels close server side on error, so you have to indicate to the library when that happens.</para>
+        /// <para>The library does its best to listen for a dead <see cref="ChannelHost"/>, but nothing is as reliable as the user flagging the channel for replacement.</para>
+        /// <para><em>Users flag the channel for replacement (e.g. when an error occurs) on it's next use.</em></para>
+        /// </summary>
+        /// <param name="chanHost"></param>
+        /// <param name="flagChannel"></param>
+        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async ValueTask ReturnChannelAsync(ChannelHost chanHost, bool flagChannel = false)
+        public async ValueTask ReturnChannelAsync(IChannelHost chanHost, bool flagChannel = false)
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ChannelPoolValidationMessage);
 
             FlaggedChannels[chanHost.ChannelId] = flagChannel;
             if (chanHost.Ackable)
@@ -242,7 +313,7 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(ShutdownValidationMessage);
+            if (!Initialized) throw new InvalidOperationException(Strings.ChannelPoolShutdownValidationMessage);
 
             await poolLock
                 .WaitAsync()
@@ -266,11 +337,12 @@ namespace CookedRabbit.Core.Pools
 
         private async Task CloseChannelsAsync()
         {
-            Channels.Writer.Complete(); // Signal to Channel no more data is coming.
+            // Signal to Channel no more data is coming.
+            Channels.Writer.Complete();
             AckChannels.Writer.Complete();
 
             await Channels.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (Channels.Reader.TryRead(out ChannelHost chanHost))
+            while (Channels.Reader.TryRead(out IChannelHost chanHost))
             {
                 try
                 { chanHost.Close(); }
@@ -278,7 +350,7 @@ namespace CookedRabbit.Core.Pools
             }
 
             await AckChannels.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (AckChannels.Reader.TryRead(out ChannelHost chanHost))
+            while (AckChannels.Reader.TryRead(out IChannelHost chanHost))
             {
                 try
                 { chanHost.Close(); }

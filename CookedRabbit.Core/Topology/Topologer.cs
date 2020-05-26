@@ -7,10 +7,27 @@ using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core
 {
-    public class Topologer
+    public interface ITopologer
+    {
+        IChannelPool ChannelPool { get; }
+        Config Config { get; }
+
+        Task<bool> BindExchangeToExchangeAsync(string childExchangeName, string parentExchangeName, string routingKey = "", IDictionary<string, object> args = null);
+        Task<bool> BindQueueToExchangeAsync(string queueName, string exchangeName, string routingKey = "", IDictionary<string, object> args = null);
+        Task<bool> CreateExchangeAsync(string exchangeName, string exchangeType, bool durable = true, bool autoDelete = false, IDictionary<string, object> args = null);
+        Task<bool> CreateQueueAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false, IDictionary<string, object> args = null);
+        Task CreateTopologyAsync(TopologyConfig topologyConfig);
+        Task CreateTopologyFromFileAsync(string fileNamePath);
+        Task<bool> DeleteExchangeAsync(string exchangeName, bool onlyIfUnused = false);
+        Task<bool> DeleteQueueAsync(string queueName, bool onlyIfUnused = false, bool onlyIfEmpty = false);
+        Task<bool> UnbindExchangeFromExchangeAsync(string childExchangeName, string parentExchangeName, string routingKey = "", IDictionary<string, object> args = null);
+        Task<bool> UnbindQueueFromExchangeAsync(string queueName, string exchangeName, string routingKey = "", IDictionary<string, object> args = null);
+    }
+
+    public class Topologer : ITopologer
     {
         public Config Config { get; }
-        public ChannelPool ChannelPool { get; }
+        public IChannelPool ChannelPool { get; }
 
         public Topologer(Config config)
         {
@@ -20,7 +37,7 @@ namespace CookedRabbit.Core
             ChannelPool = new ChannelPool(Config);
         }
 
-        public Topologer(ChannelPool channelPool)
+        public Topologer(IChannelPool channelPool)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 

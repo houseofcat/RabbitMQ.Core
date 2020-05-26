@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Channels;
 
@@ -20,7 +19,7 @@ namespace CookedRabbit.Core
         public bool Exclusive { get; set; }
         public ushort QosPrefetchCount { get; set; } = 5;
 
-        public int MessageBufferSize { get; set; } = 100;
+        public int BufferSize { get; set; } = 100;
         public BoundedChannelFullMode BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
         public int SleepOnIdleInterval { get; set; } = 1000;
     }

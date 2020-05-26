@@ -1,19 +1,38 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using RabbitMQ.Client;
-using Utf8Json;
 
 namespace CookedRabbit.Core
 {
-    public class Publisher
+    public interface IPublisher
+    {
+        IChannelPool ChannelPool { get; }
+        Config Config { get; }
+        Channel<PublishReceipt> ReceiptBuffer { get; }
+
+        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
+        Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
+        Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
+        IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
+        ValueTask<PublishReceipt> ReadPublishReceiptAsync();
+    }
+
+    public class Publisher : IPublisher
     {
         public Config Config { get; }
-        public ChannelPool ChannelPool { get; }
+        public IChannelPool ChannelPool { get; }
 
         public Channel<PublishReceipt> ReceiptBuffer { get; }
 
@@ -26,7 +45,7 @@ namespace CookedRabbit.Core
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
 
-        public Publisher(ChannelPool channelPool)
+        public Publisher(IChannelPool channelPool)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
@@ -63,6 +82,42 @@ namespace CookedRabbit.Core
                     routingKey: routingKey,
                     mandatory: mandatory,
                     basicProperties: messageProperties,
+                    body: payload);
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(channelHost, error);
+            }
+
+            return error;
+        }
+
+        // A basic implementation of publish but using the ChannelPool. If headers are provided and start with "x-", they get included in the message properties.
+        public async Task<bool> PublishAsync(
+            string exchangeName,
+            string routingKey,
+            byte[] payload,
+            IDictionary<string, object> headers = null,
+            byte? priority = 0,
+            bool mandatory = false)
+        {
+            Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
+            Guard.AgainstNull(payload, nameof(payload));
+
+            if (payload is null) throw new ArgumentNullException(nameof(payload));
+
+            var error = false;
+            var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+
+            try
+            {
+                channelHost.Channel.BasicPublish(
+                    exchange: exchangeName ?? string.Empty,
+                    routingKey: routingKey,
+                    mandatory: mandatory,
+                    basicProperties: BuildProperties(headers, channelHost, priority),
                     body: payload);
             }
             catch { error = true; }
@@ -115,13 +170,50 @@ namespace CookedRabbit.Core
             return error;
         }
 
+        // A basic implementation of publishing batches but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
+        public async Task<bool> PublishBatchAsync(
+            string exchangeName,
+            string routingKey,
+            IList<byte[]> payloads,
+            IDictionary<string, object> headers = null,
+            byte? priority = 0,
+            bool mandatory = false)
+        {
+            Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
+            Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
+
+            var error = false;
+            var channelHost = await ChannelPool.GetChannelAsync();
+
+            try
+            {
+                var batch = channelHost.Channel.CreateBasicPublishBatch();
+
+                for (int i = 0; i < payloads.Count; i++)
+                {
+                    batch.Add(exchangeName, routingKey, mandatory, BuildProperties(headers, channelHost, priority), payloads[i]);
+                }
+
+                batch.Publish();
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(channelHost, error);
+            }
+
+            return error;
+        }
+
         /// <summary>
         /// Acquires a channel from the channel pool, then publishes message based on the letter/envelope parameters.
         /// <para>Only throws exception when failing to acquire channel or when creating a receipt after the ReceiptBuffer is closed.</para>
         /// </summary>
         /// <param name="letter"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublishAsync(Letter letter, bool createReceipt)
+        /// <param name="withHeaders"></param>
+        public async Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -130,17 +222,12 @@ namespace CookedRabbit.Core
 
             try
             {
-                var props = chanHost.Channel.CreateBasicProperties();
-                props.DeliveryMode = letter.Envelope.RoutingOptions?.DeliveryMode ?? 0;
-                props.ContentType = letter.Envelope.RoutingOptions?.MessageType ?? string.Empty;
-                props.Priority = letter.Envelope.RoutingOptions?.PriorityLevel ?? 0;
-
                 chanHost.Channel.BasicPublish(
                     letter.Envelope.Exchange,
                     letter.Envelope.RoutingKey,
                     letter.Envelope.RoutingOptions?.Mandatory ?? false,
-                    props,
-                    JsonSerializer.Serialize(letter));
+                    BuildProperties(letter, chanHost, withHeaders),
+                    JsonSerializer.SerializeToUtf8Bytes(letter));
             }
             catch { error = true; }
             finally
@@ -161,7 +248,8 @@ namespace CookedRabbit.Core
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublishManyAsync(IList<Letter> letters, bool createReceipt)
+        /// <param name="withHeaders"></param>
+        public async Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -172,17 +260,12 @@ namespace CookedRabbit.Core
             {
                 try
                 {
-                    var props = chanHost.Channel.CreateBasicProperties();
-                    props.DeliveryMode = letters[i].Envelope.RoutingOptions.DeliveryMode;
-                    props.ContentType = letters[i].Envelope.RoutingOptions.MessageType;
-                    props.Priority = letters[i].Envelope.RoutingOptions.PriorityLevel;
-
                     chanHost.Channel.BasicPublish(
                         letters[i].Envelope.Exchange,
                         letters[i].Envelope.RoutingKey,
                         letters[i].Envelope.RoutingOptions.Mandatory,
-                        props,
-                        JsonSerializer.Serialize(letters[i]));
+                        BuildProperties(letters[i], chanHost, withHeaders),
+                        JsonSerializer.SerializeToUtf8Bytes(letters[i]));
                 }
                 catch
                 { error = true; }
@@ -202,7 +285,8 @@ namespace CookedRabbit.Core
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt)
+        /// <param name="withHeaders"></param>
+        public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -211,28 +295,26 @@ namespace CookedRabbit.Core
 
             try
             {
-                var props = chanHost.Channel.CreateBasicProperties();
-                props.DeliveryMode = letters[0].Envelope.RoutingOptions.DeliveryMode;
-                props.ContentType = letters[0].Envelope.RoutingOptions.MessageType;
-                props.Priority = letters[0].Envelope.RoutingOptions.PriorityLevel;
-
-                var publishBatch = chanHost.Channel.CreateBasicPublishBatch();
-                for (int i = 0; i < letters.Count; i++)
+                if (letters.Count > 0)
                 {
-                    publishBatch.Add(
-                        letters[i].Envelope.Exchange,
-                        letters[i].Envelope.RoutingKey,
-                        letters[i].Envelope.RoutingOptions.Mandatory,
-                        props,
-                        JsonSerializer.Serialize(letters[i]));
-
-                    if (createReceipt)
+                    var publishBatch = chanHost.Channel.CreateBasicPublishBatch();
+                    for (int i = 0; i < letters.Count; i++)
                     {
-                        await CreateReceiptAsync(letters[i], error).ConfigureAwait(false);
-                    }
-                }
+                        publishBatch.Add(
+                            letters[i].Envelope.Exchange,
+                            letters[i].Envelope.RoutingKey,
+                            letters[i].Envelope.RoutingOptions.Mandatory,
+                            BuildProperties(letters[i], chanHost, withHeaders),
+                            JsonSerializer.SerializeToUtf8Bytes(letters[i]));
 
-                publishBatch.Publish();
+                        if (createReceipt)
+                        {
+                            await CreateReceiptAsync(letters[i], error).ConfigureAwait(false);
+                        }
+                    }
+
+                    publishBatch.Publish();
+                }
             }
             catch
             { error = true; }
@@ -286,13 +368,13 @@ namespace CookedRabbit.Core
                 .ConfigureAwait(false);
         }
 
-#if CORE3
         /// <summary>
         /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
         /// </summary>
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
-        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt)
+        /// <param name="withHeaders"></param>
+        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
             var chanHost = await ChannelPool
@@ -303,16 +385,11 @@ namespace CookedRabbit.Core
             {
                 try
                 {
-                    var props = chanHost.Channel.CreateBasicProperties();
-                    props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
-                    props.ContentType = letter.Envelope.RoutingOptions.MessageType;
-                    props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
-
                     chanHost.Channel.BasicPublish(
                         letter.Envelope.Exchange,
                         letter.Envelope.RoutingKey,
                         letter.Envelope.RoutingOptions.Mandatory,
-                        props,
+                        BuildProperties(letter, chanHost, withHeaders),
                         letter.Body);
                 }
                 catch
@@ -341,6 +418,57 @@ namespace CookedRabbit.Core
                 yield return receipt;
             }
         }
-#endif
+
+        private IBasicProperties BuildProperties(Letter letter, IChannelHost channelHost, bool withHeaders)
+        {
+            var props = channelHost.Channel.CreateBasicProperties();
+
+            props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
+            props.ContentType = letter.Envelope.RoutingOptions.MessageType;
+            props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
+
+            if (withHeaders && letter.LetterMetadata != null)
+            {
+                if (!props.IsHeadersPresent())
+                {
+                    props.Headers = new Dictionary<string, object>();
+                }
+
+                foreach (var kvp in letter.LetterMetadata?.CustomFields)
+                {
+                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        props.Headers[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
+            return props;
+        }
+
+        private IBasicProperties BuildProperties(IDictionary<string, object> headers, IChannelHost channelHost, byte? priority = 0, byte? deliveryMode = 2)
+        {
+            var props = channelHost.Channel.CreateBasicProperties();
+            props.DeliveryMode = deliveryMode ?? 2; // Default Persisted
+            props.Priority = priority ?? 0; // Default Priority
+
+            if (headers != null && headers.Count > 0)
+            {
+                if (!props.IsHeadersPresent())
+                {
+                    props.Headers = new Dictionary<string, object>();
+                }
+
+                foreach (var kvp in headers)
+                {
+                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        props.Headers[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
+            return props;
+        }
     }
 }
