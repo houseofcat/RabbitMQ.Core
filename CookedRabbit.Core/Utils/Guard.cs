@@ -53,6 +53,17 @@ namespace CookedRabbit.Core.Utils
         }
 
         /// <summary>
+        /// Throws an exception if IEnumerable is empty.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="argumentValue"></param>
+        /// <param name="argumentName"></param>
+        public static void AgainstNullOrEmpty<T>(ICollection<T> argumentValue, string argumentName)
+        {
+            if (argumentValue?.Any() != true) throw new ArgumentException($"{argumentName} can't be null or empty.");
+        }
+
+        /// <summary>
         /// Throws an exception if bool is true.
         /// </summary>
         /// <param name="argumentValue"></param>

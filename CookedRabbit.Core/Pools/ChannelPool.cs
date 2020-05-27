@@ -71,6 +71,10 @@ namespace CookedRabbit.Core.Pools
 
             ConnectionPool = new ConnectionPool(config);
             Config = config;
+
+            FlaggedChannels = new ConcurrentDictionary<ulong, bool>();
+            Channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
+            AckChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
         }
 
         public ChannelPool(ConnectionPool connPool)
@@ -79,6 +83,10 @@ namespace CookedRabbit.Core.Pools
 
             ConnectionPool = connPool;
             Config = connPool.Config;
+
+            FlaggedChannels = new ConcurrentDictionary<ulong, bool>();
+            Channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
+            AckChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
         }
 
         public async Task InitializeAsync()
@@ -91,8 +99,6 @@ namespace CookedRabbit.Core.Pools
             {
                 if (!Initialized)
                 {
-                    ConfigurePool();
-
                     await ConnectionPool
                         .InitializeAsync()
                         .ConfigureAwait(false);
@@ -105,13 +111,6 @@ namespace CookedRabbit.Core.Pools
                 }
             }
             finally { poolLock.Release(); }
-        }
-
-        private void ConfigurePool()
-        {
-            FlaggedChannels = new ConcurrentDictionary<ulong, bool>();
-            Channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
-            AckChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
         }
 
         private async Task CreateChannelsAsync()

@@ -470,7 +470,7 @@
         </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.GetAsync``1(System.String)">
             <summary>
-            Simple retrieve message (byte[]) from queue and convert to type T. /> efficiently. Default (assumed null) if nothing was available (or on transmission error).
+            Simple retrieve message (byte[]) from queue and convert to type T. Default (assumed null) if nothing was available (or on transmission error).
             <para>AutoAcks message.</para>
             </summary>
             <param name="queueName"></param>
@@ -623,6 +623,14 @@
             <param name="secondArgumentName"></param>
         </member>
         <member name="M:CookedRabbit.Core.Utils.Guard.AgainstNullOrEmpty``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+            Throws an exception if IEnumerable is empty.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="argumentValue"></param>
+            <param name="argumentName"></param>
+        </member>
+        <member name="M:CookedRabbit.Core.Utils.Guard.AgainstNullOrEmpty``1(System.Collections.Generic.ICollection{``0},System.String)">
             <summary>
             Throws an exception if IEnumerable is empty.
             </summary>

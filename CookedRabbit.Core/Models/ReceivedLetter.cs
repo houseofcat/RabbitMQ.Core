@@ -9,8 +9,6 @@ namespace CookedRabbit.Core
     {
         public Letter Letter { get; private set; }
 
-        private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
-
         public ReceivedLetter(IModel channel, BasicGetResult result, bool ackable) : base(channel, result, ackable)
         {
             Letter = JsonSerializer.Deserialize<Letter>(result.Body.Span);

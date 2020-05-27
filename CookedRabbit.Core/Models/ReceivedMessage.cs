@@ -10,8 +10,6 @@ namespace CookedRabbit.Core
     {
         public byte[] Body { get; private set; }
 
-        private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
-
         public ReceivedMessage(IModel channel, BasicGetResult result, bool ackable) : base(channel, result, ackable)
         {
             Body = result.Body.ToArray();

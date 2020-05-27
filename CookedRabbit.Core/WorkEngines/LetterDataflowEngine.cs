@@ -4,16 +4,16 @@ using System.Threading.Tasks.Dataflow;
 
 namespace CookedRabbit.Core.WorkEngines
 {
-    public class MessageDataflowEngine
+    public class LetterDataflowEngine
     {
-        private ActionBlock<ReceivedMessage> Block { get; }
+        private ActionBlock<ReceivedLetter> Block { get; }
 
-        private Func<ReceivedMessage, Task<bool>> WorkBodyAsync { get; }
+        private Func<ReceivedLetter, Task<bool>> WorkBodyAsync { get; }
 
-        public MessageDataflowEngine(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDegreeOfParallelism)
+        public LetterDataflowEngine(Func<ReceivedLetter, Task<bool>> workBodyAsync, int maxDegreeOfParallelism)
         {
             WorkBodyAsync = workBodyAsync ?? throw new ArgumentNullException(nameof(workBodyAsync));
-            Block = new ActionBlock<ReceivedMessage>(
+            Block = new ActionBlock<ReceivedLetter>(
                 ExecuteWorkBodyAsync,
                 new ExecutionDataflowBlockOptions
                 {
@@ -21,20 +21,20 @@ namespace CookedRabbit.Core.WorkEngines
                 });
         }
 
-        private async Task ExecuteWorkBodyAsync(ReceivedMessage receivedMessage)
+        private async Task ExecuteWorkBodyAsync(ReceivedLetter receivedLetter)
         {
             try
             {
-                if (await WorkBodyAsync(receivedMessage).ConfigureAwait(false))
-                { receivedMessage.AckMessage(); }
+                if (await WorkBodyAsync(receivedLetter).ConfigureAwait(false))
+                { receivedLetter.AckMessage(); }
                 else
-                { receivedMessage.NackMessage(true); }
+                { receivedLetter.NackMessage(true); }
             }
             catch
-            { receivedMessage.NackMessage(true); }
+            { receivedLetter.NackMessage(true); }
         }
 
-        public async ValueTask EnqueueWorkAsync(ReceivedMessage receivedMessage)
+        public async ValueTask EnqueueWorkAsync(ReceivedLetter receivedMessage)
         {
             try
             { await Block.SendAsync(receivedMessage).ConfigureAwait(false); }

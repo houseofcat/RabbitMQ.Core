@@ -389,7 +389,7 @@ namespace CookedRabbit.Core.Service
         }
 
         /// <summary>
-        /// Simple retrieve message (byte[]) from queue and convert to type T. /> efficiently. Default (assumed null) if nothing was available (or on transmission error).
+        /// Simple retrieve message (byte[]) from queue and convert to type T. Default (assumed null) if nothing was available (or on transmission error).
         /// <para>AutoAcks message.</para>
         /// </summary>
         /// <param name="queueName"></param>

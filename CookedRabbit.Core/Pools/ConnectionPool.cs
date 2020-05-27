@@ -16,7 +16,7 @@ namespace CookedRabbit.Core.Pools
         bool Initialized { get; }
         bool Shutdown { get; }
 
-        void ConfigurePool();
+
         ValueTask<IConnectionHost> GetConnectionAsync();
         Task InitializeAsync();
         Task ShutdownAsync();
@@ -39,6 +39,9 @@ namespace CookedRabbit.Core.Pools
         {
             Guard.AgainstNull(config, nameof(config));
             Config = config;
+
+            Connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
+            ConnectionFactory = CreateConnectionFactory();
         }
 
         private ConnectionFactory CreateConnectionFactory()
@@ -81,8 +84,6 @@ namespace CookedRabbit.Core.Pools
             {
                 if (!Initialized)
                 {
-                    ConfigurePool();
-
                     await CreateConnectionsAsync()
                         .ConfigureAwait(false);
 
@@ -92,12 +93,6 @@ namespace CookedRabbit.Core.Pools
             }
             finally
             { poolLock.Release(); }
-        }
-
-        public void ConfigurePool()
-        {
-            Connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
-            ConnectionFactory = CreateConnectionFactory();
         }
 
         private async Task CreateConnectionsAsync()

@@ -50,12 +50,15 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try
+            if (Ackable)
             {
-                Channel?.BasicAck(DeliveryTag, false);
-                Channel = null;
+                try
+                {
+                    Channel?.BasicAck(DeliveryTag, false);
+                    Channel = null;
+                }
+                catch { success = false; }
             }
-            catch { success = false; }
 
             return success;
         }
@@ -67,12 +70,15 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try
+            if (Ackable)
             {
-                Channel?.BasicNack(DeliveryTag, false, requeue);
-                Channel = null;
+                try
+                {
+                    Channel?.BasicNack(DeliveryTag, false, requeue);
+                    Channel = null;
+                }
+                catch { success = false; }
             }
-            catch { success = false; }
 
             return success;
         }
@@ -84,12 +90,15 @@ namespace CookedRabbit.Core
         {
             bool success = true;
 
-            try
+            if (Ackable)
             {
-                Channel?.BasicReject(DeliveryTag, requeue);
-                Channel = null;
+                try
+                {
+                    Channel?.BasicReject(DeliveryTag, requeue);
+                    Channel = null;
+                }
+                catch { success = false; }
             }
-            catch { success = false; }
 
             return success;
         }

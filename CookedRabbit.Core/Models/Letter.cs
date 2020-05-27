@@ -1,3 +1,8 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using CookedRabbit.Core.Utils;
+
 namespace CookedRabbit.Core
 {
     public class Letter
@@ -79,6 +84,74 @@ namespace CookedRabbit.Core
                 },
                 LetterMetadata = LetterMetadata
             };
+        }
+
+        public T GetHeader<T>(string key)
+        {
+            Guard.AgainstNull(LetterMetadata, nameof(LetterMetadata));
+            Guard.AgainstNullOrEmpty(LetterMetadata.CustomFields, nameof(LetterMetadata.CustomFields));
+
+            if (LetterMetadata.CustomFields.ContainsKey(key))
+            {
+                if (LetterMetadata.CustomFields[key] is T temp)
+                { return temp; }
+                else { throw new InvalidCastException(); }
+            }
+
+            return default;
+        }
+
+        public void UpsertHeader(string key, object value)
+        {
+            Guard.AgainstNull(LetterMetadata, nameof(LetterMetadata));
+            Guard.AgainstNullOrEmpty(LetterMetadata.CustomFields, nameof(LetterMetadata.CustomFields));
+
+            LetterMetadata.CustomFields[key] = value;
+        }
+
+        public bool RemoveHeader(string key)
+        {
+            Guard.AgainstNull(LetterMetadata, nameof(LetterMetadata));
+            Guard.AgainstNullOrEmpty(LetterMetadata.CustomFields, nameof(LetterMetadata.CustomFields));
+
+            return LetterMetadata
+                .CustomFields
+                .Remove(key);
+        }
+
+        public IDictionary<string, object> GetHeadersOutOfMetadata()
+        {
+            Guard.AgainstNull(LetterMetadata, nameof(LetterMetadata));
+            Guard.AgainstNullOrEmpty(LetterMetadata.CustomFields, nameof(LetterMetadata.CustomFields));
+
+            var dict = new Dictionary<string, object>();
+
+            foreach (var kvp in LetterMetadata.CustomFields)
+            {
+                if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[kvp.Key] = kvp.Value;
+                }
+            }
+
+            return dict;
+        }
+
+        public void WriteHeadersToMetadata(IDictionary<string, object> headers)
+        {
+            if (LetterMetadata == null)
+            { LetterMetadata = new LetterMetadata(); }
+
+            if (LetterMetadata.CustomFields == null)
+            { LetterMetadata.CustomFields = new Dictionary<string, object>(); }
+
+            foreach (var kvp in headers)
+            {
+                if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    LetterMetadata.CustomFields[kvp.Key] = kvp.Value;
+                }
+            }
         }
     }
 }
