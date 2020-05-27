@@ -2,37 +2,30 @@
 
     <PropertyGroup>
         <Description>The RabbitMQ.Core.Client is the Unofficial port of the official client library for C#.</Description>
-        <VersionPrefix>1.0.602</VersionPrefix>
         <TargetFrameworks>netstandard2.1;netcoreapp3.1</TargetFrameworks>
         <RuntimeIdentifiers>win-x64;win10-x64;linux-x64;linux-musl-x64;osx-x64;centos-x64;debian-x64</RuntimeIdentifiers>
         <LangVersion>latest</LangVersion>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <AssemblyName>RabbitMQ.Client</AssemblyName>
+        <Authors>HouseofCat.io</Authors>
         <PackageId>RabbitMQ.Core.Client</PackageId>
         <PackageTags>RabbitMQ, NetStandard 2.1, NetCore3.1, Unofficial</PackageTags>
         <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core</PackageProjectUrl>
         <PackageLicenseUrl></PackageLicenseUrl>
-        <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-        <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-        <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-        <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-        <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-        <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-        <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <FileVersion>1.0.602.0</FileVersion>
+        <AssemblyVersion>1.0.604.0</AssemblyVersion>
+        <FileVersion>1.0.604.0</FileVersion>
+        <Version>1.0.604</Version>
         <PackageReleaseNotes>The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x</PackageReleaseNotes>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+        <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
-        <RepositoryType>Library</RepositoryType>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <Authors>HouseofCat.io</Authors>
-        <Version>1.0.602</Version>
-        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -40,13 +33,17 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
-      <DebugType>embedded</DebugType>
+      <DebugType>portable</DebugType>
       <DebugSymbols>true</DebugSymbols>
+      <DocumentationFile>RabbitMQ.Client.xml</DocumentationFile>
+      <OutputPath>bin\Release\</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.1|AnyCPU'">
-      <DebugType>embedded</DebugType>
+      <DebugType>portable</DebugType>
       <DebugSymbols>true</DebugSymbols>
+      <DocumentationFile>RabbitMQ.Client.xml</DocumentationFile>
+      <OutputPath>bin\Release\</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>
