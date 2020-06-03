@@ -70,7 +70,15 @@ namespace CookedRabbit.Core
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
                 messageProperties.DeliveryMode = 2;
+
+                if (!messageProperties.IsHeadersPresent())
+                {
+                    messageProperties.Headers = new Dictionary<string, object>();
+                }
             }
+
+            // Non-optional Header.
+            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
 
             try
             {
@@ -141,7 +149,15 @@ namespace CookedRabbit.Core
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
                 messageProperties.DeliveryMode = 2;
+
+                if (!messageProperties.IsHeadersPresent())
+                {
+                    messageProperties.Headers = new Dictionary<string, object>();
+                }
             }
+
+            // Non-optional Header.
+            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
 
             try
             {

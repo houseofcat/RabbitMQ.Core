@@ -218,19 +218,12 @@ namespace CookedRabbit.Core.PipelineClient
                 .CreateQueueAsync("TestRabbitServiceQueue")
                 .ConfigureAwait(false);
 
-            var messageHeaders = new Dictionary<string, object>
-            {
-                { Strings.HeaderForObjectType, Strings.HeaderValueForMessage }
-            };
-
             PublisherOne = Task.Run(async () =>
             {
                 // Produce ReceivedLetters
                 for (ulong i = 0; i < 500; i++)
                 {
                     var letter = letterTemplate.Clone();
-                    letter.UpsertHeader(Strings.HeaderForObjectType, Strings.HeaderValueForLetter);
-
                     letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
 
                     await rabbitService
@@ -248,7 +241,7 @@ namespace CookedRabbit.Core.PipelineClient
                     await rabbitService
                         .AutoPublisher
                         .Publisher
-                        .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), messageHeaders)
+                        .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
                         .ConfigureAwait(false);
                 }
             });
@@ -325,14 +318,14 @@ namespace CookedRabbit.Core.PipelineClient
         {
             await Console
                 .Out
-                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Deserialize Step Success? {state.DeserializeStepSuccess}")
+                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Deserialize Step Success? {state.DeserializeStepSuccess}")
                 .ConfigureAwait(false);
 
             if (state.DeserializeStepSuccess)
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Received: {state.Message.StringMessage}")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Received: {state.Message?.StringMessage}")
                     .ConfigureAwait(false);
 
                 state.ProcessStepSuccess = true;
@@ -345,14 +338,14 @@ namespace CookedRabbit.Core.PipelineClient
         {
             await Console
                 .Out
-                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Process Step Success? {state.ProcessStepSuccess}")
+                .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Process Step Success? {state.ProcessStepSuccess}")
                 .ConfigureAwait(false);
 
             if (state.ProcessStepSuccess)
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Acking message...")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Acking message...")
                     .ConfigureAwait(false);
 
                 if (state.ReceivedData.AckMessage())

@@ -95,7 +95,7 @@ namespace CookedRabbit.Core
 
         public void ReadHeaders()
         {
-            if (Properties.Headers.ContainsKey(Strings.HeaderForObjectType))
+            if (Properties.Headers != null && Properties.Headers.ContainsKey(Strings.HeaderForObjectType))
             {
                 ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Strings.HeaderForObjectType]);
             }
