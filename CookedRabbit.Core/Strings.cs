@@ -28,8 +28,8 @@ namespace CookedRabbit.Core
 
         // Consumer
         public const string HeaderForObjectType = "X-CR-OBJECTTYPE";
-        public const string HeaderValueForReceivedMessage = "MESSAGE";
-        public const string HeaderValueForReceivedLetter = "LETTER";
+        public const string HeaderValueForMessage = "MESSAGE";
+        public const string HeaderValueForLetter = "LETTER";
         public const string HeaderValueForUnknown = "UNKNOWN";
 
         // Pipeline Messages

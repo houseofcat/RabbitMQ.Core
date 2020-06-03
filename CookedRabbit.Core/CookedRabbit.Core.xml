@@ -305,6 +305,7 @@
             <typeparam name="TResult"></typeparam>
             <param name="decrypt">Is only used for Message/Unknown types.</param>
             <param name="decompress">Is only used on Message/Unknown types.</param>
+            <param name="jsonSerializerOptions"></param>
             <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.ReceivedData.AckMessage">

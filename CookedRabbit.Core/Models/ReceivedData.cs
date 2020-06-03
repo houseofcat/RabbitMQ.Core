@@ -178,14 +178,14 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForReceivedLetter:
+                case Strings.HeaderValueForLetter:
 
                     if (Letter == null)
                     { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
 
                     return Letter.Body;
 
-                case Strings.HeaderValueForReceivedMessage:
+                case Strings.HeaderValueForMessage:
                 default:
 
                     return Data;
@@ -208,7 +208,7 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForReceivedLetter:
+                case Strings.HeaderValueForLetter:
 
                     if (Letter == null)
                     { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
@@ -230,7 +230,7 @@ namespace CookedRabbit.Core
 
                     return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Strings.HeaderValueForReceivedMessage:
+                case Strings.HeaderValueForMessage:
                 default:
 
                     byte[] data = null;

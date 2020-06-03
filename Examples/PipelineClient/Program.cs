@@ -220,7 +220,7 @@ namespace CookedRabbit.Core.PipelineClient
 
             var messageHeaders = new Dictionary<string, object>
             {
-                { Strings.HeaderForObjectType, Strings.HeaderValueForReceivedMessage }
+                { Strings.HeaderForObjectType, Strings.HeaderValueForMessage }
             };
 
             PublisherOne = Task.Run(async () =>
@@ -229,7 +229,7 @@ namespace CookedRabbit.Core.PipelineClient
                 for (ulong i = 0; i < 500; i++)
                 {
                     var letter = letterTemplate.Clone();
-                    letter.UpsertHeader(Strings.HeaderForObjectType, Strings.HeaderValueForReceivedLetter);
+                    letter.UpsertHeader(Strings.HeaderForObjectType, Strings.HeaderValueForLetter);
 
                     letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
 
@@ -304,7 +304,7 @@ namespace CookedRabbit.Core.PipelineClient
 
                 state.Message = state.ReceivedData.ContentType switch
                 {
-                    Strings.HeaderValueForReceivedLetter => await receivedData
+                    Strings.HeaderValueForLetter => await receivedData
                         .GetTypeFromJsonAsync<Message>()
                         .ConfigureAwait(false),
 
