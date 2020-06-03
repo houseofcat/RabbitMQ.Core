@@ -10,9 +10,9 @@
     <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
     <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>3.0.3.0</AssemblyVersion>
-    <FileVersion>3.0.3.0</FileVersion>
-    <Version>3.0.3</Version>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <FileVersion>3.1.0.0</FileVersion>
+    <Version>3.1.0</Version>
     <Authors>HouseofCat.io</Authors>
     <Description>CookedRabbit.Core is a C# RabbitMQ wrapper for NetCore.</Description>
     <Copyright>Copyright © 2018-2020</Copyright>
@@ -20,7 +20,7 @@
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>Adding Debug symbols to Nuget symbol server.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added support for a unified Consumer.</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

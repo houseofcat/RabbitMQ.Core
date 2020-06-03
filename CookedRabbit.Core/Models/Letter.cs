@@ -69,6 +69,17 @@ namespace CookedRabbit.Core
 
         public Letter Clone()
         {
+            var metadata = new LetterMetadata
+            {
+                Compressed = LetterMetadata.Compressed,
+                Encrypted = LetterMetadata.Encrypted,
+            };
+
+            foreach(var kvp in LetterMetadata.CustomFields)
+            {
+                metadata.CustomFields.Add(kvp.Key, kvp.Value);
+            }
+
             return new Letter
             {
                 Envelope = new Envelope
@@ -82,7 +93,7 @@ namespace CookedRabbit.Core
                         PriorityLevel = Envelope.RoutingOptions?.PriorityLevel ?? 0,
                     }
                 },
-                LetterMetadata = LetterMetadata
+                LetterMetadata = metadata
             };
         }
 
@@ -103,8 +114,11 @@ namespace CookedRabbit.Core
 
         public void UpsertHeader(string key, object value)
         {
-            Guard.AgainstNull(LetterMetadata, nameof(LetterMetadata));
-            Guard.AgainstNullOrEmpty(LetterMetadata.CustomFields, nameof(LetterMetadata.CustomFields));
+            if (LetterMetadata == null)
+            { LetterMetadata = new LetterMetadata(); }
+
+            if (LetterMetadata.CustomFields == null)
+            { LetterMetadata.CustomFields = new Dictionary<string, object>(); }
 
             LetterMetadata.CustomFields[key] = value;
         }

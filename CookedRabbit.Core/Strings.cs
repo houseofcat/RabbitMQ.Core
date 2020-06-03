@@ -26,6 +26,12 @@ namespace CookedRabbit.Core
         public const string ChannelPoolShutdownValidationMessage = "ChannelPool is not initialized. Can't be Shutdown.";
         public const string ChannelPoolGetChannelError = "Threading.Channel used for reading RabbitMQ channels has been closed.";
 
+        // Consumer
+        public const string HeaderForObjectType = "X-CR-OBJECTTYPE";
+        public const string HeaderValueForReceivedMessage = "MESSAGE";
+        public const string HeaderValueForReceivedLetter = "LETTER";
+        public const string HeaderValueForUnknown = "UNKNOWN";
+
         // Pipeline Messages
         public const string NotFinalized = "Pipeline is not ready for receiving work as it has not been finalized yet.";
         public const string AlreadyFinalized = "Pipeline is already finalized and ready for use.";

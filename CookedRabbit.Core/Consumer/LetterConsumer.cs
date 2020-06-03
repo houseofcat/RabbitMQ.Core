@@ -12,31 +12,6 @@ using RabbitMQ.Client.Events;
 
 namespace CookedRabbit.Core
 {
-    public interface IConsumer<TFromQueue>
-    {
-        IChannelPool ChannelPool { get; }
-        Channel<TFromQueue> DataBuffer { get; }
-        Config Config { get; }
-        ConsumerOptions ConsumerSettings { get; set; }
-        bool Consuming { get; }
-        bool Shutdown { get; }
-
-        Task DataflowExecutionEngineAsync(Func<TFromQueue, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default);
-        Task ExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync);
-        Task ExecutionEngineAsync(Func<TFromQueue, Task> workAsync);
-        Task ExecutionEngineAsync<TOptions>(Func<TFromQueue, TOptions, Task<bool>> workAsync, TOptions options);
-
-        ChannelReader<TFromQueue> GetConsumerBuffer();
-        Task ParallelExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default);
-        Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
-        ValueTask<TFromQueue> ReadAsync();
-        Task<IEnumerable<TFromQueue>> ReadUntilEmptyAsync();
-        Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true);
-        Task StopConsumerAsync(bool immediate = false);
-        IAsyncEnumerable<TFromQueue> StreamOutUntilClosedAsync();
-        IAsyncEnumerable<TFromQueue> StreamOutUntilEmptyAsync();
-    }
-
     public class LetterConsumer : IConsumer<ReceivedLetter>
     {
         public Config Config { get; }
@@ -244,9 +219,7 @@ namespace CookedRabbit.Core
             return consumer;
         }
 
-#pragma warning disable RCS1163 // Unused parameter.
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
-#pragma warning restore RCS1163 // Unused parameter.
         {
             var receivedLetter = new ReceivedLetter(ConsumingChannelHost.Channel, bdea, !AutoAck);
 
@@ -306,9 +279,7 @@ namespace CookedRabbit.Core
             return consumer;
         }
 
-#pragma warning disable RCS1163 // Unused parameter.
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
-#pragma warning restore RCS1163 // Unused parameter.
         {
             var receivedLetter = new ReceivedLetter(ConsumingChannelHost.Channel, bdea, !AutoAck);
 

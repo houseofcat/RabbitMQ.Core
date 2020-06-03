@@ -40,10 +40,10 @@ namespace CookedRabbit.Core.Tests
             _output.WriteLine(Encoding.UTF8.GetString(hashKey));
             _output.WriteLine($"HashKey: {Encoding.UTF8.GetString(hashKey)}");
 
-            var encryptedData = AesEncrypt.Encrypt(data.AsSpan(), hashKey);
+            var encryptedData = AesEncrypt.Encrypt(data, hashKey);
             _output.WriteLine($"Encrypted: {Encoding.UTF8.GetString(encryptedData)}");
 
-            var decryptedData = AesEncrypt.Decrypt(encryptedData.AsSpan(), hashKey);
+            var decryptedData = AesEncrypt.Decrypt(encryptedData, hashKey);
             _output.WriteLine($"Data: {Encoding.UTF8.GetString(data)}");
             _output.WriteLine($"Decrypted: {Encoding.UTF8.GetString(decryptedData)}");
 

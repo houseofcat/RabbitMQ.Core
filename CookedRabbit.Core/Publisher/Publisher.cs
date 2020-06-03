@@ -170,11 +170,86 @@ namespace CookedRabbit.Core
             return error;
         }
 
+        public async Task<bool> PublishBatchAsync(
+            string exchangeName,
+            string routingKey,
+            IList<ReadOnlyMemory<byte>> payloads,
+            bool mandatory = false,
+            IBasicProperties messageProperties = null)
+        {
+            Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
+            Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
+
+            var error = false;
+            var channelHost = await ChannelPool.GetChannelAsync();
+            if (messageProperties == null)
+            {
+                messageProperties = channelHost.Channel.CreateBasicProperties();
+                messageProperties.DeliveryMode = 2;
+            }
+
+            try
+            {
+                var batch = channelHost.Channel.CreateBasicPublishBatch();
+
+                for (int i = 0; i < payloads.Count; i++)
+                {
+                    batch.Add(exchangeName, routingKey, mandatory, messageProperties, payloads[i]);
+                }
+
+                batch.Publish();
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(channelHost, error);
+            }
+
+            return error;
+        }
+
         // A basic implementation of publishing batches but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
             string routingKey,
             IList<byte[]> payloads,
+            IDictionary<string, object> headers = null,
+            byte? priority = 0,
+            bool mandatory = false)
+        {
+            Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
+            Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
+
+            var error = false;
+            var channelHost = await ChannelPool.GetChannelAsync();
+
+            try
+            {
+                var batch = channelHost.Channel.CreateBasicPublishBatch();
+
+                for (int i = 0; i < payloads.Count; i++)
+                {
+                    batch.Add(exchangeName, routingKey, mandatory, BuildProperties(headers, channelHost, priority), payloads[i]);
+                }
+
+                batch.Publish();
+            }
+            catch { error = true; }
+            finally
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(channelHost, error);
+            }
+
+            return error;
+        }
+
+        // A basic implementation of publishing batches but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
+        public async Task<bool> PublishBatchAsync(
+            string exchangeName,
+            string routingKey,
+            IList<ReadOnlyMemory<byte>> payloads,
             IDictionary<string, object> headers = null,
             byte? priority = 0,
             bool mandatory = false)

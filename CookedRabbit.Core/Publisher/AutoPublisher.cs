@@ -44,21 +44,24 @@ namespace CookedRabbit.Core
         public bool Encrypt { get; private set; }
         public bool CreatePublishReceipts { get; private set; }
         private byte[] HashKey { get; set; }
+        private bool _withHeaders;
 
-        public AutoPublisher(Config config)
+        public AutoPublisher(Config config, bool withHeaders = true)
         {
             Guard.AgainstNull(config, nameof(config));
 
             Config = config;
             Publisher = new Publisher(Config);
+            _withHeaders = withHeaders;
         }
 
-        public AutoPublisher(IChannelPool channelPool)
+        public AutoPublisher(IChannelPool channelPool, bool withHeaders = true)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
             Config = channelPool.Config;
             Publisher = new Publisher(channelPool);
+            _withHeaders = withHeaders;
         }
 
         public async Task StartAsync(byte[] hashKey = null)
@@ -196,7 +199,7 @@ namespace CookedRabbit.Core
                     }
 
                     await Publisher
-                        .PublishAsync(letter, CreatePublishReceipts)
+                        .PublishAsync(letter, CreatePublishReceipts, _withHeaders)
                         .ConfigureAwait(false);
                 }
             }

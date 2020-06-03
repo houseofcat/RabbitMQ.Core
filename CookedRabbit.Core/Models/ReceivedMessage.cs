@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,28 +9,22 @@ namespace CookedRabbit.Core
 {
     public class ReceivedMessage : ReceivedData
     {
-        public byte[] Body { get; private set; }
+        public ReceivedMessage(IModel channel, BasicGetResult result, bool ackable) : base(channel, result, ackable, null)
+        { }
 
-        public ReceivedMessage(IModel channel, BasicGetResult result, bool ackable) : base(channel, result, ackable)
-        {
-            Body = result.Body.ToArray();
-        }
-
-        public ReceivedMessage(IModel channel, BasicDeliverEventArgs args, bool ackable) : base(channel, args, ackable)
-        {
-            Body = args.Body.ToArray();
-        }
+        public ReceivedMessage(IModel channel, BasicDeliverEventArgs args, bool ackable) : base(channel, args, ackable, null)
+        { }
 
         /// <summary>
         /// Convert internal Body to type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Body);
+        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Data.Span);
 
         /// <summary>
         /// Convert internal Body to type <see cref="Letter" />.
         /// </summary>
-        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Body);
+        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Data.Span);
 
         /// <summary>
         /// Convert internal Body as a Stream asynchronously to type T.
@@ -37,7 +32,7 @@ namespace CookedRabbit.Core
         /// <typeparam name="T"></typeparam>
         public async Task<T> ConvertJsonBodyAsync<T>() =>
             await JsonSerializer
-            .DeserializeAsync<T>(new MemoryStream(Body))
+            .DeserializeAsync<T>(new MemoryStream(Data.ToArray()))
             .ConfigureAwait(false);
 
         /// <summary>
@@ -45,7 +40,7 @@ namespace CookedRabbit.Core
         /// </summary>
         public async Task<Letter> ConvertJsonBodyToLetterAsync() =>
             await JsonSerializer
-            .DeserializeAsync<Letter>(new MemoryStream(Body))
+            .DeserializeAsync<Letter>(new MemoryStream(Data.ToArray()))
             .ConfigureAwait(false);
     }
 }
