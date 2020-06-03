@@ -19,7 +19,7 @@ namespace CookedRabbit.Core
         /// Convert internal Body to type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public T ConvertJsonBody<T>() => JsonSerializer.Deserialize<T>(Data.Span);
+        public T ConvertJsonBody<T>(JsonSerializerOptions options = null) => JsonSerializer.Deserialize<T>(Data.Span, options);
 
         /// <summary>
         /// Convert internal Body to type <see cref="Letter" />.
@@ -30,9 +30,9 @@ namespace CookedRabbit.Core
         /// Convert internal Body as a Stream asynchronously to type T.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public async Task<T> ConvertJsonBodyAsync<T>() =>
+        public async Task<T> ConvertJsonBodyAsync<T>(JsonSerializerOptions options = null) =>
             await JsonSerializer
-            .DeserializeAsync<T>(new MemoryStream(Data.ToArray()))
+            .DeserializeAsync<T>(new MemoryStream(Data.ToArray()), options)
             .ConfigureAwait(false);
 
         /// <summary>
