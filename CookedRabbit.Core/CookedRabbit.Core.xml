@@ -357,7 +357,7 @@
             A way to await the message until it is marked complete.
             </summary>
         </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBody``1">
+        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBody``1(System.Text.Json.JsonSerializerOptions)">
             <summary>
             Convert internal Body to type.
             </summary>
@@ -368,7 +368,7 @@
             Convert internal Body to type <see cref="T:CookedRabbit.Core.Letter" />.
             </summary>
         </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBodyAsync``1">
+        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBodyAsync``1(System.Text.Json.JsonSerializerOptions)">
             <summary>
             Convert internal Body as a Stream asynchronously to type T.
             </summary>
