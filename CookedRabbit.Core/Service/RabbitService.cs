@@ -15,6 +15,7 @@ namespace CookedRabbit.Core.Service
         IAutoPublisher AutoPublisher { get; }
         IChannelPool ChannelPool { get; }
         bool Initialized { get; }
+        ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; }
         ITopologer Topologer { get; }
@@ -27,6 +28,7 @@ namespace CookedRabbit.Core.Service
         bool Encrypt(ReceivedLetter receivedLetter);
         Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
         Task<T> GetAsync<T>(string queueName);
+        IConsumer<ReceivedData> GetConsumer(string consumerName);
         IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName);
         IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName);
         Task InitializeAsync();
@@ -43,6 +45,8 @@ namespace CookedRabbit.Core.Service
         public IChannelPool ChannelPool { get; }
         public IAutoPublisher AutoPublisher { get; }
         public ITopologer Topologer { get; }
+
+        public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
         public ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedLetter>>();
         public ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedMessage>>();
 
@@ -167,6 +171,14 @@ namespace CookedRabbit.Core.Service
 
         private async ValueTask StopAllConsumers(bool immediately)
         {
+            foreach (var kvp in Consumers)
+            {
+                await kvp
+                    .Value
+                    .StopConsumerAsync(immediately)
+                    .ConfigureAwait(false);
+            }
+
             foreach (var kvp in LetterConsumers)
             {
                 await kvp
@@ -186,6 +198,26 @@ namespace CookedRabbit.Core.Service
 
         private async Task BuildConsumersAsync()
         {
+            foreach (var consumerSetting in Config.ConsumerSettings)
+            {
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
+                }
+
+                Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, HashKey));
+            }
+
             foreach (var consumerSetting in Config.LetterConsumerSettings)
             {
                 if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
@@ -225,6 +257,12 @@ namespace CookedRabbit.Core.Service
 
                 MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
             }
+        }
+
+        public IConsumer<ReceivedData> GetConsumer(string consumerName)
+        {
+            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            return Consumers[consumerName];
         }
 
         public IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName)

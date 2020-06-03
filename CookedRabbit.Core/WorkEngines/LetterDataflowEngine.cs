@@ -34,10 +34,10 @@ namespace CookedRabbit.Core.WorkEngines
             { receivedLetter.NackMessage(true); }
         }
 
-        public async ValueTask EnqueueWorkAsync(ReceivedLetter receivedMessage)
+        public async ValueTask EnqueueWorkAsync(ReceivedLetter receivedLetter)
         {
             try
-            { await Block.SendAsync(receivedMessage).ConfigureAwait(false); }
+            { await Block.SendAsync(receivedLetter).ConfigureAwait(false); }
             catch
             { }
         }

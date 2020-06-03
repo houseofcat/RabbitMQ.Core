@@ -18,11 +18,11 @@ namespace CookedRabbit.Core
 
         ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
-        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, bool mandatory = false, IBasicProperties messageProperties = null);
-        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true);
-        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
-        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
@@ -58,14 +58,11 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishAsync(
             string exchangeName,
             string routingKey,
-            byte[] payload,
+            ReadOnlyMemory<byte> payload,
             bool mandatory = false,
             IBasicProperties messageProperties = null)
         {
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
-            Guard.AgainstNull(payload, nameof(payload));
-
-            if (payload is null) throw new ArgumentNullException(nameof(payload));
 
             var error = false;
             var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
@@ -98,15 +95,12 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishAsync(
             string exchangeName,
             string routingKey,
-            byte[] payload,
+            ReadOnlyMemory<byte> payload,
             IDictionary<string, object> headers = null,
             byte? priority = 0,
             bool mandatory = false)
         {
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
-            Guard.AgainstNull(payload, nameof(payload));
-
-            if (payload is null) throw new ArgumentNullException(nameof(payload));
 
             var error = false;
             var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
@@ -134,7 +128,7 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
             string routingKey,
-            IList<byte[]> payloads,
+            IList<ReadOnlyMemory<byte>> payloads,
             bool mandatory = false,
             IBasicProperties messageProperties = null)
         {
@@ -170,11 +164,12 @@ namespace CookedRabbit.Core
             return error;
         }
 
+
         // A basic implementation of publishing batches but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
             string routingKey,
-            IList<byte[]> payloads,
+            IList<ReadOnlyMemory<byte>> payloads,
             IDictionary<string, object> headers = null,
             byte? priority = 0,
             bool mandatory = false)
@@ -427,13 +422,13 @@ namespace CookedRabbit.Core
             props.ContentType = letter.Envelope.RoutingOptions.MessageType;
             props.Priority = letter.Envelope.RoutingOptions.PriorityLevel;
 
+            if (!props.IsHeadersPresent())
+            {
+                props.Headers = new Dictionary<string, object>();
+            }
+
             if (withHeaders && letter.LetterMetadata != null)
             {
-                if (!props.IsHeadersPresent())
-                {
-                    props.Headers = new Dictionary<string, object>();
-                }
-
                 foreach (var kvp in letter.LetterMetadata?.CustomFields)
                 {
                     if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
@@ -442,6 +437,9 @@ namespace CookedRabbit.Core
                     }
                 }
             }
+
+            // Non-optional Header.
+            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForLetter;
 
             return props;
         }
@@ -452,13 +450,13 @@ namespace CookedRabbit.Core
             props.DeliveryMode = deliveryMode ?? 2; // Default Persisted
             props.Priority = priority ?? 0; // Default Priority
 
+            if (!props.IsHeadersPresent())
+            {
+                props.Headers = new Dictionary<string, object>();
+            }
+
             if (headers != null && headers.Count > 0)
             {
-                if (!props.IsHeadersPresent())
-                {
-                    props.Headers = new Dictionary<string, object>();
-                }
-
                 foreach (var kvp in headers)
                 {
                     if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
@@ -467,6 +465,9 @@ namespace CookedRabbit.Core
                     }
                 }
             }
+
+            // Non-optional Header.
+            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
 
             return props;
         }

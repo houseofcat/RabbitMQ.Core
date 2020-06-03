@@ -133,36 +133,36 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task PublishBatchAsync()
         {
-            var config = new Config();
-            config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
-            const int letterCount = 10_000;
-            const int byteCount = 500;
+            //var config = new Config();
+            //config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
+            //const int letterCount = 10_000;
+            //const int byteCount = 500;
 
-            var pub = new Publisher(config);
-            await pub
-                .ChannelPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
+            //var pub = new Publisher(config);
+            //await pub
+            //    .ChannelPool
+            //    .InitializeAsync()
+            //    .ConfigureAwait(false);
 
-            var queueNames = new List<string>
-            {
-                "TestQueue0",
-            };
+            //var queueNames = new List<string>
+            //{
+            //    "TestQueue0",
+            //};
 
-            var letters = RandomData.CreateManySimpleRandomLetters(queueNames, letterCount, byteCount);
+            //var letters = RandomData.CreateManySimpleRandomLetters(queueNames, letterCount, byteCount);
 
-            var sw = Stopwatch.StartNew();
-            await pub
-                .PublishBatchAsync("", "TestQueue0", letters.Select(x => x.Body).ToList(), false)
-                .ConfigureAwait(false);
-            sw.Stop();
+            //var sw = Stopwatch.StartNew();
+            //await pub
+            //    .PublishBatchAsync("", "TestQueue0", letters.Select(x => x.Body), false)
+            //    .ConfigureAwait(false);
+            //sw.Stop();
 
-            const double kiloByteCount = byteCount / 1000.0;
-            output.WriteLine($"Published {letterCount} letters, {kiloByteCount} KB each, in {sw.ElapsedMilliseconds} ms.");
+            //const double kiloByteCount = byteCount / 1000.0;
+            //output.WriteLine($"Published {letterCount} letters, {kiloByteCount} KB each, in {sw.ElapsedMilliseconds} ms.");
 
-            var rate = letterCount / (sw.ElapsedMilliseconds / 1000.0);
-            var dataRate = rate * kiloByteCount;
-            output.WriteLine($"Message Rate: {rate.ToString("0.###")} letters / sec, or {(dataRate / 1000.0).ToString("0.###")} MB/s");
+            //var rate = letterCount / (sw.ElapsedMilliseconds / 1000.0);
+            //var dataRate = rate * kiloByteCount;
+            //output.WriteLine($"Message Rate: {rate.ToString("0.###")} letters / sec, or {(dataRate / 1000.0).ToString("0.###")} MB/s");
         }
     }
 }

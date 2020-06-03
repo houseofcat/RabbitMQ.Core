@@ -12,12 +12,37 @@ using RabbitMQ.Client.Events;
 
 namespace CookedRabbit.Core
 {
-    public class MessageConsumer : IConsumer<ReceivedMessage>
+    public interface IConsumer<TFromQueue>
+    {
+        IChannelPool ChannelPool { get; }
+        Channel<TFromQueue> DataBuffer { get; }
+        Config Config { get; }
+        ConsumerOptions ConsumerSettings { get; set; }
+        bool Consuming { get; }
+        bool Shutdown { get; }
+
+        Task DataflowExecutionEngineAsync(Func<TFromQueue, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default);
+        Task ExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync);
+        Task ExecutionEngineAsync(Func<TFromQueue, Task> workAsync);
+        Task ExecutionEngineAsync<TOptions>(Func<TFromQueue, TOptions, Task<bool>> workAsync, TOptions options);
+
+        ChannelReader<TFromQueue> GetConsumerBuffer();
+        Task ParallelExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default);
+        Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
+        ValueTask<TFromQueue> ReadAsync();
+        Task<IEnumerable<TFromQueue>> ReadUntilEmptyAsync();
+        Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true);
+        Task StopConsumerAsync(bool immediate = false);
+        IAsyncEnumerable<TFromQueue> StreamOutUntilClosedAsync();
+        IAsyncEnumerable<TFromQueue> StreamOutUntilEmptyAsync();
+    }
+
+    public class Consumer : IConsumer<ReceivedData>
     {
         public Config Config { get; }
 
         public IChannelPool ChannelPool { get; }
-        public Channel<ReceivedMessage> DataBuffer { get; set; }
+        public Channel<ReceivedData> DataBuffer { get; set; }
 
         private IChannelHost ConsumingChannelHost { get; set; }
 
@@ -30,40 +55,46 @@ namespace CookedRabbit.Core
         private bool UseTransientChannel { get; set; }
         private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
 
-        public MessageConsumer(Config config, string consumerName)
+        private byte[] HashKey { get; }
+
+        public Consumer(Config config, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(config, nameof(config));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-            ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
+            HashKey = hashKey;
+            
+            ConsumerSettings = Config.GetConsumerSettings(consumerName);
         }
 
-        public MessageConsumer(IChannelPool channelPool, string consumerName)
+        public Consumer(IChannelPool channelPool, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
+            HashKey = hashKey;
 
-            ConsumerSettings = Config.GetMessageConsumerSettings(consumerName);
+            ConsumerSettings = Config.GetConsumerSettings(consumerName);
         }
 
-        public MessageConsumer(IChannelPool channelPool, ConsumerOptions consumerSettings)
+        public Consumer(IChannelPool channelPool, ConsumerOptions consumerSettings, byte[] hashKey = null)
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNull(consumerSettings, nameof(consumerSettings));
 
             Config = channelPool.Config;
             ChannelPool = channelPool;
+            HashKey = hashKey;
             ConsumerSettings = consumerSettings;
         }
 
         public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
         {
-            ConsumerSettings = Config.GetMessageConsumerSettings(ConsumerSettings.ConsumerName);
+            ConsumerSettings = Config.GetConsumerSettings(ConsumerSettings.ConsumerName);
 
             await conLock
                 .WaitAsync()
@@ -76,7 +107,7 @@ namespace CookedRabbit.Core
                     AutoAck = autoAck;
                     UseTransientChannel = useTransientChannel;
 
-                    DataBuffer = Channel.CreateBounded<ReceivedMessage>(
+                    DataBuffer = Channel.CreateBounded<ReceivedData>(
                     new BoundedChannelOptions(ConsumerSettings.BufferSize)
                     {
                         FullMode = ConsumerSettings.BehaviorWhenFull
@@ -216,7 +247,7 @@ namespace CookedRabbit.Core
 
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
 
             if (await DataBuffer
                     .Writer
@@ -258,7 +289,7 @@ namespace CookedRabbit.Core
 
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedMessage(ConsumingChannelHost.Channel, bdea, !AutoAck);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
 
             if (await DataBuffer
                 .Writer
@@ -281,9 +312,9 @@ namespace CookedRabbit.Core
             }
         }
 
-        public ChannelReader<ReceivedMessage> GetConsumerBuffer() => DataBuffer.Reader;
+        public ChannelReader<ReceivedData> GetConsumerBuffer() => DataBuffer.Reader;
 
-        public async ValueTask<ReceivedMessage> ReadAsync()
+        public async ValueTask<ReceivedData> ReadAsync()
         {
             if (!await DataBuffer
                 .Reader
@@ -299,7 +330,7 @@ namespace CookedRabbit.Core
                 .ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<ReceivedMessage>> ReadUntilEmptyAsync()
+        public async Task<IEnumerable<ReceivedData>> ReadUntilEmptyAsync()
         {
             if (!await DataBuffer
                 .Reader
@@ -309,7 +340,7 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            var list = new List<ReceivedMessage>();
+            var list = new List<ReceivedData>();
             await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
             while (DataBuffer.Reader.TryRead(out var message))
             {
@@ -320,7 +351,7 @@ namespace CookedRabbit.Core
             return list;
         }
 
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutUntilEmptyAsync()
+        public async IAsyncEnumerable<ReceivedData> StreamOutUntilEmptyAsync()
         {
             if (!await DataBuffer
                 .Reader
@@ -338,7 +369,7 @@ namespace CookedRabbit.Core
             }
         }
 
-        public async IAsyncEnumerable<ReceivedMessage> StreamOutUntilClosedAsync()
+        public async IAsyncEnumerable<ReceivedData> StreamOutUntilClosedAsync()
         {
             if (!await DataBuffer
                 .Reader
@@ -348,72 +379,72 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
             }
 
-            await foreach (var message in DataBuffer.Reader.ReadAllAsync())
+            await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
             {
-                yield return message;
+                yield return receivedData;
             }
         }
 
-        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task> workAsync)
+        public async Task ExecutionEngineAsync(Func<ReceivedData, Task> workAsync)
         {
             while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
-                        await workAsync(receivedMessage)
+                        await workAsync(receivedData)
                             .ConfigureAwait(false);
 
-                        receivedMessage.AckMessage();
+                        receivedData.AckMessage();
                     }
                     catch
-                    { receivedMessage.NackMessage(true); }
+                    { receivedData.NackMessage(true); }
                 }
             }
         }
 
-        public async Task ExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync)
+        public async Task ExecutionEngineAsync(Func<ReceivedData, Task<bool>> workAsync)
         {
             while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
-                        if (await workAsync(receivedMessage).ConfigureAwait(false))
-                        { receivedMessage.AckMessage(); }
+                        if (await workAsync(receivedData).ConfigureAwait(false))
+                        { receivedData.AckMessage(); }
                         else
-                        { receivedMessage.NackMessage(true); }
+                        { receivedData.NackMessage(true); }
                     }
                     catch
-                    { receivedMessage.NackMessage(true); }
+                    { receivedData.NackMessage(true); }
                 }
             }
         }
 
-        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedMessage, TOptions, Task<bool>> workAsync, TOptions options)
+        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedData, TOptions, Task<bool>> workAsync, TOptions options)
         {
             while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                await foreach (var receivedMessage in DataBuffer.Reader.ReadAllAsync())
+                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
                 {
                     try
                     {
-                        if (await workAsync(receivedMessage, options).ConfigureAwait(false))
-                        { receivedMessage.AckMessage(); }
+                        if (await workAsync(receivedData, options).ConfigureAwait(false))
+                        { receivedData.AckMessage(); }
                         else
-                        { receivedMessage.NackMessage(true); }
+                        { receivedData.NackMessage(true); }
                     }
                     catch
-                    { receivedMessage.NackMessage(true); }
+                    { receivedData.NackMessage(true); }
                 }
             }
         }
 
         private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task ParallelExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default)
+        public async Task ParallelExecutionEngineAsync(Func<ReceivedData, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default)
         {
             await parallelExecLock.WaitAsync().ConfigureAwait(false);
 
@@ -431,12 +462,12 @@ namespace CookedRabbit.Core
 
                     try
                     {
-                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedData))
                         {
                             if (token.IsCancellationRequested)
                             { return; }
 
-                            if (receivedMessage != null)
+                            if (receivedData != null)
                             {
                                 await parallelLock.WaitAsync().ConfigureAwait(false);
 
@@ -446,13 +477,13 @@ namespace CookedRabbit.Core
                                 {
                                     try
                                     {
-                                        if (await workAsync(receivedMessage).ConfigureAwait(false))
-                                        { receivedMessage.AckMessage(); }
+                                        if (await workAsync(receivedData).ConfigureAwait(false))
+                                        { receivedData.AckMessage(); }
                                         else
-                                        { receivedMessage.NackMessage(true); }
+                                        { receivedData.NackMessage(true); }
                                     }
                                     catch
-                                    { receivedMessage.NackMessage(true); }
+                                    { receivedData.NackMessage(true); }
                                     finally
                                     { parallelLock.Release(); }
                                 }
@@ -471,7 +502,7 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task DataflowExecutionEngineAsync(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
+        public async Task DataflowExecutionEngineAsync(Func<ReceivedData, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
         {
             await dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
 
@@ -480,7 +511,7 @@ namespace CookedRabbit.Core
                 if (token.IsCancellationRequested)
                 { return; }
 
-                var messageEngine = new MessageDataflowEngine(workBodyAsync, maxDoP);
+                var dataflowEngine = new DataflowEngine(workBodyAsync, maxDoP);
 
                 while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
                 {
@@ -489,12 +520,12 @@ namespace CookedRabbit.Core
 
                     try
                     {
-                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedData))
                         {
-                            if (receivedMessage != null)
+                            if (receivedData != null)
                             {
-                                await messageEngine
-                                    .EnqueueWorkAsync(receivedMessage)
+                                await dataflowEngine
+                                    .EnqueueWorkAsync(receivedData)
                                     .ConfigureAwait(false);
                             }
                         }
@@ -512,7 +543,7 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
-        public async Task PipelineExecutionEngineAsync<TOut>(IPipeline<ReceivedMessage, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
+        public async Task PipelineExecutionEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
             await pipeExecLock
                 .WaitAsync(2000)
@@ -532,24 +563,24 @@ namespace CookedRabbit.Core
 
                     try
                     {
-                        while (DataBuffer.Reader.TryRead(out var receivedMessage))
+                        while (DataBuffer.Reader.TryRead(out var receivedData))
                         {
                             if (token.IsCancellationRequested)
                             { return; }
 
-                            if (receivedMessage != null)
+                            if (receivedData != null)
                             {
                                 await workLock.WaitAsync().ConfigureAwait(false);
 
                                 try
                                 {
                                     await pipeline
-                                        .QueueForExecutionAsync(receivedMessage)
+                                        .QueueForExecutionAsync(receivedData)
                                         .ConfigureAwait(false);
 
                                     if (waitForCompletion)
                                     {
-                                        await receivedMessage
+                                        await receivedData
                                             .Completion()
                                             .ConfigureAwait(false);
                                     }

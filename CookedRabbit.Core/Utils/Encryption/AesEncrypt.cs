@@ -14,19 +14,16 @@ namespace CookedRabbit.Core.Utils
         public const int NonceSize = 12;
         public const int KeySize = 32;
 
-        public static byte[] Encrypt(Span<byte> data, byte[] key)
+        public static byte[] Encrypt(ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> key)
         {
-            //User Error Checks
-            if (key == null
-                || key.Length != KeySize
-                || data.Length == 0)
+            if (key.Length != KeySize || data.Length == 0)
             { return null; }
 
             var nonce = new byte[NonceSize];
             Random.NextBytes(nonce);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            cipher.Init(true, new AeadParameters(new KeyParameter(key), MacBitSize, nonce));
+            cipher.Init(true, new AeadParameters(new KeyParameter(key.ToArray()), MacBitSize, nonce));
 
             var cipherText = new byte[cipher.GetOutputSize(data.Length)];
             cipher.DoFinal(cipherText, cipher.ProcessBytes(data.ToArray(), 0, data.Length, cipherText, 0));
@@ -41,12 +38,9 @@ namespace CookedRabbit.Core.Utils
             return cs.ToArray();
         }
 
-        public static byte[] Decrypt(Span<byte> encryptedData, byte[] key)
+        public static byte[] Decrypt(ReadOnlyMemory<byte> encryptedData, ReadOnlyMemory<byte> key)
         {
-            //User Error Checks
-            if (key == null
-                || key.Length != KeySize
-                || encryptedData.Length == 0)
+            if (key.Length != KeySize || encryptedData.Length == 0)
             { return null; }
 
             using var cipherStream = new MemoryStream(encryptedData.ToArray());
@@ -55,7 +49,7 @@ namespace CookedRabbit.Core.Utils
             var nonce = cipherReader.ReadBytes(NonceSize);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
+            var parameters = new AeadParameters(new KeyParameter(key.ToArray()), MacBitSize, nonce);
 
             cipher.Init(false, parameters);
 
