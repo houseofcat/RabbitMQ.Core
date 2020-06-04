@@ -1,6 +1,6 @@
+using Konscious.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Konscious.Security.Cryptography;
 
 namespace CookedRabbit.Core.Utils
 {

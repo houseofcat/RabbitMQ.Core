@@ -1,7 +1,6 @@
 ﻿using CookedRabbit.Core.Service;
 using CookedRabbit.Core.WorkEngines;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -181,15 +180,19 @@ namespace CookedRabbit.Core.PipelineClient
 
     public static class ConsumerPipelineExample
     {
+        public static string ErrorQueue { get; set; }
+        public static IRabbitService RabbitService { get; set; }
+
         public static async Task RunPipelineExecutionAsync()
         {
             await Console.Out.WriteLineAsync("Starting ConsumerPipelineExample...").ConfigureAwait(false);
 
-            var rabbitService = await SetupAsync()
+            RabbitService = await SetupAsync()
                 .ConfigureAwait(false);
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+            var consumer = RabbitService.GetConsumer("ConsumerFromConfig");
+            ErrorQueue = consumer.ConsumerSettings.ErrorQueueName;
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -260,12 +263,12 @@ namespace CookedRabbit.Core.PipelineClient
                 .Finalize((state) =>
                 {
                     if (state.AllStepsSuccess)
-                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Finished route successfully."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route successfully."); }
                     else
-                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Finished route unsuccesfully."); }
+                    { Console.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route unsuccesfully."); }
 
                     // Lastly mark the excution pipeline finished for this message.
-                    state.ReceivedData.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
+                    state.ReceivedData?.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
                 });
 
             return pipeline;
@@ -290,11 +293,13 @@ namespace CookedRabbit.Core.PipelineClient
 
         private static async Task<WorkState> DeserializeStepAsync(IReceivedData receivedData)
         {
-            var state = new WorkState();
+            var state = new WorkState
+            {
+                ReceivedData = receivedData
+            };
+
             try
             {
-                state.ReceivedData = receivedData;
-
                 state.Message = state.ReceivedData.ContentType switch
                 {
                     Strings.HeaderValueForLetter => await receivedData
@@ -305,11 +310,39 @@ namespace CookedRabbit.Core.PipelineClient
                         .GetTypeFromJsonAsync<Message>(decrypt: false, decompress: false)
                         .ConfigureAwait(false),
                 };
-
-                state.DeserializeStepSuccess = true;
             }
             catch
-            { state.DeserializeStepSuccess = false; }
+            { }
+
+            if (state.ReceivedData.Data.Length > 0 && (state.ReceivedData.Letter != null || state.Message != null))
+            { state.DeserializeStepSuccess = true; }
+
+            if (!state.DeserializeStepSuccess)
+            {
+                // Park Failed Deserialize Steps
+                var failed = await RabbitService
+                    .AutoPublisher
+                    .Publisher
+                    .PublishAsync("", ErrorQueue, state.ReceivedData.Data, null)
+                    .ConfigureAwait(false);
+
+                if (failed)
+                {
+                    await Console
+                        .Out
+                        .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize and publish to ErrorQueue!\r\n{state.ReceivedData.GetBodyAsUtf8String()}\r\n")
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await Console
+                        .Out
+                        .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize. Published to ErrorQueue!\r\n{state.ReceivedData.GetBodyAsUtf8String()}\r\n")
+                        .ConfigureAwait(false);
+                }
+
+                state.ProcessStepSuccess = true;
+            }
 
             return state;
         }
@@ -355,7 +388,7 @@ namespace CookedRabbit.Core.PipelineClient
             {
                 await Console
                     .Out
-                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message.MessageId} - Nacking message...")
+                    .WriteLineAsync($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Nacking message...")
                     .ConfigureAwait(false);
 
                 if (state.ReceivedData.NackMessage(true))

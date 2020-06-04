@@ -10,7 +10,7 @@ namespace CookedRabbit.Core
         public string ConsumerName { get; set; }
 
         public string ErrorSuffix { get; set; }
-        public string ErrorQueueName => $"{ConsumerName}.{ErrorSuffix}";
+        public string ErrorQueueName => $"{QueueName}.{ErrorSuffix}";
 
         public string TargetQueueName { get; set; }
         public IDictionary<string, string> TargetQueues { get; set; }

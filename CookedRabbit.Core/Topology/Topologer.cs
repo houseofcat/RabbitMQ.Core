@@ -1,9 +1,9 @@
+using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Pools;
-using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core
 {

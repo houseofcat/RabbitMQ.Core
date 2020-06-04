@@ -1,5 +1,4 @@
 using CookedRabbit.Core.Utils;
-using System;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -31,7 +30,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task EncryptDecryptTest()
         {
-            var data = new byte[] { 0xFF, 0x00, 0xAA, 0xFF, 0x00, 0x00, 0xFF, 0xAA, 0x00, 0xFF,0x00, 0xFF };
+            var data = new byte[] { 0xFF, 0x00, 0xAA, 0xFF, 0x00, 0x00, 0xFF, 0xAA, 0x00, 0xFF, 0x00, 0xFF };
 
             var hashKey = await ArgonHash
                 .GetHashKeyAsync(Passphrase, Salt, 32)

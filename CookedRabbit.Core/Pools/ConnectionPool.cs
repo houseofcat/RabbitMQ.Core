@@ -1,10 +1,10 @@
+using CookedRabbit.Core.Utils;
+using RabbitMQ.Client;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Utils;
-using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Pools
 {
