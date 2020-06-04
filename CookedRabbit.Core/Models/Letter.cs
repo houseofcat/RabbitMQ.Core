@@ -1,7 +1,6 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using CookedRabbit.Core.Utils;
+using System;
+using System.Collections.Generic;
 
 namespace CookedRabbit.Core
 {
@@ -75,7 +74,7 @@ namespace CookedRabbit.Core
                 Encrypted = LetterMetadata.Encrypted,
             };
 
-            foreach(var kvp in LetterMetadata.CustomFields)
+            foreach (var kvp in LetterMetadata.CustomFields)
             {
                 metadata.CustomFields.Add(kvp.Key, kvp.Value);
             }

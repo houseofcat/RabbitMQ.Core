@@ -1,12 +1,12 @@
+using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Pools;
-using CookedRabbit.Core.Utils;
-using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Service
 {

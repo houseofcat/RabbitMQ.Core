@@ -89,7 +89,7 @@ namespace CookedRabbit.Core.Tests
                 {
                     receiptCount++;
                     if (receipt.IsError)
-                    { error = true;  break; }
+                    { error = true; break; }
                 }
             }
             sw.Stop();

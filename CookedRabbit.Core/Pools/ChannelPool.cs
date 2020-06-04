@@ -1,10 +1,10 @@
+using CookedRabbit.Core.Utils;
 using System;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using CookedRabbit.Core.Utils;
 
 namespace CookedRabbit.Core.Pools
 {

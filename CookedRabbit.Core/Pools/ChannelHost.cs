@@ -1,6 +1,6 @@
+using RabbitMQ.Client;
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Client;
 
 namespace CookedRabbit.Core.Pools
 {
