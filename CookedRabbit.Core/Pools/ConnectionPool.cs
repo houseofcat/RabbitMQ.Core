@@ -1,4 +1,5 @@
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,8 @@ namespace CookedRabbit.Core.Pools
 
     public class ConnectionPool : IConnectionPool
     {
+        private ILogger<ConnectionPool> _logger;
+
         public ConnectionFactory ConnectionFactory { get; set; }
 
         public ulong CurrentConnectionId { get; private set; }
@@ -40,6 +43,8 @@ namespace CookedRabbit.Core.Pools
             Guard.AgainstNull(config, nameof(config));
             Config = config;
 
+            _logger = LogHelper.GetLogger<ConnectionPool>();
+
             Connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
             ConnectionFactory = CreateConnectionFactory();
         }
@@ -49,7 +54,7 @@ namespace CookedRabbit.Core.Pools
             var cf = new ConnectionFactory
             {
                 Uri = Config.FactorySettings.Uri,
-                AutomaticRecoveryEnabled = Config.FactorySettings.AutoRecovery,
+                AutomaticRecoveryEnabled = true,
                 TopologyRecoveryEnabled = Config.FactorySettings.TopologyRecovery,
                 NetworkRecoveryInterval = TimeSpan.FromSeconds(Config.FactorySettings.NetRecoveryTimeout),
                 ContinuationTimeout = TimeSpan.FromSeconds(Config.FactorySettings.ContinuationTimeout),
@@ -76,6 +81,8 @@ namespace CookedRabbit.Core.Pools
 
         public async Task InitializeAsync()
         {
+            _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
+
             await poolLock
                 .WaitAsync()
                 .ConfigureAwait(false);
@@ -93,24 +100,25 @@ namespace CookedRabbit.Core.Pools
             }
             finally
             { poolLock.Release(); }
+
+            _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
         }
 
         private async Task CreateConnectionsAsync()
         {
             for (int i = 0; i < Config.PoolSettings.MaxConnections; i++)
             {
+                var connectionName = $"{Config.PoolSettings.ConnectionPoolName}:{i}";
                 try
                 {
-                    var connection = ConnectionFactory.CreateConnection($"{Config.PoolSettings.ConnectionPoolName}:{i}");
+                    var connection = ConnectionFactory.CreateConnection();
                     await Connections
                         .Writer
                         .WriteAsync(new ConnectionHost(CurrentConnectionId++, connection));
                 }
-                catch (Exception)
-                //catch (Exception ex) when (ex is ArgumentException || ex is ConnectFailureException || ex is BrokerUnreachableException)
+                catch (Exception ex)
                 {
-                    // TODO: Implement Logger
-                    // RabbitMQ Server/Cluster is unreachable.
+                    _logger.LogError(ex, LogMessages.ConnectionPool.CreateConnectionException, connectionName);
                     throw; // Non Optional Throw
                 }
             }
@@ -119,13 +127,13 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<IConnectionHost> GetConnectionAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.ValidationMessage);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ValidationMessage);
             if (!await Connections
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.GetConnectionErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.GetConnectionErrorMessage);
             }
 
             var connHost = await Connections
@@ -143,7 +151,9 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(Strings.ShutdownValidationMessage);
+            if (!Initialized) throw new InvalidOperationException(ExceptionMessages.ShutdownValidationMessage);
+
+            _logger.LogTrace(LogMessages.ConnectionPool.Shutdown);
 
             await poolLock
                 .WaitAsync()
@@ -159,6 +169,8 @@ namespace CookedRabbit.Core.Pools
             }
 
             poolLock.Release();
+
+            _logger.LogTrace(LogMessages.ConnectionPool.ShutdownComplete);
         }
 
         private async Task CloseConnectionsAsync()

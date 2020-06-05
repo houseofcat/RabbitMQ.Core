@@ -141,7 +141,7 @@ namespace CookedRabbit.Core
 
             foreach (var kvp in LetterMetadata.CustomFields)
             {
-                if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     dict[kvp.Key] = kvp.Value;
                 }
@@ -160,7 +160,7 @@ namespace CookedRabbit.Core
 
             foreach (var kvp in headers)
             {
-                if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     LetterMetadata.CustomFields[kvp.Key] = kvp.Value;
                 }

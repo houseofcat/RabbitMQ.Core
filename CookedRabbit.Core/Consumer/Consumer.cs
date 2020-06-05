@@ -1,6 +1,7 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -56,7 +57,7 @@ namespace CookedRabbit.Core
 
         private byte[] HashKey { get; }
 
-        public Consumer(Config config, string consumerName, byte[] hashKey = null)
+        public Consumer(ILoggerFactory loggerFactory, Config config, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(config, nameof(config));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
@@ -320,7 +321,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return await DataBuffer
@@ -336,7 +337,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             var list = new List<ReceivedData>();
@@ -357,7 +358,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
@@ -375,7 +376,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())

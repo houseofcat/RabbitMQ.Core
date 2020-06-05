@@ -74,7 +74,7 @@ namespace CookedRabbit.Core
                 Compress = Config.PublisherSettings.Compress;
                 Encrypt = Config.PublisherSettings.Encrypt;
 
-                if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(Strings.EncrypConfigErrorMessage);
+                if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(ExceptionMessages.EncrypConfigErrorMessage);
                 HashKey = hashKey;
 
                 await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
@@ -143,7 +143,7 @@ namespace CookedRabbit.Core
 
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.InitializeError);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.InitializeError);
 
             if (priority)
             {
@@ -152,7 +152,7 @@ namespace CookedRabbit.Core
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(Strings.QueueChannelError);
+                    throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
 
                 await PriorityLetterQueue
@@ -167,7 +167,7 @@ namespace CookedRabbit.Core
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(Strings.QueueChannelError);
+                    throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
 
                 await LetterQueue

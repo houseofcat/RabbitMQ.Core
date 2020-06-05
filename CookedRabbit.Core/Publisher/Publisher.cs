@@ -78,7 +78,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             try
             {
@@ -157,7 +157,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             try
             {
@@ -341,7 +341,7 @@ namespace CookedRabbit.Core
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await ReceiptBuffer
@@ -357,7 +357,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return ReceiptBuffer.Reader;
@@ -370,7 +370,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return await ReceiptBuffer
@@ -421,7 +421,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())
@@ -447,7 +447,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in letter.LetterMetadata?.CustomFields)
                 {
-                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -455,7 +455,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForLetter;
+            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForLetter;
 
             return props;
         }
@@ -475,7 +475,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in headers)
                 {
-                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -483,7 +483,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             return props;
         }

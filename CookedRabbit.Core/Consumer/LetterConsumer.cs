@@ -330,7 +330,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return await DataBuffer
@@ -346,7 +346,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             var list = new List<ReceivedLetter>();
@@ -367,7 +367,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
@@ -385,7 +385,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var message in DataBuffer.Reader.ReadAllAsync())

@@ -79,13 +79,13 @@ namespace CookedRabbit.Core
 
         public void ReadHeaders()
         {
-            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Strings.HeaderForObjectType))
+            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Constants.HeaderForObjectType))
             {
-                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Strings.HeaderForObjectType]);
+                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Constants.HeaderForObjectType]);
             }
             else
             {
-                ContentType = Strings.HeaderValueForUnknown;
+                ContentType = Constants.HeaderValueForUnknown;
             }
         }
 
@@ -162,14 +162,14 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
                     { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
 
                     return Letter.Body;
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     return Data;
@@ -188,14 +188,14 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
                     { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     return Encoding.UTF8.GetString(Data.Span);
@@ -218,7 +218,7 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
                     { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
@@ -240,7 +240,7 @@ namespace CookedRabbit.Core
 
                     return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJson(Data.Span))
@@ -281,7 +281,7 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     var types = new List<TResult>();
                     if (Letter == null)
@@ -304,7 +304,7 @@ namespace CookedRabbit.Core
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJsonArray(Data.Span))

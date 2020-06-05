@@ -60,6 +60,7 @@
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCore" Version="1.8.6" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.4" />
     <PackageReference Include="RabbitMQ.Core.Client" Version="1.0.604" />
     <PackageReference Include="System.Threading.Channels" Version="4.7.1" />
   </ItemGroup>

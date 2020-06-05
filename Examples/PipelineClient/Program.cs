@@ -302,7 +302,7 @@ namespace CookedRabbit.Core.PipelineClient
             {
                 state.Message = state.ReceivedData.ContentType switch
                 {
-                    Strings.HeaderValueForLetter => await receivedData
+                    Constants.HeaderValueForLetter => await receivedData
                         .GetTypeFromJsonAsync<Message>()
                         .ConfigureAwait(false),
 
