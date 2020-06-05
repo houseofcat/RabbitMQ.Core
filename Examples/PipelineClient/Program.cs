@@ -336,7 +336,7 @@ namespace CookedRabbit.Core.PipelineClient
                 var failed = await _rabbitService
                     .AutoPublisher
                     .Publisher
-                    .PublishAsync("", _errorQueue, state.ReceivedData.Data.ToArray(), null)
+                    .PublishAsync("", _errorQueue, state.ReceivedData.Data, null)
                     .ConfigureAwait(false);
 
                 string body = null;
