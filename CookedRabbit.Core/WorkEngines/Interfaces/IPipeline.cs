@@ -32,7 +32,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         void Finalize(Action<TOut> finalizeStep = null);
         void Finalize(Func<TOut, Task> finalizeStep = null);
-        Exception PipelineHasFault();
+        Exception GetAnyPipelineStepsFault();
         Task<bool> QueueForExecutionAsync(TIn input);
     }
 }

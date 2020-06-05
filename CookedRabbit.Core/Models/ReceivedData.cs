@@ -189,12 +189,6 @@ namespace CookedRabbit.Core
             switch (ContentType)
             {
                 case Constants.HeaderValueForLetter:
-
-                    if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
-
-                    return Encoding.UTF8.GetString(Letter.Body);
-
                 case Constants.HeaderValueForMessage:
                 default:
 
@@ -238,7 +232,7 @@ namespace CookedRabbit.Core
                         Letter.LetterMetadata.Compressed = false;
                     }
 
-                    return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
+                    return JsonSerializer.Deserialize<TResult>(Letter.Body, jsonSerializerOptions);
 
                 case Constants.HeaderValueForMessage:
                 default:

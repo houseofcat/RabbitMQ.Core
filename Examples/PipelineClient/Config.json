@@ -21,7 +21,7 @@
         "ConnectionPoolName": "PipelineClient",
         "MaxConnections": 5,
         "MaxChannels": 25,
-        "SleepOnErrorInterval": 0
+        "SleepOnErrorInterval": 1000
     },
     "PublisherSettings": {
         "LetterQueueBufferSize": 100,

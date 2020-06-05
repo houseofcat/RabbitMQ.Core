@@ -27,7 +27,7 @@
         <member name="P:CookedRabbit.Core.FactoryOptions.Uri">
             <summary>
             ConnectionFactory (RabbitMQ) Uri connection string.
-            <para>amqp(s) : user : password @ machinename : port / vhost</para>
+            <para>amqp(s)://guest:guest@localhost:5672/vhost</para>
             </summary>
         </member>
         <member name="P:CookedRabbit.Core.FactoryOptions.MaxChannelsPerConnection">
@@ -38,11 +38,6 @@
         <member name="P:CookedRabbit.Core.FactoryOptions.HeartbeatInterval">
             <summary>
             ConnectionFactory (RabbitMQ) timespan (in seconds) between heartbeats. More than two timeouts in a row trigger RabbitMQ AutoRecovery.
-            </summary>
-        </member>
-        <member name="P:CookedRabbit.Core.FactoryOptions.AutoRecovery">
-            <summary>
-            ConnectionFactory (RabbitMQ) autorecovery property.
             </summary>
         </member>
         <member name="P:CookedRabbit.Core.FactoryOptions.TopologyRecovery">
@@ -488,19 +483,21 @@
             <param name="createReceipt"></param>
             <param name="withHeaders"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(System.String)">
+        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(System.String,Microsoft.Extensions.Logging.ILoggerFactory)">
             <summary>
             Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="fileNamePath"></param>
+            <param name="loggerFactory"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config)">
+        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,Microsoft.Extensions.Logging.ILoggerFactory)">
             <summary>
             Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="config"></param>
+            <param name="loggerFactory"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,CookedRabbit.Core.Pools.IChannelPool,CookedRabbit.Core.IAutoPublisher,CookedRabbit.Core.ITopologer)">
+        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,CookedRabbit.Core.Pools.IChannelPool,CookedRabbit.Core.IAutoPublisher,CookedRabbit.Core.ITopologer,Microsoft.Extensions.Logging.ILoggerFactory)">
             <summary>
             Use this constructor with DependencyInjection. Config's values are only used for RabbitService-esque settings and for building of Consumers.
             </summary>
@@ -508,6 +505,7 @@
             <param name="channelPool"></param>
             <param name="autoPublisher"></param>
             <param name="toploger"></param>
+            <param name="loggerFactory"></param>
         </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.GetAsync(System.String)">
             <summary>
@@ -738,16 +736,6 @@
             </summary>
             <typeparam name="TLocalIn"></typeparam>
             <param name="pipeline"></param>
-        </member>
-        <member name="M:CookedRabbit.Core.WorkEngines.Pipeline`2.PipelineHasFault">
-            <summary>
-            Let's you identify if any of your step Tasks are in a faulted state.
-            </summary>
-        </member>
-        <member name="M:CookedRabbit.Core.WorkEngines.Pipeline`2.GetPipelineFaults">
-            <summary>
-            Let's you get any InnerExceptions from any faulted tasks.
-            </summary>
         </member>
     </members>
 </doc>

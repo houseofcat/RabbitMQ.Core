@@ -19,7 +19,7 @@ namespace CookedRabbit.Core.WorkEngines
         private readonly DataflowLinkOptions _linkStepOptions;
         private int? _bufferSize;
 
-        private TimeSpan _healthCheckInterval; // in seconds
+        private TimeSpan _healthCheckInterval;
         private Task _healthCheckTask;
         private string _pipelineName;
 
@@ -28,12 +28,43 @@ namespace CookedRabbit.Core.WorkEngines
         public bool Ready { get; private set; }
         public int StepCount { get; private set; }
 
-        public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null, uint healthCheckInterval = 10, string pipelineName = null)
+        public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
-            _healthCheckInterval = TimeSpan.FromSeconds(healthCheckInterval);
+
+            MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            _bufferSize = bufferSize;
+            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            _executeStepOptions = new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = maxDegreeOfParallelism,
+            };
+
+            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
+        }
+
+        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, int? bufferSize = null)
+        {
+            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+            _healthCheckInterval = healthCheckInterval;
             _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
-            _healthCheckTask = Task.Run(() => PipelineHealthTaskAsync());
+            _healthCheckTask = Task.Run(() => SimplePipelineHealthTaskAsync());
+
+            MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            _bufferSize = bufferSize;
+            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            _executeStepOptions = new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = maxDegreeOfParallelism,
+            };
+
+  
+          _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
+        }
+        public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, int? bufferSize = null)
+        {
+            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+            _healthCheckTask = Task.Run(() => healthCheck);
 
             MaxDegreeOfParallelism = maxDegreeOfParallelism;
             _bufferSize = bufferSize;
@@ -647,10 +678,7 @@ namespace CookedRabbit.Core.WorkEngines
             return false;
         }
 
-        /// <summary>
-        /// Let's you identify if any of your step Tasks are in a faulted state.
-        /// </summary>
-        public Exception PipelineHasFault()
+        public Exception GetAnyPipelineStepsFault()
         {
             foreach (var step in Steps)
             {
@@ -676,7 +704,7 @@ namespace CookedRabbit.Core.WorkEngines
             return options;
         }
 
-        public async Task PipelineHealthTaskAsync()
+        private async Task SimplePipelineHealthTaskAsync()
         {
             await Task.Yield();
 
@@ -684,11 +712,11 @@ namespace CookedRabbit.Core.WorkEngines
             {
                 await Task.Delay(_healthCheckInterval);
 
-                var ex = PipelineHasFault();
-                if (ex != null)
-                { _logger.LogError(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
+                var ex = GetAnyPipelineStepsFault();
+                if (ex != null) // No Steps are Faulted... Hooray!
+                { _logger.LogCritical(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
                 else
-                { _logger.LogInformation(LogMessages.Pipeline.Healthy, _pipelineName); }
+                { _logger.LogDebug(LogMessages.Pipeline.Healthy, _pipelineName); }
             }
         }
     }
