@@ -86,6 +86,28 @@ namespace CookedRabbit.Core
         public static class AutoPublisher
         {
             public readonly static string LetterQueued = "AutoPublisher queued letter [LetterId:{0} InternalId:{1}].";
+            public readonly static string LetterPublished = "AutoPublisher published letter [LetterId:{0} InternalId:{1}]. Listen for receipt to indicate success...";
+        }
+
+        public static class Consumer
+        {
+            public readonly static string StartingConsumer = "Consumer ({0}) starting...";
+            public readonly static string StartedConsumer = "Consumer ({0}) started.";
+            public readonly static string StartingConsumerLoop = "Consumer ({0}) startup loop executing...";
+            public readonly static string Started = "Consumer ({0}) started.";
+            public readonly static string StopConsumer = "Consumer ({0}) stop consuming called...";
+            public readonly static string StoppedConsumer = "Consumer ({0}) stopped consuming.";
+            public readonly static string GettingTransientChannelHost = "Consumer ({0}) getting a transient channel.";
+            public readonly static string GettingChannelHost = "Consumer ({0}) getting a channel.";
+            public readonly static string GettingAckChannelHost = "Consumer ({0}) getting a ackable channel host.";
+            public readonly static string ChannelEstablished = "Consumer ({0}) channel host ({1}) assigned.";
+            public readonly static string ConsumerMessageReceived = "Consumer ({0}) message received (DT:{1}). Adding to buffer...";
+            public readonly static string ConsumerAsyncMessageReceived = "Consumer ({0}) async message received (DT:{1}). Adding to buffer...";
+            public readonly static string ConsumerShutdownEvent = "Consumer ({0}) shutdown event has occurred. Attempting to restart consuming...";
+            public readonly static string ConsumerParallelExecution = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}).";
+            public readonly static string ConsumerParallelExecutionSuccess = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) was successful... acking.";
+            public readonly static string ConsumerParallelExecutionFailure = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) was unsuccesful... nacking.";
+            public readonly static string ConsumerParallelExecutionError = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) triggered an error. Error: {2}";
         }
     }
 }

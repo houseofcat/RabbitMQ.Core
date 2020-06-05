@@ -30,6 +30,8 @@ namespace CookedRabbit.Core
     {
         private ILogger<AutoPublisher> _logger;
         private readonly SemaphoreSlim _pubLock = new SemaphoreSlim(1, 1);
+        private byte[] HashKey { get; set; }
+        private bool _withHeaders;
 
         public Config Config { get; }
         public IPublisher Publisher { get; }
@@ -45,8 +47,6 @@ namespace CookedRabbit.Core
         public bool Compress { get; private set; }
         public bool Encrypt { get; private set; }
         public bool CreatePublishReceipts { get; private set; }
-        private byte[] HashKey { get; set; }
-        private bool _withHeaders;
 
         public AutoPublisher(Config config, bool withHeaders = true)
         {
@@ -142,12 +142,12 @@ namespace CookedRabbit.Core
             { _pubLock.Release(); }
         }
 
-        // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
         public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer.Reader;
 
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
         {
             if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.InitializeError);
+            Guard.AgainstNull(letter, nameof(letter));
 
             if (priority)
             {
@@ -173,6 +173,8 @@ namespace CookedRabbit.Core
                 {
                     throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
+
+                _logger.LogDebug(LogMessages.AutoPublisher.LetterQueued, letter.LetterId, letter.LetterMetadata?.Id);
 
                 await LetterQueue
                     .Writer
@@ -202,7 +204,7 @@ namespace CookedRabbit.Core
                         letter.LetterMetadata.Encrypted = Encrypt;
                     }
 
-                    _logger.LogDebug(LogMessages.AutoPublisher.LetterQueued, letter.LetterId, letter.LetterMetadata?.Id);
+                    _logger.LogDebug(LogMessages.AutoPublisher.LetterPublished, letter.LetterId, letter.LetterMetadata?.Id);
 
                     await Publisher
                         .PublishAsync(letter, CreatePublishReceipts, _withHeaders)

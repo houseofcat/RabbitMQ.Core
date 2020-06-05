@@ -174,7 +174,7 @@ namespace CookedRabbit.Core.Pools
             var flagged = FlaggedChannels.ContainsKey(chanHost.ChannelId) && FlaggedChannels[chanHost.ChannelId];
             if (flagged || !healthy)
             {
-                _logger.LogDebug(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
+                _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
                 // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
                 // is they would like to replace it.
@@ -216,7 +216,7 @@ namespace CookedRabbit.Core.Pools
             var flagged = FlaggedChannels.ContainsKey(chanHost.ChannelId) && FlaggedChannels[chanHost.ChannelId];
             if (flagged || !healthy)
             {
-                _logger.LogDebug(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
+                _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
                 // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
                 // is they would like to replace it.

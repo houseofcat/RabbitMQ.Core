@@ -39,6 +39,9 @@ namespace CookedRabbit.Core
 
     public class Consumer : IConsumer<ReceivedData>
     {
+        private ILogger<Consumer> _logger;
+        private readonly SemaphoreSlim _conLock = new SemaphoreSlim(1, 1);
+
         public Config Config { get; }
 
         public IChannelPool ChannelPool { get; }
@@ -53,15 +56,16 @@ namespace CookedRabbit.Core
 
         private bool AutoAck { get; set; }
         private bool UseTransientChannel { get; set; }
-        private readonly SemaphoreSlim conLock = new SemaphoreSlim(1, 1);
+
 
         private byte[] HashKey { get; }
 
-        public Consumer(ILoggerFactory loggerFactory, Config config, string consumerName, byte[] hashKey = null)
+        public Consumer(Config config, string consumerName, byte[] hashKey = null)
         {
             Guard.AgainstNull(config, nameof(config));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
+            _logger = LogHelper.GetLogger<Consumer>();
             Config = config;
             ChannelPool = new ChannelPool(Config);
             HashKey = hashKey;
@@ -74,6 +78,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNullOrEmpty(consumerName, nameof(consumerName));
 
+            _logger = LogHelper.GetLogger<Consumer>();
             Config = channelPool.Config;
             ChannelPool = channelPool;
             HashKey = hashKey;
@@ -86,6 +91,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNull(channelPool, nameof(channelPool));
             Guard.AgainstNull(consumerSettings, nameof(consumerSettings));
 
+            _logger = LogHelper.GetLogger<Consumer>();
             Config = channelPool.Config;
             ChannelPool = channelPool;
             HashKey = hashKey;
@@ -96,9 +102,11 @@ namespace CookedRabbit.Core
         {
             ConsumerSettings = Config.GetConsumerSettings(ConsumerSettings.ConsumerName);
 
-            await conLock
+            await _conLock
                 .WaitAsync()
                 .ConfigureAwait(false);
+
+            _logger.LogTrace(LogMessages.Consumer.Started, ConsumerSettings.ConsumerName);
 
             try
             {
@@ -119,21 +127,29 @@ namespace CookedRabbit.Core
                         .ConfigureAwait(false);
 
                     bool success;
-                    do { success = await StartConsumingAsync().ConfigureAwait(false); }
+                    do
+                    {
+                        _logger.LogTrace(LogMessages.Consumer.StartingConsumerLoop, ConsumerSettings.ConsumerName);
+                        success = await StartConsumingAsync().ConfigureAwait(false);
+                    }
                     while (!success);
+
+                    _logger.LogDebug(LogMessages.Consumer.Started, ConsumerSettings.ConsumerName);
 
                     Consuming = true;
                     Shutdown = false;
                 }
             }
-            finally { conLock.Release(); }
+            finally { _conLock.Release(); }
         }
 
         public async Task StopConsumerAsync(bool immediate = false)
         {
-            await conLock
+            await _conLock
                 .WaitAsync()
                 .ConfigureAwait(false);
+
+            _logger.LogDebug(LogMessages.Consumer.StopConsumer, ConsumerSettings.ConsumerName);
 
             try
             {
@@ -153,13 +169,21 @@ namespace CookedRabbit.Core
 
                 Shutdown = true;
             }
-            finally { conLock.Release(); }
+            finally { _conLock.Release(); }
+
+            _logger.LogDebug(
+                LogMessages.Consumer.StoppedConsumer,
+                ConsumerSettings.ConsumerName);
         }
 
         private async Task<bool> StartConsumingAsync()
         {
             if (Shutdown)
             { return false; }
+
+            _logger.LogInformation(
+                LogMessages.Consumer.StartingConsumer,
+                ConsumerSettings.ConsumerName);
 
             await SetChannelHostAsync()
                 .ConfigureAwait(false);
@@ -199,6 +223,10 @@ namespace CookedRabbit.Core
                         consumer);
             }
 
+            _logger.LogInformation(
+                LogMessages.Consumer.StartedConsumer,
+                ConsumerSettings.ConsumerName);
+
             return true;
         }
 
@@ -208,24 +236,32 @@ namespace CookedRabbit.Core
             {
                 if (UseTransientChannel)
                 {
+                    _logger.LogTrace(LogMessages.Consumer.GettingTransientChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
                         .GetTransientChannelAsync(!AutoAck)
                         .ConfigureAwait(false);
                 }
                 else if (AutoAck)
                 {
+                    _logger.LogTrace(LogMessages.Consumer.GettingChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
                         .GetChannelAsync()
                         .ConfigureAwait(false);
                 }
                 else
                 {
+                    _logger.LogTrace(LogMessages.Consumer.GettingAckChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
                         .GetAckChannelAsync()
                         .ConfigureAwait(false);
                 }
             }
             catch { ConsumingChannelHost = null; }
+
+            _logger.LogDebug(
+                LogMessages.Consumer.ChannelEstablished,
+                ConsumerSettings.ConsumerName,
+                ConsumingChannelHost.ChannelId);
         }
 
         private EventingBasicConsumer CreateConsumer()
@@ -248,6 +284,11 @@ namespace CookedRabbit.Core
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
         {
             var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
+
+            _logger.LogDebug(
+                LogMessages.Consumer.ConsumerMessageReceived,
+                ConsumerSettings.ConsumerName,
+                bdea.DeliveryTag);
 
             if (await DataBuffer
                     .Writer
@@ -291,6 +332,11 @@ namespace CookedRabbit.Core
         {
             var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
 
+            _logger.LogDebug(
+                LogMessages.Consumer.ConsumerAsyncMessageReceived,
+                ConsumerSettings.ConsumerName,
+                bdea.DeliveryTag);
+
             if (await DataBuffer
                 .Writer
                 .WaitToWriteAsync()
@@ -307,7 +353,14 @@ namespace CookedRabbit.Core
             if (!Shutdown)
             {
                 bool success;
-                do { success = await StartConsumingAsync().ConfigureAwait(false); }
+                do
+                {
+                    _logger.LogWarning(
+                        LogMessages.Consumer.ConsumerShutdownEvent,
+                        ConsumerSettings.ConsumerName);
+
+                    success = await StartConsumingAsync().ConfigureAwait(false);
+                }
                 while (!success);
             }
         }
@@ -477,13 +530,40 @@ namespace CookedRabbit.Core
                                 {
                                     try
                                     {
+                                        _logger.LogDebug(
+                                            LogMessages.Consumer.ConsumerParallelExecution,
+                                            ConsumerSettings.ConsumerName,
+                                            receivedData.DeliveryTag);
+
                                         if (await workAsync(receivedData).ConfigureAwait(false))
-                                        { receivedData.AckMessage(); }
+                                        {
+                                            _logger.LogDebug(
+                                                LogMessages.Consumer.ConsumerParallelExecutionSuccess,
+                                                ConsumerSettings.ConsumerName,
+                                                receivedData.DeliveryTag);
+
+                                            receivedData.AckMessage();
+                                        }
                                         else
-                                        { receivedData.NackMessage(true); }
+                                        {
+                                            _logger.LogWarning(
+                                                LogMessages.Consumer.ConsumerParallelExecutionFailure,
+                                                ConsumerSettings.ConsumerName,
+                                                receivedData.DeliveryTag);
+
+                                            receivedData.NackMessage(true);
+                                        }
                                     }
-                                    catch
-                                    { receivedData.NackMessage(true); }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogError(
+                                                LogMessages.Consumer.ConsumerParallelExecutionFailure,
+                                                ConsumerSettings.ConsumerName,
+                                                receivedData.DeliveryTag,
+                                                ex.Message);
+
+                                        receivedData.NackMessage(true);
+                                    }
                                     finally
                                     { parallelLock.Release(); }
                                 }
