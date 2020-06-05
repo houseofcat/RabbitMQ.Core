@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,8 @@ namespace CookedRabbit.Core
 
     public class Publisher : IPublisher
     {
+        private ILogger<Publisher> _logger;
+
         public Config Config { get; }
         public IChannelPool ChannelPool { get; }
 
@@ -40,6 +43,7 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(config, nameof(config));
 
+            _logger = LogHelper.GetLogger<Publisher>();
             Config = config;
             ChannelPool = new ChannelPool(Config);
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
@@ -49,6 +53,7 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
+            _logger = LogHelper.GetLogger<Publisher>();
             Config = channelPool.Config;
             ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
@@ -89,7 +94,11 @@ namespace CookedRabbit.Core
                     basicProperties: messageProperties,
                     body: payload);
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(LogMessages.Publisher.PublishFailed, $"{exchangeName}->{routingKey}", ex.Message);
+                error = true;
+            }
             finally
             {
                 await ChannelPool
@@ -122,7 +131,15 @@ namespace CookedRabbit.Core
                     basicProperties: BuildProperties(headers, channelHost, priority),
                     body: payload);
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
                 await ChannelPool
@@ -170,7 +187,15 @@ namespace CookedRabbit.Core
 
                 batch.Publish();
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
                 await ChannelPool
@@ -207,7 +232,15 @@ namespace CookedRabbit.Core
 
                 batch.Publish();
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
                 await ChannelPool
@@ -240,7 +273,16 @@ namespace CookedRabbit.Core
                     BuildProperties(letter, chanHost, withHeaders),
                     JsonSerializer.SerializeToUtf8Bytes(letter));
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishLetterFailed,
+                    $"{letter.Envelope.Exchange}->{letter.Envelope.RoutingKey}",
+                    letter.LetterId,
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
                 if (createReceipt)
@@ -278,8 +320,16 @@ namespace CookedRabbit.Core
                         BuildProperties(letters[i], chanHost, withHeaders),
                         JsonSerializer.SerializeToUtf8Bytes(letters[i]));
                 }
-                catch
-                { error = true; }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(
+                        LogMessages.Publisher.PublishLetterFailed,
+                        $"{letters[i].Envelope.Exchange}->{letters[i].Envelope.RoutingKey}",
+                        letters[i].LetterId,
+                        ex.Message);
+
+                    error = true;
+                }
 
                 if (createReceipt)
                 { await CreateReceiptAsync(letters[i], error).ConfigureAwait(false); }
@@ -327,8 +377,14 @@ namespace CookedRabbit.Core
                     publishBatch.Publish();
                 }
             }
-            catch
-            { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishBatchFailed,
+                    ex.Message);
+
+                error = true;
+            }
             finally
             { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
@@ -403,8 +459,15 @@ namespace CookedRabbit.Core
                         BuildProperties(letter, chanHost, withHeaders),
                         letter.Body);
                 }
-                catch
-                { error = true; }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(
+                        LogMessages.Publisher.PublishFailed,
+                        $"{letter.Envelope.Exchange}->{letter.Envelope.RoutingKey}",
+                        ex.Message);
+
+                    error = true;
+                }
 
                 if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
 

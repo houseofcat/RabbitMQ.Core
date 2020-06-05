@@ -75,5 +75,17 @@ namespace CookedRabbit.Core
             public readonly static string Shutdown = "ChannelPool shutdown was called.";
             public readonly static string ShutdownComplete = "ChannelPool shutdown complete.";
         }
+
+        public static class Publisher
+        {
+            public readonly static string PublishFailed = "Publish to route ({0}) failed, flagging channel host. Error: {1}";
+            public readonly static string PublishLetterFailed = "Publish to route ({0}) failed [LetterId: {1}] flagging channel host. Error: {2}";
+            public readonly static string PublishBatchFailed = "Batch publish failed, flagging channel host. Error: {0}";
+        }
+
+        public static class AutoPublisher
+        {
+            public readonly static string LetterQueued = "AutoPublisher queued letter [LetterId:{0} InternalId:{1}].";
+        }
     }
 }

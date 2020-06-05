@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Channels;
@@ -27,6 +28,9 @@ namespace CookedRabbit.Core
 
     public class AutoPublisher : IAutoPublisher
     {
+        private ILogger<AutoPublisher> _logger;
+        private readonly SemaphoreSlim _pubLock = new SemaphoreSlim(1, 1);
+
         public Config Config { get; }
         public IPublisher Publisher { get; }
         private Channel<Letter> LetterQueue { get; set; }
@@ -34,8 +38,6 @@ namespace CookedRabbit.Core
         private Task PublishingTask { get; set; }
         private Task PublishingPriorityTask { get; set; }
         private Task ProcessReceiptsAsync { get; set; }
-
-        private readonly SemaphoreSlim pubLock = new SemaphoreSlim(1, 1);
 
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
@@ -50,6 +52,7 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(config, nameof(config));
 
+            _logger = LogHelper.GetLogger<AutoPublisher>();
             Config = config;
             Publisher = new Publisher(Config);
             _withHeaders = withHeaders;
@@ -59,6 +62,7 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
+            _logger = LogHelper.GetLogger<AutoPublisher>();
             Config = channelPool.Config;
             Publisher = new Publisher(channelPool);
             _withHeaders = withHeaders;
@@ -66,7 +70,7 @@ namespace CookedRabbit.Core
 
         public async Task StartAsync(byte[] hashKey = null)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -96,12 +100,12 @@ namespace CookedRabbit.Core
                 Initialized = true;
                 Shutdown = false;
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
 
         public async Task StopAsync(bool immediately = false)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -135,7 +139,7 @@ namespace CookedRabbit.Core
                 Shutdown = true;
             }
             finally
-            { pubLock.Release(); }
+            { _pubLock.Release(); }
         }
 
         // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
@@ -198,6 +202,8 @@ namespace CookedRabbit.Core
                         letter.LetterMetadata.Encrypted = Encrypt;
                     }
 
+                    _logger.LogDebug(LogMessages.AutoPublisher.LetterQueued, letter.LetterId, letter.LetterMetadata?.Id);
+
                     await Publisher
                         .PublishAsync(letter, CreatePublishReceipts, _withHeaders)
                         .ConfigureAwait(false);
@@ -207,7 +213,7 @@ namespace CookedRabbit.Core
 
         public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -222,12 +228,12 @@ namespace CookedRabbit.Core
                     });
                 }
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
 
         public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -242,7 +248,7 @@ namespace CookedRabbit.Core
                     });
                 }
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
     }
 }

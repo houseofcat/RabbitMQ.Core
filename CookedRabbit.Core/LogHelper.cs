@@ -1,13 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CookedRabbit.Core
 {
-    public static class LogHelper
-    {
+	public static class LogHelper
+	{
 		private static object _syncObj;
 		private static ILoggerFactory _factory = null;
 
@@ -17,7 +14,7 @@ namespace CookedRabbit.Core
 			{
 				if (_factory == null)
 				{
-					lock(_syncObj)
+					lock (_syncObj)
 					{
 						if (_factory == null)
 						{
