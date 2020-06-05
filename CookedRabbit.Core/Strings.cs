@@ -12,6 +12,9 @@ namespace CookedRabbit.Core
         public const string HeaderValueForUnknown = "UNKNOWN";
 
         public const string RangeErrorMessage = "Value for {0} must be between {1} and {2}.";
+
+        // Pipeline
+        public const string DefaultPipelineName = "NoNameProvided";
     }
 
     public static class ExceptionMessages
@@ -140,6 +143,11 @@ namespace CookedRabbit.Core
             public readonly static string ExecutionFailure = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}) was unsuccesful... nacking.";
             public readonly static string ExecutionError = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}) triggered an error. Error: {1}";
             public readonly static string QueueError = "Dataflow execution engine queueing unit of work (LetterId:{0} DT:{1}) triggered an error. Error: {1}";
+        }
+
+        public static class Pipeline
+        {
+            public readonly static string Faulted = "Pipeline ({0}) has faulted.";
         }
     }
 }
