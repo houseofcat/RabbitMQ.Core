@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -57,8 +58,11 @@ namespace CookedRabbit.Core.Service
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="fileNamePath"></param>
-        public RabbitService(string fileNamePath)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(string fileNamePath, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = ConfigReader
                 .ConfigFileReadAsync(fileNamePath)
                 .GetAwaiter()
@@ -73,8 +77,11 @@ namespace CookedRabbit.Core.Service
         /// Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="config"></param>
-        public RabbitService(Config config)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(Config config, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = config;
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
@@ -88,8 +95,11 @@ namespace CookedRabbit.Core.Service
         /// <param name="channelPool"></param>
         /// <param name="autoPublisher"></param>
         /// <param name="toploger"></param>
-        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = config;
             ChannelPool = channelPool;
             AutoPublisher = autoPublisher;

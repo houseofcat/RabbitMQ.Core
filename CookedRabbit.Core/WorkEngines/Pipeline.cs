@@ -21,6 +21,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         private TimeSpan _healthCheckInterval; // in seconds
         private Task _healthCheckTask;
+        private string _pipelineName;
 
         public List<PipelineStep> Steps { get; private set; } = new List<PipelineStep>();
         public int MaxDegreeOfParallelism { get; private set; }
@@ -31,7 +32,8 @@ namespace CookedRabbit.Core.WorkEngines
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
             _healthCheckInterval = TimeSpan.FromSeconds(healthCheckInterval);
-            _healthCheckTask = PipelineHealthTaskAsync(pipelineName ?? Constants.DefaultPipelineName);
+            _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
+            _healthCheckTask = Task.Run(() => PipelineHealthTaskAsync());
 
             MaxDegreeOfParallelism = maxDegreeOfParallelism;
             _bufferSize = bufferSize;
@@ -616,6 +618,8 @@ namespace CookedRabbit.Core.WorkEngines
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
+
+                _logger.LogTrace(LogMessages.Pipeline.Queued, _pipelineName);
                 return await firstStep.SendAsync(input).ConfigureAwait(false);
             }
 
@@ -634,6 +638,7 @@ namespace CookedRabbit.Core.WorkEngines
                 // Await the last step.
                 if (Steps[Steps.Count - 1].Block is ITargetBlock<TIn> lastStep)
                 {
+                    _logger.LogTrace(LogMessages.Pipeline.AwaitsCompletion, _pipelineName);
                     await lastStep.Completion.ConfigureAwait(false);
                     return true;
                 }
@@ -671,19 +676,19 @@ namespace CookedRabbit.Core.WorkEngines
             return options;
         }
 
-        public async Task PipelineHealthTaskAsync(string pipelineName)
+        public async Task PipelineHealthTaskAsync()
         {
             await Task.Yield();
 
             while (true)
             {
-                await Task.Delay(1000);
+                await Task.Delay(_healthCheckInterval);
 
                 var ex = PipelineHasFault();
                 if (ex != null)
-                {
-                    _logger.LogError(ex, LogMessages.Pipeline.Faulted, pipelineName);
-                }
+                { _logger.LogError(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
+                else
+                { _logger.LogInformation(LogMessages.Pipeline.Healthy, _pipelineName); }
             }
         }
     }

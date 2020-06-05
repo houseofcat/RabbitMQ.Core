@@ -147,7 +147,10 @@ namespace CookedRabbit.Core
 
         public static class Pipeline
         {
+            public readonly static string Healthy = "Pipeline ({0}) appears healthy.";
             public readonly static string Faulted = "Pipeline ({0}) has faulted.";
+            public readonly static string AwaitsCompletion = "Pipeline ({0}) awaits completion.";
+            public readonly static string Queued = "Pipeline ({0}) queued item for execution.";
         }
     }
 }
