@@ -446,13 +446,31 @@ namespace CookedRabbit.Core
                 {
                     try
                     {
+                        _logger.LogTrace(
+                            LogMessages.Consumer.ConsumerExecution,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
                         await workAsync(receivedData)
                             .ConfigureAwait(false);
 
+                        _logger.LogDebug(
+                            LogMessages.Consumer.ConsumerExecutionSuccess,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
                         receivedData.AckMessage();
                     }
-                    catch
-                    { receivedData.NackMessage(true); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            LogMessages.Consumer.ConsumerExecutionError,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag,
+                            ex.Message);
+
+                        receivedData.NackMessage(true);
+                    }
                 }
             }
         }
@@ -465,13 +483,40 @@ namespace CookedRabbit.Core
                 {
                     try
                     {
+                        _logger.LogTrace(
+                            LogMessages.Consumer.ConsumerExecution,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
                         if (await workAsync(receivedData).ConfigureAwait(false))
-                        { receivedData.AckMessage(); }
+                        {
+                            _logger.LogDebug(
+                                LogMessages.Consumer.ConsumerExecutionSuccess,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
+
+                            receivedData.AckMessage();
+                        }
                         else
-                        { receivedData.NackMessage(true); }
+                        {
+                            _logger.LogWarning(
+                                LogMessages.Consumer.ConsumerExecutionFailure,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
+
+                            receivedData.NackMessage(true);
+                        }
                     }
-                    catch
-                    { receivedData.NackMessage(true); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            LogMessages.Consumer.ConsumerExecutionError,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag,
+                            ex.Message);
+
+                        receivedData.NackMessage(true);
+                    }
                 }
             }
         }
@@ -484,13 +529,40 @@ namespace CookedRabbit.Core
                 {
                     try
                     {
+                        _logger.LogTrace(
+                            LogMessages.Consumer.ConsumerExecution,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
                         if (await workAsync(receivedData, options).ConfigureAwait(false))
-                        { receivedData.AckMessage(); }
+                        {
+                            _logger.LogDebug(
+                                LogMessages.Consumer.ConsumerExecutionSuccess,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
+
+                            receivedData.AckMessage();
+                        }
                         else
-                        { receivedData.NackMessage(true); }
+                        {
+                            _logger.LogWarning(
+                                LogMessages.Consumer.ConsumerExecutionFailure,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
+
+                            receivedData.NackMessage(true);
+                        }
                     }
-                    catch
-                    { receivedData.NackMessage(true); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            LogMessages.Consumer.ConsumerExecutionError,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag,
+                            ex.Message);
+
+                        receivedData.NackMessage(true);
+                    }
                 }
             }
         }
@@ -557,10 +629,10 @@ namespace CookedRabbit.Core
                                     catch (Exception ex)
                                     {
                                         _logger.LogError(
-                                                LogMessages.Consumer.ConsumerParallelExecutionFailure,
-                                                ConsumerSettings.ConsumerName,
-                                                receivedData.DeliveryTag,
-                                                ex.Message);
+                                            LogMessages.Consumer.ConsumerParallelExecutionFailure,
+                                            ConsumerSettings.ConsumerName,
+                                            receivedData.DeliveryTag,
+                                            ex.Message);
 
                                         receivedData.NackMessage(true);
                                     }
@@ -604,6 +676,11 @@ namespace CookedRabbit.Core
                         {
                             if (receivedData != null)
                             {
+                                _logger.LogDebug(
+                                    LogMessages.Consumer.ConsumerDataflowQueueing,
+                                    ConsumerSettings.ConsumerName,
+                                    receivedData.DeliveryTag);
+
                                 await dataflowEngine
                                     .EnqueueWorkAsync(receivedData)
                                     .ConfigureAwait(false);
@@ -654,15 +731,30 @@ namespace CookedRabbit.Core
 
                                 try
                                 {
+                                    _logger.LogDebug(
+                                        LogMessages.Consumer.ConsumerPipelineQueueing,
+                                        ConsumerSettings.ConsumerName,
+                                        receivedData.DeliveryTag);
+
                                     await pipeline
                                         .QueueForExecutionAsync(receivedData)
                                         .ConfigureAwait(false);
 
                                     if (waitForCompletion)
                                     {
+                                        _logger.LogTrace(
+                                            LogMessages.Consumer.ConsumerPipelineWaiting,
+                                            ConsumerSettings.ConsumerName,
+                                            receivedData.DeliveryTag);
+
                                         await receivedData
                                             .Completion()
                                             .ConfigureAwait(false);
+
+                                        _logger.LogTrace(
+                                            LogMessages.Consumer.ConsumerPipelineWaitingDone,
+                                            ConsumerSettings.ConsumerName,
+                                            receivedData.DeliveryTag);
                                     }
                                 }
                                 finally
@@ -674,10 +766,15 @@ namespace CookedRabbit.Core
                             .Delay(ConsumerSettings.SleepOnIdleInterval)
                             .ConfigureAwait(false);
                     }
-                    catch { }
+                    catch (Exception ex) 
+                    {
+                        _logger.LogError(
+                            LogMessages.Consumer.ConsumerPipelineError,
+                            ConsumerSettings.ConsumerName,
+                            ex.Message);
+                    }
                 }
             }
-            catch { }
             finally { pipeExecLock.Release(); }
         }
     }

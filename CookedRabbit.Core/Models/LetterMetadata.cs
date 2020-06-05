@@ -8,6 +8,6 @@ namespace CookedRabbit.Core
         public bool Encrypted { get; set; }
         public bool Compressed { get; set; }
 
-        public IDictionary<string, object> CustomFields = new Dictionary<string, object>();
+        public IDictionary<string, object> CustomFields { get; set; }  = new Dictionary<string, object>();
     }
 }

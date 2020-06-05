@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -6,14 +7,16 @@ namespace CookedRabbit.Core.WorkEngines
 {
     public class MessageDataflowEngine
     {
-        private ActionBlock<ReceivedMessage> Block { get; }
-
-        private Func<ReceivedMessage, Task<bool>> WorkBodyAsync { get; }
+        private ILogger<MessageDataflowEngine> _logger;
+        private ActionBlock<ReceivedMessage> _block;
+        private Func<ReceivedMessage, Task<bool>> _workBodyAsync;
 
         public MessageDataflowEngine(Func<ReceivedMessage, Task<bool>> workBodyAsync, int maxDegreeOfParallelism)
         {
-            WorkBodyAsync = workBodyAsync ?? throw new ArgumentNullException(nameof(workBodyAsync));
-            Block = new ActionBlock<ReceivedMessage>(
+            _logger = LogHelper.GetLogger<MessageDataflowEngine>();
+
+            _workBodyAsync = workBodyAsync ?? throw new ArgumentNullException(nameof(workBodyAsync));
+            _block = new ActionBlock<ReceivedMessage>(
                 ExecuteWorkBodyAsync,
                 new ExecutionDataflowBlockOptions
                 {
@@ -25,21 +28,49 @@ namespace CookedRabbit.Core.WorkEngines
         {
             try
             {
-                if (await WorkBodyAsync(receivedMessage).ConfigureAwait(false))
-                { receivedMessage.AckMessage(); }
+                _logger.LogDebug(
+                    LogMessages.DataflowEngine.Execution,
+                    receivedMessage.DeliveryTag);
+
+                if (await _workBodyAsync(receivedMessage).ConfigureAwait(false))
+                {
+                    _logger.LogDebug(
+                        LogMessages.DataflowEngine.ExecutionSuccess,
+                        receivedMessage.DeliveryTag);
+
+                    receivedMessage.AckMessage();
+                }
                 else
-                { receivedMessage.NackMessage(true); }
+                {
+                    _logger.LogWarning(
+                        LogMessages.DataflowEngine.ExecutionFailure,
+                        receivedMessage.DeliveryTag);
+
+                    receivedMessage.NackMessage(true);
+                }
             }
-            catch
-            { receivedMessage.NackMessage(true); }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    LogMessages.DataflowEngine.ExecutionError,
+                    receivedMessage.DeliveryTag,
+                    ex.Message);
+
+                receivedMessage.NackMessage(true);
+            }
         }
 
-        public async ValueTask EnqueueWorkAsync(ReceivedMessage receivedMessage)
+        public async ValueTask EnqueueWorkAsync(ReceivedMessage receivedLetter)
         {
             try
-            { await Block.SendAsync(receivedMessage).ConfigureAwait(false); }
-            catch
-            { }
+            { await _block.SendAsync(receivedLetter).ConfigureAwait(false); }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    LogMessages.DataflowEngine.ExecutionError,
+                    receivedLetter.DeliveryTag,
+                    ex.Message);
+            }
         }
     }
 }

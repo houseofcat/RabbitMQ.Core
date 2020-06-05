@@ -104,10 +104,42 @@ namespace CookedRabbit.Core
             public readonly static string ConsumerMessageReceived = "Consumer ({0}) message received (DT:{1}). Adding to buffer...";
             public readonly static string ConsumerAsyncMessageReceived = "Consumer ({0}) async message received (DT:{1}). Adding to buffer...";
             public readonly static string ConsumerShutdownEvent = "Consumer ({0}) shutdown event has occurred. Attempting to restart consuming...";
+
+            public readonly static string ConsumerExecution = "Consumer ({0}) execution engine executing unit of work (ReceivedData:DT:{1}).";
+            public readonly static string ConsumerExecutionSuccess = "Consumer ({0}) execution engine executing unit of work (ReceivedData:DT:{1}) was successful... acking.";
+            public readonly static string ConsumerExecutionFailure = "Consumer ({0}) execution engine executing unit of work (ReceivedData:DT:{1}) was unsuccesful... nacking.";
+            public readonly static string ConsumerExecutionError = "Consumer ({0}) execution engine executing unit of work (ReceivedData:DT:{1}) triggered an error. Error: {2}";
+
             public readonly static string ConsumerParallelExecution = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}).";
             public readonly static string ConsumerParallelExecutionSuccess = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) was successful... acking.";
             public readonly static string ConsumerParallelExecutionFailure = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) was unsuccesful... nacking.";
             public readonly static string ConsumerParallelExecutionError = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) triggered an error. Error: {2}";
+
+            public readonly static string ConsumerDataflowQueueing = "Consumer ({0}) dataflow engine queueing unit of work (ReceivedData:DT:{1}).";
+            public readonly static string ConsumerPipelineQueueing = "Consumer ({0}) pipeline engine queueing unit of work (ReceivedData:DT:{1}).";
+            public readonly static string ConsumerPipelineWaiting = "Consumer ({0}) pipeline engine waiting on completion of unit of work (ReceivedData:DT:{1})...";
+            public readonly static string ConsumerPipelineWaitingDone = "Consumer ({0}) pipeline engine waiting on completed unit of work (ReceivedData:DT:{1}).";
+
+            public readonly static string ConsumerPipelineError = "Consumer ({0}) pipeline engine encountered an error. Error: {1}";
+        }
+
+        public static class DataflowEngine
+        {
+            public readonly static string Execution = "Dataflow execution engine executing unit of work (DT:{0}).";
+            public readonly static string ExecutionSuccess = "Dataflow execution engine executing unit of work (DT:{0}) was successful... acking.";
+            public readonly static string ExecutionFailure = "Dataflow execution engine executing unit of work (DT:{0}) was unsuccesful... nacking.";
+            public readonly static string ExecutionError = "Dataflow execution engine executing unit of work (DT:{0}) triggered an error. Error: {1}";
+            public readonly static string QueueError = "Dataflow execution engine queueing unit of work (DT:{0}) triggered an error. Error: {1}";
+
+        }
+
+        public static class LetterDataflowEngine
+        {
+            public readonly static string Execution = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}).";
+            public readonly static string ExecutionSuccess = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}) was successful... acking.";
+            public readonly static string ExecutionFailure = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}) was unsuccesful... nacking.";
+            public readonly static string ExecutionError = "Dataflow execution engine executing unit of work (LetterId:{0} DT:{1}) triggered an error. Error: {1}";
+            public readonly static string QueueError = "Dataflow execution engine queueing unit of work (LetterId:{0} DT:{1}) triggered an error. Error: {1}";
         }
     }
 }
