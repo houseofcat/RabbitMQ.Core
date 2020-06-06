@@ -9,9 +9,9 @@ namespace CookedRabbit.Core
 {
     public interface ITopologer
     {
-        IChannelPool ChannelPool { get; }
         Config Config { get; }
 
+        Task InitializeAsync();
         Task<bool> BindExchangeToExchangeAsync(string childExchangeName, string parentExchangeName, string routingKey = "", IDictionary<string, object> args = null);
         Task<bool> BindQueueToExchangeAsync(string queueName, string exchangeName, string routingKey = "", IDictionary<string, object> args = null);
         Task<bool> CreateExchangeAsync(string exchangeName, string exchangeType, bool durable = true, bool autoDelete = false, IDictionary<string, object> args = null);
@@ -26,15 +26,15 @@ namespace CookedRabbit.Core
 
     public class Topologer : ITopologer
     {
+        private readonly IChannelPool _channelPool;
         public Config Config { get; }
-        public IChannelPool ChannelPool { get; }
 
         public Topologer(Config config)
         {
             Guard.AgainstNull(config, nameof(config));
 
             Config = config;
-            ChannelPool = new ChannelPool(Config);
+            _channelPool = new ChannelPool(Config);
         }
 
         public Topologer(IChannelPool channelPool)
@@ -42,7 +42,12 @@ namespace CookedRabbit.Core
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
             Config = channelPool.Config;
-            ChannelPool = channelPool;
+            _channelPool = channelPool;
+        }
+
+        public async Task InitializeAsync()
+        {
+            await _channelPool.InitializeAsync();
         }
 
         public async Task CreateTopologyAsync(TopologyConfig topologyConfig)
@@ -212,7 +217,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(queueName, nameof(queueName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -224,7 +229,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -245,7 +250,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(queueName, nameof(queueName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -255,7 +260,7 @@ namespace CookedRabbit.Core
                     ifEmpty: onlyIfEmpty);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -279,7 +284,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(queueName, nameof(queueName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -290,7 +295,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -314,7 +319,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(queueName, nameof(queueName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -325,7 +330,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -350,7 +355,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(exchangeName, nameof(exchangeName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -362,7 +367,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -379,7 +384,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(exchangeName, nameof(exchangeName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -388,7 +393,7 @@ namespace CookedRabbit.Core
                     ifUnused: onlyIfUnused);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -412,7 +417,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(childExchangeName, nameof(childExchangeName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -423,7 +428,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }
@@ -447,7 +452,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(childExchangeName, nameof(childExchangeName));
 
             var error = false;
-            var chanHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var chanHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -458,7 +463,7 @@ namespace CookedRabbit.Core
                     arguments: args);
             }
             catch { error = true; }
-            finally { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            finally { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
 
             return error;
         }

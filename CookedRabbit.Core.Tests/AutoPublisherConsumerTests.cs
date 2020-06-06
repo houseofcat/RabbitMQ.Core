@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -20,11 +21,12 @@ namespace CookedRabbit.Core.Tests
             this.output = output;
             config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
 
-            topologer = new Topologer(config);
-            topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
+            var channelPool = new ChannelPool(config);
+            topologer = new Topologer(channelPool);
+            topologer.InitializeAsync().GetAwaiter().GetResult();
 
-            autoPublisher = new AutoPublisher(topologer.ChannelPool);
-            consumer = new MessageConsumer(topologer.ChannelPool, "TestAutoPublisherConsumerName");
+            autoPublisher = new AutoPublisher(channelPool);
+            consumer = new MessageConsumer(channelPool, "TestAutoPublisherConsumerName");
         }
 
         [Fact]

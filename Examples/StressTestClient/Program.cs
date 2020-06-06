@@ -1,4 +1,5 @@
-﻿using CookedRabbit.Core.Utils;
+﻿using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Utils;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -58,17 +59,16 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         {
             var sw = Stopwatch.StartNew();
             config = await ConfigReader.ConfigFileReadAsync("Config.json");
-            topologer = new Topologer(config);
 
-            await topologer
-                .ChannelPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
+            var channelPool = new ChannelPool(config);
+            await channelPool.InitializeAsync();
 
-            apub1 = new AutoPublisher(topologer.ChannelPool);
-            apub2 = new AutoPublisher(topologer.ChannelPool);
-            apub3 = new AutoPublisher(topologer.ChannelPool);
-            apub4 = new AutoPublisher(topologer.ChannelPool);
+            topologer = new Topologer(channelPool);
+
+            apub1 = new AutoPublisher(channelPool);
+            apub2 = new AutoPublisher(channelPool);
+            apub3 = new AutoPublisher(channelPool);
+            apub4 = new AutoPublisher(channelPool);
 
             await Console.Out.WriteLineAsync("- Creating stress test queues!").ConfigureAwait(false);
 
@@ -91,10 +91,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await apub3.StartAsync().ConfigureAwait(false);
             await apub4.StartAsync().ConfigureAwait(false);
 
-            con1 = new MessageConsumer(topologer.ChannelPool, "Consumer1");
-            con2 = new MessageConsumer(topologer.ChannelPool, "Consumer2");
-            con3 = new MessageConsumer(topologer.ChannelPool, "Consumer3");
-            con4 = new MessageConsumer(topologer.ChannelPool, "Consumer4");
+            con1 = new MessageConsumer(channelPool, "Consumer1");
+            con2 = new MessageConsumer(channelPool, "Consumer2");
+            con3 = new MessageConsumer(channelPool, "Consumer3");
+            con4 = new MessageConsumer(channelPool, "Consumer4");
             sw.Stop();
 
             await Console

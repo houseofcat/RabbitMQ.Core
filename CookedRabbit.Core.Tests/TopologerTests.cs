@@ -26,7 +26,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             Assert.NotNull(top);
         }
@@ -64,7 +64,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
             var error = await top.CreateQueueAsync("TestQueueTest", false, false, false, null).ConfigureAwait(false);
             Assert.False(error);
         }
@@ -76,7 +76,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateQueueAsync("TestQueueTest", false, false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -92,7 +92,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateExchangeAsync("TestExchangeTest", "direct", false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -105,7 +105,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateExchangeAsync("TestExchangeTest", "direct", false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -121,7 +121,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateExchangeAsync("TestExchangeTest", "direct", false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -146,7 +146,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateExchangeAsync("TestExchangeTest", "direct", false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -171,7 +171,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var top = new Topologer(config);
-            await top.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await top.InitializeAsync().ConfigureAwait(false);
 
             var error = await top.CreateExchangeAsync("TestExchangeTest", "direct", false, false, null).ConfigureAwait(false);
             Assert.False(error);
@@ -199,7 +199,6 @@ namespace CookedRabbit.Core.Tests
             var top = new Topologer(config);
 
             await top
-                .ChannelPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
 
@@ -215,7 +214,6 @@ namespace CookedRabbit.Core.Tests
             var top = new Topologer(config);
 
             await top
-                .ChannelPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
 

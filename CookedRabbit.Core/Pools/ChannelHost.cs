@@ -7,10 +7,10 @@ namespace CookedRabbit.Core.Pools
     public interface IChannelHost
     {
         bool Ackable { get; }
-        IModel Channel { get; set; }
-        ulong ChannelId { get; set; }
+        IModel Channel { get; }
+        ulong ChannelId { get; }
         bool Closed { get; }
-        ulong ConnectionId { get; set; }
+        ulong ConnectionId { get; }
 
         void Close();
         Task<bool> HealthyAsync();

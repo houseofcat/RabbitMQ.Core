@@ -19,10 +19,10 @@ namespace CookedRabbit.Core
         Task InitializeAsync();
 
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
-        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, bool mandatory = false, IBasicProperties messageProperties = null);
-        Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
-        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
-        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
+        Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
 
@@ -68,7 +68,7 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishAsync(
             string exchangeName,
             string routingKey,
-            byte[] payload,
+            ReadOnlyMemory<byte> payload,
             bool mandatory = false,
             IBasicProperties messageProperties = null)
         {
@@ -117,7 +117,7 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishAsync(
             string exchangeName,
             string routingKey,
-            byte[] payload,
+            ReadOnlyMemory<byte> payload,
             IDictionary<string, object> headers = null,
             byte? priority = 0,
             bool mandatory = false)
@@ -158,7 +158,7 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
             string routingKey,
-            IList<byte[]> payloads,
+            IList<ReadOnlyMemory<byte>> payloads,
             bool mandatory = false,
             IBasicProperties messageProperties = null)
         {
@@ -215,7 +215,7 @@ namespace CookedRabbit.Core
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
             string routingKey,
-            IList<byte[]> payloads,
+            IList<ReadOnlyMemory<byte>> payloads,
             IDictionary<string, object> headers = null,
             byte? priority = 0,
             bool mandatory = false)
