@@ -44,7 +44,7 @@ namespace CookedRabbit.Core.Tests
             Assert.Equal(pipeline.StepCount, 5);
         }
 
-        private WorkState DeserializeStep(ReceivedLetter receivedLetter)
+        private static WorkState DeserializeStep(ReceivedLetter receivedLetter)
         {
             var state = new WorkState();
             try
@@ -61,7 +61,7 @@ namespace CookedRabbit.Core.Tests
             return state;
         }
 
-        private async Task<WorkState> ProcessStepAsync(WorkState state)
+        private static async Task<WorkState> ProcessStepAsync(WorkState state)
         {
             await Console
                 .Out

@@ -17,11 +17,10 @@ namespace CookedRabbit.Core.WorkEngines
         private readonly SemaphoreSlim _pipeLock = new SemaphoreSlim(1, 1);
         private readonly ExecutionDataflowBlockOptions _executeStepOptions;
         private readonly DataflowLinkOptions _linkStepOptions;
-        private int? _bufferSize;
-
-        private TimeSpan _healthCheckInterval;
-        private Task _healthCheckTask;
-        private string _pipelineName;
+        private readonly int? _bufferSize;
+        private readonly TimeSpan _healthCheckInterval;
+        private readonly Task _healthCheckTask;
+        private readonly string _pipelineName;
 
         public List<PipelineStep> Steps { get; private set; } = new List<PipelineStep>();
         public int MaxDegreeOfParallelism { get; private set; }
@@ -61,6 +60,7 @@ namespace CookedRabbit.Core.WorkEngines
 
             _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
+        
         public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, int? bufferSize = null)
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
@@ -709,7 +709,7 @@ namespace CookedRabbit.Core.WorkEngines
 
             while (true)
             {
-                await Task.Delay(_healthCheckInterval);
+                await Task.Delay(_healthCheckInterval).ConfigureAwait(false);
 
                 var ex = GetAnyPipelineStepsFault();
                 if (ex != null) // No Steps are Faulted... Hooray!

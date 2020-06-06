@@ -7,9 +7,9 @@ namespace CookedRabbit.Core.WorkEngines
 {
     public class DataflowEngine
     {
-        private ILogger<DataflowEngine> _logger;
-        private ActionBlock<ReceivedData> _block;
-        private Func<ReceivedData, Task<bool>> _workBodyAsync;
+        private readonly ILogger<DataflowEngine> _logger;
+        private readonly ActionBlock<ReceivedData> _block;
+        private readonly Func<ReceivedData, Task<bool>> _workBodyAsync;
 
         public DataflowEngine(Func<ReceivedData, Task<bool>> workBodyAsync, int maxDegreeOfParallelism)
         {
