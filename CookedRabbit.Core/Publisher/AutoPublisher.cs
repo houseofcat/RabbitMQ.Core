@@ -28,18 +28,19 @@ namespace CookedRabbit.Core
 
     public class AutoPublisher : IAutoPublisher
     {
-        private ILogger<AutoPublisher> _logger;
+        private readonly ILogger<AutoPublisher> _logger;
         private readonly SemaphoreSlim _pubLock = new SemaphoreSlim(1, 1);
-        private byte[] HashKey { get; set; }
-        private bool _withHeaders;
+        private readonly bool _withHeaders;
+
+        private Channel<Letter> _letterQueue;
+        private Channel<Letter> _priorityLetterQueue;
+        private byte[] _hashKey;
+        private Task _publishingTask;
+        private Task _publishingPriorityTask;
+        private Task _processReceiptsAsync;
 
         public Config Config { get; }
         public IPublisher Publisher { get; }
-        private Channel<Letter> LetterQueue { get; set; }
-        private Channel<Letter> PriorityLetterQueue { get; set; }
-        private Task PublishingTask { get; set; }
-        private Task PublishingPriorityTask { get; set; }
-        private Task ProcessReceiptsAsync { get; set; }
 
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
@@ -79,23 +80,23 @@ namespace CookedRabbit.Core
                 Encrypt = Config.PublisherSettings.Encrypt;
 
                 if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(ExceptionMessages.EncrypConfigErrorMessage);
-                HashKey = hashKey;
+                _hashKey = hashKey;
 
                 await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
 
-                LetterQueue = Channel.CreateBounded<Letter>(
+                _letterQueue = Channel.CreateBounded<Letter>(
                     new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)
                     {
                         FullMode = Config.PublisherSettings.BehaviorWhenFull
                     });
-                PriorityLetterQueue = Channel.CreateBounded<Letter>(
+                _priorityLetterQueue = Channel.CreateBounded<Letter>(
                     new BoundedChannelOptions(Config.PublisherSettings.PriorityLetterQueueBufferSize)
                     {
                         FullMode = Config.PublisherSettings.BehaviorWhenFull
                     });
 
-                PublishingTask = Task.Run(() => ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
-                PublishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
+                _publishingTask = Task.Run(() => ProcessDeliveriesAsync(_letterQueue.Reader).ConfigureAwait(false));
+                _publishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(_priorityLetterQueue.Reader).ConfigureAwait(false));
 
                 Initialized = true;
                 Shutdown = false;
@@ -109,28 +110,28 @@ namespace CookedRabbit.Core
 
             try
             {
-                LetterQueue.Writer.Complete();
-                PriorityLetterQueue.Writer.Complete();
+                _letterQueue.Writer.Complete();
+                _priorityLetterQueue.Writer.Complete();
                 Publisher.ReceiptBuffer.Writer.Complete();
 
                 if (!immediately)
                 {
-                    await LetterQueue
+                    await _letterQueue
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
 
-                    await PriorityLetterQueue
+                    await _priorityLetterQueue
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
 
-                    while (!PublishingTask.IsCompleted)
+                    while (!_publishingTask.IsCompleted)
                     {
                         await Task.Delay(10).ConfigureAwait(false);
                     }
 
-                    while (!PublishingPriorityTask.IsCompleted)
+                    while (!_publishingPriorityTask.IsCompleted)
                     {
                         await Task.Delay(10).ConfigureAwait(false);
                     }
@@ -151,7 +152,7 @@ namespace CookedRabbit.Core
 
             if (priority)
             {
-                if (!await PriorityLetterQueue
+                if (!await _priorityLetterQueue
                      .Writer
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
@@ -159,14 +160,14 @@ namespace CookedRabbit.Core
                     throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
 
-                await PriorityLetterQueue
+                await _priorityLetterQueue
                     .Writer
                     .WriteAsync(letter)
                     .ConfigureAwait(false);
             }
             else
             {
-                if (!await LetterQueue
+                if (!await _letterQueue
                      .Writer
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
@@ -176,7 +177,7 @@ namespace CookedRabbit.Core
 
                 _logger.LogDebug(LogMessages.AutoPublisher.LetterQueued, letter.LetterId, letter.LetterMetadata?.Id);
 
-                await LetterQueue
+                await _letterQueue
                     .Writer
                     .WriteAsync(letter)
                     .ConfigureAwait(false);
@@ -198,9 +199,9 @@ namespace CookedRabbit.Core
                         letter.LetterMetadata.Compressed = Compress;
                     }
 
-                    if (Encrypt && (HashKey != null || HashKey.Length == 0))
+                    if (Encrypt && (_hashKey != null || _hashKey.Length == 0))
                     {
-                        letter.Body = AesEncrypt.Encrypt(letter.Body, HashKey);
+                        letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
                         letter.LetterMetadata.Encrypted = Encrypt;
                     }
 
@@ -219,9 +220,9 @@ namespace CookedRabbit.Core
 
             try
             {
-                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+                if (_processReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    ProcessReceiptsAsync = Task.Run(async () =>
+                    _processReceiptsAsync = Task.Run(async () =>
                     {
                         await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
                         {
@@ -239,9 +240,9 @@ namespace CookedRabbit.Core
 
             try
             {
-                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+                if (_processReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    ProcessReceiptsAsync = Task.Run(async () =>
+                    _processReceiptsAsync = Task.Run(async () =>
                     {
                         await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
                         {

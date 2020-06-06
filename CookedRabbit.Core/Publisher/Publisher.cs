@@ -18,14 +18,15 @@ namespace CookedRabbit.Core
         Channel<PublishReceipt> ReceiptBuffer { get; }
 
         ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
+
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
-        Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<byte[]> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
+
         IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
         ValueTask<PublishReceipt> ReadPublishReceiptAsync();
     }
@@ -433,48 +434,6 @@ namespace CookedRabbit.Core
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
-        /// </summary>
-        /// <param name="letters"></param>
-        /// <param name="createReceipt"></param>
-        /// <param name="withHeaders"></param>
-        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true)
-        {
-            var error = false;
-            var chanHost = await ChannelPool
-                .GetChannelAsync()
-                .ConfigureAwait(false);
-
-            await foreach (var letter in letters)
-            {
-                try
-                {
-                    chanHost.Channel.BasicPublish(
-                        letter.Envelope.Exchange,
-                        letter.Envelope.RoutingKey,
-                        letter.Envelope.RoutingOptions.Mandatory,
-                        BuildProperties(letter, chanHost, withHeaders),
-                        letter.Body);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(
-                        LogMessages.Publisher.PublishFailed,
-                        $"{letter.Envelope.Exchange}->{letter.Envelope.RoutingKey}",
-                        ex.Message);
-
-                    error = true;
-                }
-
-                if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
-
-                if (error) { break; }
-            }
-
-            await ChannelPool.ReturnChannelAsync(chanHost, error);
         }
 
         public async IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync()

@@ -12,8 +12,6 @@ namespace CookedRabbit.Core.Pools
     public interface IConnectionPool
     {
         Config Config { get; }
-        ConnectionFactory ConnectionFactory { get; set; }
-        ulong CurrentConnectionId { get; }
         bool Initialized { get; }
         bool Shutdown { get; }
 
@@ -25,17 +23,14 @@ namespace CookedRabbit.Core.Pools
 
     public class ConnectionPool : IConnectionPool
     {
-        private ILogger<ConnectionPool> _logger;
-
-        public ConnectionFactory ConnectionFactory { get; set; }
-
-        public ulong CurrentConnectionId { get; private set; }
-        private Channel<IConnectionHost> Connections { get; set; }
+        private readonly ILogger<ConnectionPool> _logger;
+        private readonly Channel<IConnectionHost> _connections;
+        private readonly ConnectionFactory _connectionFactory;
+        private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
+        private ulong _currentConnectionId { get; set; }
 
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
-        private readonly SemaphoreSlim poolLock = new SemaphoreSlim(1, 1);
-
         public Config Config { get; }
 
         public ConnectionPool(Config config)
@@ -45,8 +40,8 @@ namespace CookedRabbit.Core.Pools
 
             _logger = LogHelper.GetLogger<ConnectionPool>();
 
-            Connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
-            ConnectionFactory = CreateConnectionFactory();
+            _connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
+            _connectionFactory = CreateConnectionFactory();
         }
 
         private ConnectionFactory CreateConnectionFactory()
@@ -83,7 +78,7 @@ namespace CookedRabbit.Core.Pools
         {
             _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
 
-            await poolLock
+            await _poolLock
                 .WaitAsync()
                 .ConfigureAwait(false);
 
@@ -99,7 +94,7 @@ namespace CookedRabbit.Core.Pools
                 }
             }
             finally
-            { poolLock.Release(); }
+            { _poolLock.Release(); }
 
             _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
         }
@@ -111,10 +106,10 @@ namespace CookedRabbit.Core.Pools
                 var connectionName = $"{Config.PoolSettings.ConnectionPoolName}:{i}";
                 try
                 {
-                    var connection = ConnectionFactory.CreateConnection();
-                    await Connections
+                    var connection = _connectionFactory.CreateConnection();
+                    await _connections
                         .Writer
-                        .WriteAsync(new ConnectionHost(CurrentConnectionId++, connection));
+                        .WriteAsync(new ConnectionHost(_currentConnectionId++, connection));
                 }
                 catch (Exception ex)
                 {
@@ -128,7 +123,7 @@ namespace CookedRabbit.Core.Pools
         public async ValueTask<IConnectionHost> GetConnectionAsync()
         {
             if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ValidationMessage);
-            if (!await Connections
+            if (!await _connections
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -136,12 +131,12 @@ namespace CookedRabbit.Core.Pools
                 throw new InvalidOperationException(ExceptionMessages.GetConnectionErrorMessage);
             }
 
-            var connHost = await Connections
+            var connHost = await _connections
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
 
-            await Connections
+            await _connections
                 .Writer
                 .WriteAsync(connHost)
                 .ConfigureAwait(false);
@@ -155,7 +150,7 @@ namespace CookedRabbit.Core.Pools
 
             _logger.LogTrace(LogMessages.ConnectionPool.Shutdown);
 
-            await poolLock
+            await _poolLock
                 .WaitAsync()
                 .ConfigureAwait(false);
 
@@ -168,17 +163,17 @@ namespace CookedRabbit.Core.Pools
                 Initialized = false;
             }
 
-            poolLock.Release();
+            _poolLock.Release();
 
             _logger.LogTrace(LogMessages.ConnectionPool.ShutdownComplete);
         }
 
         private async Task CloseConnectionsAsync()
         {
-            Connections.Writer.Complete();
+            _connections.Writer.Complete();
 
-            await Connections.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (Connections.Reader.TryRead(out IConnectionHost connHost))
+            await _connections.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (_connections.Reader.TryRead(out IConnectionHost connHost))
             {
                 try
                 { connHost.Close(); }
