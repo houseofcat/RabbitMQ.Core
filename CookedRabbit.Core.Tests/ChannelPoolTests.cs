@@ -41,7 +41,6 @@ namespace CookedRabbit.Core.Tests
                 .InitializeAsync()
                 .ConfigureAwait(false);
 
-            Assert.True(chanPool.ConnectionPool.CurrentConnectionId > 0);
             Assert.True(chanPool.CurrentChannelId > 0);
         }
 

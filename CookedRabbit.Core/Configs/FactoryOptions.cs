@@ -6,7 +6,7 @@ namespace CookedRabbit.Core
     {
         /// <summary>
         /// ConnectionFactory (RabbitMQ) Uri connection string.
-        /// <para>amqp(s) : user : password @ machinename : port / vhost</para>
+        /// <para>amqp(s)://guest:guest@localhost:5672/vhost</para>
         /// </summary>
         public Uri Uri { get; set; } = new Uri("amqp://guest:guest@localhost:5672/");
 
@@ -19,11 +19,6 @@ namespace CookedRabbit.Core
         /// ConnectionFactory (RabbitMQ) timespan (in seconds) between heartbeats. More than two timeouts in a row trigger RabbitMQ AutoRecovery.
         /// </summary>
         public ushort HeartbeatInterval { get; set; } = 6;
-
-        /// <summary>
-        /// ConnectionFactory (RabbitMQ) autorecovery property.
-        /// </summary>
-        public bool AutoRecovery { get; set; } = true;
 
         /// <summary>
         /// ConnectionFactory (RabbitMQ) topology recovery property.

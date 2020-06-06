@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,26 +13,68 @@ namespace CookedRabbit.Core.WorkEngines
 
     public class Pipeline<TIn, TOut> : IPipeline<TIn, TOut>
     {
-        private readonly List<PipelineStep> Steps = new List<PipelineStep>();
+        private readonly ILogger<Pipeline<TIn, TOut>> _logger;
+        private readonly SemaphoreSlim _pipeLock = new SemaphoreSlim(1, 1);
+        private readonly ExecutionDataflowBlockOptions _executeStepOptions;
+        private readonly DataflowLinkOptions _linkStepOptions;
+        private readonly int? _bufferSize;
+        private readonly TimeSpan _healthCheckInterval;
+        private readonly Task _healthCheckTask;
+        private readonly string _pipelineName;
+
+        public List<PipelineStep> Steps { get; private set; } = new List<PipelineStep>();
+        public int MaxDegreeOfParallelism { get; private set; }
         public bool Ready { get; private set; }
-        private readonly SemaphoreSlim pipeLock = new SemaphoreSlim(1, 1);
-        private ExecutionDataflowBlockOptions ExecuteStepOptions { get; }
-        private DataflowLinkOptions LinkStepOptions { get; }
-        public int MaxDegreeOfParallelism { get; }
-        public int? BufferSize { get; }
         public int StepCount { get; private set; }
 
         public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
         {
+            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+
             MaxDegreeOfParallelism = maxDegreeOfParallelism;
-            BufferSize = bufferSize;
-            LinkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
-            ExecuteStepOptions = new ExecutionDataflowBlockOptions
+            _bufferSize = bufferSize;
+            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            _executeStepOptions = new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism,
             };
 
-            ExecuteStepOptions.BoundedCapacity = bufferSize ?? ExecuteStepOptions.BoundedCapacity;
+            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
+        }
+
+        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, int? bufferSize = null)
+        {
+            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+            _healthCheckInterval = healthCheckInterval;
+            _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
+            _healthCheckTask = Task.Run(() => SimplePipelineHealthTaskAsync());
+
+            MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            _bufferSize = bufferSize;
+            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            _executeStepOptions = new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = maxDegreeOfParallelism,
+            };
+
+
+            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
+        }
+        
+        public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, int? bufferSize = null)
+        {
+            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+            _healthCheckTask = Task.Run(() => healthCheck);
+
+            MaxDegreeOfParallelism = maxDegreeOfParallelism;
+            _bufferSize = bufferSize;
+            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            _executeStepOptions = new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = maxDegreeOfParallelism,
+            };
+
+            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
 
         public void AddAsyncStep<TLocalIn, TLocalOut>(
@@ -39,7 +82,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
             var pipelineStep = new PipelineStep
@@ -64,11 +107,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                     if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
@@ -76,11 +119,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                     if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                     {
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
             }
         }
@@ -90,7 +133,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -118,11 +161,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -130,11 +173,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -145,7 +188,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -173,11 +216,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -185,11 +228,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -200,7 +243,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? bufferSizeOverride = null,
             params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -228,11 +271,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -240,11 +283,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -255,7 +298,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
             var pipelineStep = new PipelineStep
@@ -280,22 +323,22 @@ namespace CookedRabbit.Core.WorkEngines
 
                     if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                     {
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
                     var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunc, options);
                     if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                     {
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
             }
         }
@@ -305,7 +348,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -333,11 +376,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -345,11 +388,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -360,7 +403,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? localMaxDoP = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -388,11 +431,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -400,11 +443,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -415,7 +458,7 @@ namespace CookedRabbit.Core.WorkEngines
             int? bufferSizeOverride = null,
             params Func<TLocalIn, TLocalOut>[] stepFunctions)
         {
-            if (Ready) throw new InvalidOperationException(Strings.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
 
@@ -443,11 +486,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                     else
                     {
@@ -455,11 +498,11 @@ namespace CookedRabbit.Core.WorkEngines
 
                         if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
                         {
-                            targetBlock.LinkTo(step, LinkStepOptions);
+                            targetBlock.LinkTo(step, _linkStepOptions);
                             pipelineStep.Block = step;
                             Steps.Add(pipelineStep);
                         }
-                        else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                     }
                 }
             }
@@ -475,8 +518,8 @@ namespace CookedRabbit.Core.WorkEngines
         /// <param name="pipeline"></param>
         public void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline)
         {
-            if (pipeline.Ready || Ready) throw new InvalidOperationException(Strings.ChainingImpossible);
-            if (Steps.Count == 0 || pipeline.Steps.Count == 0) throw new InvalidOperationException(Strings.NothingToChain);
+            if (pipeline.Ready || Ready) throw new InvalidOperationException(ExceptionMessages.ChainingImpossible);
+            if (Steps.Count == 0 || pipeline.Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.NothingToChain);
 
             var lastStepThisPipeline = Steps.Last();
             var firstStepNewPipeline = pipeline.Steps.First();
@@ -486,15 +529,15 @@ namespace CookedRabbit.Core.WorkEngines
                 && lastStepThisPipeline.Block is ISourceBlock<Task<TLocalIn>> asyncLastBlock
                 && firstStepNewPipeline.Block is ITargetBlock<Task<TLocalIn>> asyncFirstBlock)
             {
-                asyncLastBlock.LinkTo(asyncFirstBlock, LinkStepOptions);
+                asyncLastBlock.LinkTo(asyncFirstBlock, _linkStepOptions);
             }
             else if (lastStepThisPipeline.Block is ISourceBlock<TLocalIn> lastBlock
                 && firstStepNewPipeline.Block is ITargetBlock<TLocalIn> firstBlock)
             {
-                lastBlock.LinkTo(firstBlock, LinkStepOptions);
+                lastBlock.LinkTo(firstBlock, _linkStepOptions);
             }
             else
-            { throw new InvalidOperationException(Strings.ChainingNotMatched); }
+            { throw new InvalidOperationException(ExceptionMessages.ChainingNotMatched); }
 
             foreach (var step in pipeline.Steps)
             {
@@ -504,8 +547,8 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void Finalize(Action<TOut> finalizeStep = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.AlreadyFinalized);
-            if (Steps.Count == 0) throw new InvalidOperationException(Strings.CantFinalize);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);
 
             if (finalizeStep != null)
             {
@@ -521,29 +564,29 @@ namespace CookedRabbit.Core.WorkEngines
                 {
                     var step = new ActionBlock<Task<TOut>>(
                         async input => finalizeStep(await input),
-                        ExecuteStepOptions);
+                        _executeStepOptions);
 
                     if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
                     {
                         pipelineStep.Block = step;
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
                     var step = new ActionBlock<TOut>(
                         finalizeStep,
-                        ExecuteStepOptions);
+                        _executeStepOptions);
 
                     if (lastStep.Block is ISourceBlock<TOut> targetBlock)
                     {
                         pipelineStep.Block = step;
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(Strings.InvalidStepFound); }
+                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
                 }
             }
             else
@@ -554,8 +597,8 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void Finalize(Func<TOut, Task> finalizeStep = null)
         {
-            if (Ready) throw new InvalidOperationException(Strings.AlreadyFinalized);
-            if (Steps.Count == 0) throw new InvalidOperationException(Strings.CantFinalize);
+            if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);
 
             if (finalizeStep != null)
             {
@@ -571,22 +614,22 @@ namespace CookedRabbit.Core.WorkEngines
                 {
                     var step = new ActionBlock<Task<TOut>>(
                         async t => await finalizeStep(await t),
-                        ExecuteStepOptions);
+                        _executeStepOptions);
 
                     if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
                     {
                         pipelineStep.Block = step;
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
                 }
                 else
                 {
-                    var step = new ActionBlock<TOut>(t => finalizeStep(t), ExecuteStepOptions);
+                    var step = new ActionBlock<TOut>(t => finalizeStep(t), _executeStepOptions);
                     if (lastStep.Block is ISourceBlock<TOut> targetBlock)
                     {
                         pipelineStep.Block = step;
-                        targetBlock.LinkTo(step, LinkStepOptions);
+                        targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
                 }
@@ -602,10 +645,11 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task<bool> QueueForExecutionAsync(TIn input)
         {
-            if (!Ready) throw new InvalidOperationException(Strings.NotFinalized);
+            if (!Ready) throw new InvalidOperationException(ExceptionMessages.NotFinalized);
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
+                _logger.LogTrace(LogMessages.Pipeline.Queued, _pipelineName);
                 return await firstStep.SendAsync(input).ConfigureAwait(false);
             }
 
@@ -614,7 +658,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task<bool> AwaitCompletionAsync()
         {
-            if (!Ready) throw new InvalidOperationException(Strings.NotFinalized);
+            if (!Ready) throw new InvalidOperationException(ExceptionMessages.NotFinalized);
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
@@ -624,6 +668,7 @@ namespace CookedRabbit.Core.WorkEngines
                 // Await the last step.
                 if (Steps[Steps.Count - 1].Block is ITargetBlock<TIn> lastStep)
                 {
+                    _logger.LogTrace(LogMessages.Pipeline.AwaitsCompletion, _pipelineName);
                     await lastStep.Completion.ConfigureAwait(false);
                     return true;
                 }
@@ -632,32 +677,13 @@ namespace CookedRabbit.Core.WorkEngines
             return false;
         }
 
-        /// <summary>
-        /// Let's you identify if any of your step Tasks are in a faulted state.
-        /// </summary>
-        public bool PipelineHasFault()
-        {
-            foreach (var step in Steps)
-            {
-                if (step.Block.Completion.IsFaulted)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Let's you get any InnerExceptions from any faulted tasks.
-        /// </summary>
-        public IReadOnlyCollection<Exception> GetPipelineFaults()
+        public Exception GetAnyPipelineStepsFault()
         {
             foreach (var step in Steps)
             {
                 if (step.IsFaulted)
                 {
-                    return step.Block.Completion.Exception.InnerExceptions;
+                    return step.Block.Completion.Exception;
                 }
             }
 
@@ -666,7 +692,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         private ExecutionDataflowBlockOptions GetExecuteStepOptions(int? maxDoPOverride, int? bufferSizeOverride)
         {
-            var options = ExecuteStepOptions;
+            var options = _executeStepOptions;
             if (maxDoPOverride != null || bufferSizeOverride != null)
             {
                 options = new ExecutionDataflowBlockOptions();
@@ -675,6 +701,22 @@ namespace CookedRabbit.Core.WorkEngines
                 options.BoundedCapacity = bufferSizeOverride ?? options.BoundedCapacity;
             }
             return options;
+        }
+
+        private async Task SimplePipelineHealthTaskAsync()
+        {
+            await Task.Yield();
+
+            while (true)
+            {
+                await Task.Delay(_healthCheckInterval).ConfigureAwait(false);
+
+                var ex = GetAnyPipelineStepsFault();
+                if (ex != null) // No Steps are Faulted... Hooray!
+                { _logger.LogCritical(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
+                else
+                { _logger.LogDebug(LogMessages.Pipeline.Healthy, _pipelineName); }
+            }
         }
     }
 }

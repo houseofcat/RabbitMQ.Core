@@ -36,7 +36,7 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var pub = new Publisher(config);
-            await pub.ChannelPool.InitializeAsync().ConfigureAwait(false);
+            await pub.InitializeAsync().ConfigureAwait(false);
 
             Assert.NotNull(pub);
         }
@@ -76,7 +76,6 @@ namespace CookedRabbit.Core.Tests
 
             var pub = new Publisher(config);
             await pub
-                .ChannelPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
 
@@ -96,7 +95,6 @@ namespace CookedRabbit.Core.Tests
 
             var pub = new Publisher(config);
             await pub
-                .ChannelPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
 
@@ -130,7 +128,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task PublishBatchAsync()
+        public void PublishBatchAsync()
         {
             //var config = new Config();
             //config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");

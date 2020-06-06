@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -12,13 +13,14 @@ namespace CookedRabbit.Core.Service
 {
     public interface IRabbitService
     {
+        Config Config { get; }
         IAutoPublisher AutoPublisher { get; }
         IChannelPool ChannelPool { get; }
+        ITopologer Topologer { get; }
         bool Initialized { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; }
-        ITopologer Topologer { get; }
 
         Task ComcryptAsync(ReceivedLetter receivedLetter);
         Task<bool> CompressAsync(ReceivedLetter receivedLetter);
@@ -38,10 +40,11 @@ namespace CookedRabbit.Core.Service
 
     public class RabbitService : IRabbitService
     {
-        private Config Config { get; }
-        public bool Initialized { get; private set; }
-        private readonly SemaphoreSlim serviceLock = new SemaphoreSlim(1, 1);
+        private byte[] _hashKey { get; set; }
+        private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
 
+        public bool Initialized { get; private set; }
+        public Config Config { get; }
         public IChannelPool ChannelPool { get; }
         public IAutoPublisher AutoPublisher { get; }
         public ITopologer Topologer { get; }
@@ -50,15 +53,17 @@ namespace CookedRabbit.Core.Service
         public ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedLetter>>();
         public ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedMessage>>();
 
-        private byte[] HashKey { get; set; }
-        private const int KeySize = 32;
+
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="fileNamePath"></param>
-        public RabbitService(string fileNamePath)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(string fileNamePath, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = ConfigReader
                 .ConfigFileReadAsync(fileNamePath)
                 .GetAwaiter()
@@ -73,8 +78,11 @@ namespace CookedRabbit.Core.Service
         /// Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="config"></param>
-        public RabbitService(Config config)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(Config config, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = config;
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
@@ -88,8 +96,11 @@ namespace CookedRabbit.Core.Service
         /// <param name="channelPool"></param>
         /// <param name="autoPublisher"></param>
         /// <param name="toploger"></param>
-        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger)
+        /// <param name="loggerFactory"></param>
+        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger, ILoggerFactory loggerFactory = null)
         {
+            LogHelper.LoggerFactory = loggerFactory;
+
             Config = config;
             ChannelPool = channelPool;
             AutoPublisher = autoPublisher;
@@ -98,7 +109,7 @@ namespace CookedRabbit.Core.Service
 
         public async Task InitializeAsync()
         {
-            await serviceLock.WaitAsync().ConfigureAwait(false);
+            await _serviceLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -117,19 +128,19 @@ namespace CookedRabbit.Core.Service
                 }
             }
             finally
-            { serviceLock.Release(); }
+            { _serviceLock.Release(); }
         }
 
         public async Task InitializeAsync(string passphrase, string salt)
         {
-            await serviceLock.WaitAsync().ConfigureAwait(false);
+            await _serviceLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
                 if (!Initialized)
                 {
-                    HashKey = await ArgonHash
-                        .GetHashKeyAsync(passphrase, salt, KeySize)
+                    _hashKey = await ArgonHash
+                        .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
                         .ConfigureAwait(false);
 
                     await ChannelPool
@@ -137,7 +148,7 @@ namespace CookedRabbit.Core.Service
                         .ConfigureAwait(false);
 
                     await AutoPublisher
-                        .StartAsync(HashKey)
+                        .StartAsync(_hashKey)
                         .ConfigureAwait(false);
 
                     await BuildConsumersAsync().ConfigureAwait(false);
@@ -145,12 +156,12 @@ namespace CookedRabbit.Core.Service
                 }
             }
             finally
-            { serviceLock.Release(); }
+            { _serviceLock.Release(); }
         }
 
         public async ValueTask ShutdownAsync(bool immediately)
         {
-            await serviceLock.WaitAsync().ConfigureAwait(false);
+            await _serviceLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -166,7 +177,7 @@ namespace CookedRabbit.Core.Service
                     .ConfigureAwait(false);
             }
             finally
-            { serviceLock.Release(); }
+            { _serviceLock.Release(); }
         }
 
         private async ValueTask StopAllConsumers(bool immediately)
@@ -215,7 +226,7 @@ namespace CookedRabbit.Core.Service
                     await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
                 }
 
-                Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, HashKey));
+                Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, _hashKey));
             }
 
             foreach (var consumerSetting in Config.LetterConsumerSettings)
@@ -235,7 +246,7 @@ namespace CookedRabbit.Core.Service
                     await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
                 }
 
-                LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, HashKey));
+                LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, _hashKey));
             }
 
             foreach (var consumerSetting in Config.MessageConsumerSettings)
@@ -261,30 +272,30 @@ namespace CookedRabbit.Core.Service
 
         public IConsumer<ReceivedData> GetConsumer(string consumerName)
         {
-            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return Consumers[consumerName];
         }
 
         public IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName)
         {
-            if (!LetterConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!LetterConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return LetterConsumers[consumerName];
         }
 
         public IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName)
         {
-            if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return MessageConsumers[consumerName];
         }
 
         public async Task DecomcryptAsync(ReceivedLetter receivedLetter)
         {
             var decryptFailed = false;
-            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, _hashKey);
                     receivedLetter.Letter.LetterMetadata.Encrypted = false;
                 }
                 catch { decryptFailed = true; }
@@ -313,11 +324,11 @@ namespace CookedRabbit.Core.Service
                 catch { }
             }
 
-            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, _hashKey);
                     receivedLetter.Letter.LetterMetadata.Encrypted = true;
                 }
                 catch { }
@@ -326,11 +337,11 @@ namespace CookedRabbit.Core.Service
 
         public bool Encrypt(ReceivedLetter receivedLetter)
         {
-            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, _hashKey);
                     receivedLetter.Letter.LetterMetadata.Encrypted = true;
                 }
                 catch { }
@@ -341,11 +352,11 @@ namespace CookedRabbit.Core.Service
 
         public bool Decrypt(ReceivedLetter receivedLetter)
         {
-            if (receivedLetter.Letter.LetterMetadata.Encrypted && (HashKey?.Length > 0))
+            if (receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, HashKey);
+                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, _hashKey);
                     receivedLetter.Letter.LetterMetadata.Encrypted = false;
                 }
                 catch { }

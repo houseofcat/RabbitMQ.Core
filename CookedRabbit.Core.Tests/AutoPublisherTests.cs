@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using System;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ namespace CookedRabbit.Core.Tests
     {
         private readonly ITestOutputHelper output;
         private readonly Config config;
+        private readonly IChannelPool channelPool;
         private readonly Topologer topologer;
 
         public AutoPublisherTests(ITestOutputHelper output)
@@ -21,14 +23,16 @@ namespace CookedRabbit.Core.Tests
             config.PublisherSettings = new PublisherOptions();
             config.PublisherSettings.CreatePublishReceipts = true;
 
-            topologer = new Topologer(config);
-            topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
+            channelPool = new ChannelPool(config);
+            channelPool.InitializeAsync().GetAwaiter().GetResult();
+
+            topologer = new Topologer(channelPool);
         }
 
         [Fact]
         public void CreateAutoPublisher()
         {
-            var apub = new AutoPublisher(topologer.ChannelPool);
+            var apub = new AutoPublisher(channelPool);
 
             Assert.NotNull(apub);
         }
@@ -36,7 +40,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateAutoPublisherAndStart()
         {
-            var apub = new AutoPublisher(topologer.ChannelPool);
+            var apub = new AutoPublisher(channelPool);
             await apub.StartAsync().ConfigureAwait(false);
 
             Assert.NotNull(apub);
@@ -45,7 +49,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateAutoPublisherAndPublish()
         {
-            var apub = new AutoPublisher(topologer.ChannelPool);
+            var apub = new AutoPublisher(channelPool);
 
             var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await apub.QueueLetterAsync(letter));
@@ -119,7 +123,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task CreateAutoPublisherQueueConcurrentPublishAndProcessReceipts()
         {
-            var apub = new AutoPublisher(topologer.ChannelPool);
+            var apub = new AutoPublisher(channelPool);
             await apub.StartAsync().ConfigureAwait(false);
             const ulong count = 10000;
 

@@ -14,7 +14,7 @@ namespace CookedRabbit.Core
         bool Ackable { get; }
         IModel Channel { get; set; }
         string ContentType { get; }
-        ReadOnlyMemory<byte> Data { get; }
+        byte[] Data { get; }
         ulong DeliveryTag { get; }
         Letter Letter { get; }
         IBasicProperties Properties { get; }
@@ -38,7 +38,7 @@ namespace CookedRabbit.Core
         public bool Ackable { get; }
         public IModel Channel { get; set; }
         public ulong DeliveryTag { get; }
-        public ReadOnlyMemory<byte> Data { get; }
+        public byte[] Data { get; }
         public Letter Letter { get; protected set; }
         private ReadOnlyMemory<byte> _hashKey { get; }
         public string ContentType { get; private set; }
@@ -55,7 +55,7 @@ namespace CookedRabbit.Core
             Channel = channel;
             DeliveryTag = result.DeliveryTag;
             Properties = result.BasicProperties;
-            Data = result.Body;
+            Data = result.Body.ToArray();
             _hashKey = hashKey;
 
             ReadHeaders();
@@ -71,7 +71,7 @@ namespace CookedRabbit.Core
             Channel = channel;
             DeliveryTag = args.DeliveryTag;
             Properties = args.BasicProperties;
-            Data = args.Body;
+            Data = args.Body.ToArray();
             _hashKey = hashKey;
 
             ReadHeaders();
@@ -79,13 +79,13 @@ namespace CookedRabbit.Core
 
         public void ReadHeaders()
         {
-            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Strings.HeaderForObjectType))
+            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Constants.HeaderForObjectType))
             {
-                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Strings.HeaderForObjectType]);
+                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Constants.HeaderForObjectType]);
             }
             else
             {
-                ContentType = Strings.HeaderValueForUnknown;
+                ContentType = Constants.HeaderValueForUnknown;
             }
         }
 
@@ -162,14 +162,14 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
+                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
 
                     return Letter.Body;
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     return Data;
@@ -188,17 +188,17 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
+                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
-                    return Encoding.UTF8.GetString(Data.Span);
+                    return Encoding.UTF8.GetString(Data);
             }
         }
 
@@ -218,10 +218,10 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
+                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
 
                     if (Letter.LetterMetadata.Encrypted && _hashKey.Length > 0)
                     {
@@ -238,12 +238,12 @@ namespace CookedRabbit.Core
                         Letter.LetterMetadata.Compressed = false;
                     }
 
-                    return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
+                    return JsonSerializer.Deserialize<TResult>(Letter.Body, jsonSerializerOptions);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
-                    if (Bytes.IsJson(Data.Span))
+                    if (Bytes.IsJson(Data))
                     {
                         byte[] data = null;
                         if (decrypt && _hashKey.Length > 0)
@@ -258,7 +258,7 @@ namespace CookedRabbit.Core
                                 .ConfigureAwait(false);
                         }
 
-                        return JsonSerializer.Deserialize<TResult>(data ?? Data.Span, jsonSerializerOptions);
+                        return JsonSerializer.Deserialize<TResult>(data ?? Data, jsonSerializerOptions);
                     }
                     else
                     { return default(TResult); }
@@ -281,11 +281,11 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Strings.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
                     var types = new List<TResult>();
                     if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data.Span); }
+                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
 
                     if (Letter.LetterMetadata.Encrypted && _hashKey.Length > 0)
                     {
@@ -304,10 +304,10 @@ namespace CookedRabbit.Core
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Strings.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
-                    if (Bytes.IsJsonArray(Data.Span))
+                    if (Bytes.IsJsonArray(Data))
                     {
                         byte[] data = null;
                         if (decrypt && _hashKey.Length > 0)
@@ -322,7 +322,7 @@ namespace CookedRabbit.Core
                                 .ConfigureAwait(false);
                         }
 
-                        return JsonSerializer.Deserialize<List<TResult>>(data ?? Data.Span, jsonSerializerOptions);
+                        return JsonSerializer.Deserialize<List<TResult>>(data ?? Data, jsonSerializerOptions);
                     }
                     else
                     { return default(List<TResult>); }

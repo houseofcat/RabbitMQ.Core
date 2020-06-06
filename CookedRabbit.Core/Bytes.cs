@@ -4,11 +4,11 @@ namespace CookedRabbit.Core
 {
     public static class Bytes
     {
-        public static byte[] Utf8JJsonStartsWith = new byte[] { (byte)'{' };
-        public static byte[] Utf8JsonEndsWith = new byte[] { (byte)'}' };
+        public readonly static byte[] Utf8JJsonStartsWith = new byte[] { (byte)'{' };
+        public readonly static byte[] Utf8JsonEndsWith = new byte[] { (byte)'}' };
 
-        public static byte[] Utf8JsonArrayStartsWith = new byte[] { (byte)'[' };
-        public static byte[] Utf8JsonArrayEndsWith = new byte[] { (byte)']' };
+        public readonly static byte[] Utf8JsonArrayStartsWith = new byte[] { (byte)'[' };
+        public readonly static byte[] Utf8JsonArrayEndsWith = new byte[] { (byte)']' };
 
         public static bool IsJson(ReadOnlySpan<byte> data)
         {

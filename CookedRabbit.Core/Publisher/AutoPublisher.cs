@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Channels;
@@ -27,15 +28,19 @@ namespace CookedRabbit.Core
 
     public class AutoPublisher : IAutoPublisher
     {
+        private readonly ILogger<AutoPublisher> _logger;
+        private readonly SemaphoreSlim _pubLock = new SemaphoreSlim(1, 1);
+        private readonly bool _withHeaders;
+
+        private Channel<Letter> _letterQueue;
+        private Channel<Letter> _priorityLetterQueue;
+        private byte[] _hashKey;
+        private Task _publishingTask;
+        private Task _publishingPriorityTask;
+        private Task _processReceiptsAsync;
+
         public Config Config { get; }
         public IPublisher Publisher { get; }
-        private Channel<Letter> LetterQueue { get; set; }
-        private Channel<Letter> PriorityLetterQueue { get; set; }
-        private Task PublishingTask { get; set; }
-        private Task PublishingPriorityTask { get; set; }
-        private Task ProcessReceiptsAsync { get; set; }
-
-        private readonly SemaphoreSlim pubLock = new SemaphoreSlim(1, 1);
 
         public bool Initialized { get; private set; }
         public bool Shutdown { get; private set; }
@@ -43,13 +48,12 @@ namespace CookedRabbit.Core
         public bool Compress { get; private set; }
         public bool Encrypt { get; private set; }
         public bool CreatePublishReceipts { get; private set; }
-        private byte[] HashKey { get; set; }
-        private bool _withHeaders;
 
         public AutoPublisher(Config config, bool withHeaders = true)
         {
             Guard.AgainstNull(config, nameof(config));
 
+            _logger = LogHelper.GetLogger<AutoPublisher>();
             Config = config;
             Publisher = new Publisher(Config);
             _withHeaders = withHeaders;
@@ -59,6 +63,7 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
+            _logger = LogHelper.GetLogger<AutoPublisher>();
             Config = channelPool.Config;
             Publisher = new Publisher(channelPool);
             _withHeaders = withHeaders;
@@ -66,7 +71,7 @@ namespace CookedRabbit.Core
 
         public async Task StartAsync(byte[] hashKey = null)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -74,59 +79,59 @@ namespace CookedRabbit.Core
                 Compress = Config.PublisherSettings.Compress;
                 Encrypt = Config.PublisherSettings.Encrypt;
 
-                if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(Strings.EncrypConfigErrorMessage);
-                HashKey = hashKey;
+                if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(ExceptionMessages.EncrypConfigErrorMessage);
+                _hashKey = hashKey;
 
-                await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
+                await Publisher.InitializeAsync().ConfigureAwait(false);
 
-                LetterQueue = Channel.CreateBounded<Letter>(
+                _letterQueue = Channel.CreateBounded<Letter>(
                     new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)
                     {
                         FullMode = Config.PublisherSettings.BehaviorWhenFull
                     });
-                PriorityLetterQueue = Channel.CreateBounded<Letter>(
+                _priorityLetterQueue = Channel.CreateBounded<Letter>(
                     new BoundedChannelOptions(Config.PublisherSettings.PriorityLetterQueueBufferSize)
                     {
                         FullMode = Config.PublisherSettings.BehaviorWhenFull
                     });
 
-                PublishingTask = Task.Run(() => ProcessDeliveriesAsync(LetterQueue.Reader).ConfigureAwait(false));
-                PublishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(PriorityLetterQueue.Reader).ConfigureAwait(false));
+                _publishingTask = Task.Run(() => ProcessDeliveriesAsync(_letterQueue.Reader).ConfigureAwait(false));
+                _publishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(_priorityLetterQueue.Reader).ConfigureAwait(false));
 
                 Initialized = true;
                 Shutdown = false;
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
 
         public async Task StopAsync(bool immediately = false)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                LetterQueue.Writer.Complete();
-                PriorityLetterQueue.Writer.Complete();
+                _letterQueue.Writer.Complete();
+                _priorityLetterQueue.Writer.Complete();
                 Publisher.ReceiptBuffer.Writer.Complete();
 
                 if (!immediately)
                 {
-                    await LetterQueue
+                    await _letterQueue
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
 
-                    await PriorityLetterQueue
+                    await _priorityLetterQueue
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
 
-                    while (!PublishingTask.IsCompleted)
+                    while (!_publishingTask.IsCompleted)
                     {
                         await Task.Delay(10).ConfigureAwait(false);
                     }
 
-                    while (!PublishingPriorityTask.IsCompleted)
+                    while (!_publishingPriorityTask.IsCompleted)
                     {
                         await Task.Delay(10).ConfigureAwait(false);
                     }
@@ -135,42 +140,44 @@ namespace CookedRabbit.Core
                 Shutdown = true;
             }
             finally
-            { pubLock.Release(); }
+            { _pubLock.Release(); }
         }
 
-        // TODO: Simplify usage. Add a memorycache failures for optional / automatic republish.
         public ChannelReader<PublishReceipt> GetReceiptBufferReader() => Publisher.ReceiptBuffer.Reader;
 
         public async ValueTask QueueLetterAsync(Letter letter, bool priority = false)
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(Strings.InitializeError);
+            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.InitializeError);
+            Guard.AgainstNull(letter, nameof(letter));
 
             if (priority)
             {
-                if (!await PriorityLetterQueue
+                if (!await _priorityLetterQueue
                      .Writer
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(Strings.QueueChannelError);
+                    throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
 
-                await PriorityLetterQueue
+                await _priorityLetterQueue
                     .Writer
                     .WriteAsync(letter)
                     .ConfigureAwait(false);
             }
             else
             {
-                if (!await LetterQueue
+                if (!await _letterQueue
                      .Writer
                      .WaitToWriteAsync()
                      .ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(Strings.QueueChannelError);
+                    throw new InvalidOperationException(ExceptionMessages.QueueChannelError);
                 }
 
-                await LetterQueue
+                _logger.LogDebug(LogMessages.AutoPublisher.LetterQueued, letter.LetterId, letter.LetterMetadata?.Id);
+
+                await _letterQueue
                     .Writer
                     .WriteAsync(letter)
                     .ConfigureAwait(false);
@@ -192,11 +199,13 @@ namespace CookedRabbit.Core
                         letter.LetterMetadata.Compressed = Compress;
                     }
 
-                    if (Encrypt && (HashKey != null || HashKey.Length == 0))
+                    if (Encrypt && (_hashKey != null || _hashKey.Length == 0))
                     {
-                        letter.Body = AesEncrypt.Encrypt(letter.Body, HashKey);
+                        letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
                         letter.LetterMetadata.Encrypted = Encrypt;
                     }
+
+                    _logger.LogDebug(LogMessages.AutoPublisher.LetterPublished, letter.LetterId, letter.LetterMetadata?.Id);
 
                     await Publisher
                         .PublishAsync(letter, CreatePublishReceipts, _withHeaders)
@@ -207,13 +216,13 @@ namespace CookedRabbit.Core
 
         public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+                if (_processReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    ProcessReceiptsAsync = Task.Run(async () =>
+                    _processReceiptsAsync = Task.Run(async () =>
                     {
                         await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
                         {
@@ -222,18 +231,18 @@ namespace CookedRabbit.Core
                     });
                 }
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
 
         public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
         {
-            await pubLock.WaitAsync().ConfigureAwait(false);
+            await _pubLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                if (ProcessReceiptsAsync == null && processReceiptAsync != null)
+                if (_processReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    ProcessReceiptsAsync = Task.Run(async () =>
+                    _processReceiptsAsync = Task.Run(async () =>
                     {
                         await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
                         {
@@ -242,7 +251,7 @@ namespace CookedRabbit.Core
                     });
                 }
             }
-            finally { pubLock.Release(); }
+            finally { _pubLock.Release(); }
         }
     }
 }

@@ -18,12 +18,12 @@ namespace CookedRabbit.Core
         /// Convert internal Body to type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public T ConvertJsonBody<T>(JsonSerializerOptions options = null) => JsonSerializer.Deserialize<T>(Data.Span, options);
+        public T ConvertJsonBody<T>(JsonSerializerOptions options = null) => JsonSerializer.Deserialize<T>(Data, options);
 
         /// <summary>
         /// Convert internal Body to type <see cref="Letter" />.
         /// </summary>
-        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Data.Span);
+        public Letter ConvertJsonBodyToLetter() => JsonSerializer.Deserialize<Letter>(Data);
 
         /// <summary>
         /// Convert internal Body as a Stream asynchronously to type T.
@@ -31,7 +31,7 @@ namespace CookedRabbit.Core
         /// <typeparam name="T"></typeparam>
         public async Task<T> ConvertJsonBodyAsync<T>(JsonSerializerOptions options = null) =>
             await JsonSerializer
-            .DeserializeAsync<T>(new MemoryStream(Data.ToArray()), options)
+            .DeserializeAsync<T>(new MemoryStream(Data), options)
             .ConfigureAwait(false);
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace CookedRabbit.Core
         /// </summary>
         public async Task<Letter> ConvertJsonBodyToLetterAsync() =>
             await JsonSerializer
-            .DeserializeAsync<Letter>(new MemoryStream(Data.ToArray()))
+            .DeserializeAsync<Letter>(new MemoryStream(Data))
             .ConfigureAwait(false);
     }
 }

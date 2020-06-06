@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using System.Threading.Tasks;
 using Xunit;
@@ -9,6 +10,7 @@ namespace CookedRabbit.Core.Tests
     {
         private readonly ITestOutputHelper output;
         private readonly Config config;
+        private readonly IChannelPool channelPool;
         private readonly Topologer topologer;
 
         public ConsumerTests(ITestOutputHelper output)
@@ -16,8 +18,9 @@ namespace CookedRabbit.Core.Tests
             this.output = output;
             config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
 
+            channelPool = new ChannelPool(config);
+            channelPool.InitializeAsync().GetAwaiter().GetResult();
             topologer = new Topologer(config);
-            topologer.ChannelPool.InitializeAsync().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -46,7 +49,7 @@ namespace CookedRabbit.Core.Tests
         public async Task CreateConsumerAndStart()
         {
             await topologer.CreateQueueAsync("TestConsumerQueue").ConfigureAwait(false);
-            var con = new MessageConsumer(topologer.ChannelPool, "TestMessageConsumer");
+            var con = new MessageConsumer(channelPool, "TestMessageConsumer");
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
         }
 
@@ -54,7 +57,7 @@ namespace CookedRabbit.Core.Tests
         public async Task CreateConsumerStartAndStop()
         {
             await topologer.CreateQueueAsync("TestConsumerQueue").ConfigureAwait(false);
-            var con = new MessageConsumer(topologer.ChannelPool, "TestMessageConsumer");
+            var con = new MessageConsumer(channelPool, "TestMessageConsumer");
 
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
             await con.StopConsumerAsync().ConfigureAwait(false);

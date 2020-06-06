@@ -6,7 +6,6 @@ namespace CookedRabbit.Core.WorkEngines
 {
     public interface IPipeline<TIn, TOut>
     {
-        int? BufferSize { get; }
         int MaxDegreeOfParallelism { get; }
         bool Ready { get; }
         int StepCount { get; }
@@ -33,8 +32,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         void Finalize(Action<TOut> finalizeStep = null);
         void Finalize(Func<TOut, Task> finalizeStep = null);
-        IReadOnlyCollection<Exception> GetPipelineFaults();
-        bool PipelineHasFault();
+        Exception GetAnyPipelineStepsFault();
         Task<bool> QueueForExecutionAsync(TIn input);
     }
 }

@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
@@ -12,36 +13,39 @@ namespace CookedRabbit.Core
 {
     public interface IPublisher
     {
-        IChannelPool ChannelPool { get; }
         Config Config { get; }
         Channel<PublishReceipt> ReceiptBuffer { get; }
 
-        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
+        Task InitializeAsync();
+
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
-        Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
+
+        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
         IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
         ValueTask<PublishReceipt> ReadPublishReceiptAsync();
     }
 
     public class Publisher : IPublisher
     {
-        public Config Config { get; }
-        public IChannelPool ChannelPool { get; }
+        private readonly ILogger<Publisher> _logger;
+        private readonly IChannelPool _channelPool;
 
-        public Channel<PublishReceipt> ReceiptBuffer { get; }
+        public Channel<PublishReceipt> ReceiptBuffer { get; set; }
+        public Config Config { get; }
 
         public Publisher(Config config)
         {
             Guard.AgainstNull(config, nameof(config));
 
+            _logger = LogHelper.GetLogger<Publisher>();
+            _channelPool = new ChannelPool(Config);
             Config = config;
-            ChannelPool = new ChannelPool(Config);
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
 
@@ -49,9 +53,15 @@ namespace CookedRabbit.Core
         {
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
+            _logger = LogHelper.GetLogger<Publisher>();
+            _channelPool = channelPool;
             Config = channelPool.Config;
-            ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
+        }
+
+        public async Task InitializeAsync()
+        {
+            await _channelPool.InitializeAsync();
         }
 
         // A basic implementation of publish but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
@@ -65,7 +75,7 @@ namespace CookedRabbit.Core
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
             if (messageProperties == null)
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
@@ -78,7 +88,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             try
             {
@@ -89,10 +99,14 @@ namespace CookedRabbit.Core
                     basicProperties: messageProperties,
                     body: payload);
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(LogMessages.Publisher.PublishFailed, $"{exchangeName}->{routingKey}", ex.Message);
+                error = true;
+            }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -111,7 +125,7 @@ namespace CookedRabbit.Core
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -122,10 +136,18 @@ namespace CookedRabbit.Core
                     basicProperties: BuildProperties(headers, channelHost, priority),
                     body: payload);
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -144,7 +166,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync();
             if (messageProperties == null)
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
@@ -157,7 +179,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             try
             {
@@ -170,10 +192,18 @@ namespace CookedRabbit.Core
 
                 batch.Publish();
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -194,7 +224,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync();
 
             try
             {
@@ -207,10 +237,18 @@ namespace CookedRabbit.Core
 
                 batch.Publish();
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishFailed,
+                    $"{exchangeName}->{routingKey}",
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -227,7 +265,7 @@ namespace CookedRabbit.Core
         public async Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -240,7 +278,16 @@ namespace CookedRabbit.Core
                     BuildProperties(letter, chanHost, withHeaders),
                     JsonSerializer.SerializeToUtf8Bytes(letter));
             }
-            catch { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishLetterFailed,
+                    $"{letter.Envelope.Exchange}->{letter.Envelope.RoutingKey}",
+                    letter.LetterId,
+                    ex.Message);
+
+                error = true;
+            }
             finally
             {
                 if (createReceipt)
@@ -249,7 +296,7 @@ namespace CookedRabbit.Core
                         .ConfigureAwait(false);
                 }
 
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(chanHost, error);
             }
         }
@@ -263,7 +310,7 @@ namespace CookedRabbit.Core
         public async Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -278,8 +325,16 @@ namespace CookedRabbit.Core
                         BuildProperties(letters[i], chanHost, withHeaders),
                         JsonSerializer.SerializeToUtf8Bytes(letters[i]));
                 }
-                catch
-                { error = true; }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(
+                        LogMessages.Publisher.PublishLetterFailed,
+                        $"{letters[i].Envelope.Exchange}->{letters[i].Envelope.RoutingKey}",
+                        letters[i].LetterId,
+                        ex.Message);
+
+                    error = true;
+                }
 
                 if (createReceipt)
                 { await CreateReceiptAsync(letters[i], error).ConfigureAwait(false); }
@@ -287,7 +342,7 @@ namespace CookedRabbit.Core
                 if (error) { break; }
             }
 
-            await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
+            await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -300,7 +355,7 @@ namespace CookedRabbit.Core
         public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -327,10 +382,16 @@ namespace CookedRabbit.Core
                     publishBatch.Publish();
                 }
             }
-            catch
-            { error = true; }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishBatchFailed,
+                    ex.Message);
+
+                error = true;
+            }
             finally
-            { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -341,7 +402,7 @@ namespace CookedRabbit.Core
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await ReceiptBuffer
@@ -357,7 +418,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return ReceiptBuffer.Reader;
@@ -370,48 +431,13 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             return await ReceiptBuffer
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
-        /// </summary>
-        /// <param name="letters"></param>
-        /// <param name="createReceipt"></param>
-        /// <param name="withHeaders"></param>
-        public async Task PublishAsyncEnumerableAsync(IAsyncEnumerable<Letter> letters, bool createReceipt, bool withHeaders = true)
-        {
-            var error = false;
-            var chanHost = await ChannelPool
-                .GetChannelAsync()
-                .ConfigureAwait(false);
-
-            await foreach (var letter in letters)
-            {
-                try
-                {
-                    chanHost.Channel.BasicPublish(
-                        letter.Envelope.Exchange,
-                        letter.Envelope.RoutingKey,
-                        letter.Envelope.RoutingOptions.Mandatory,
-                        BuildProperties(letter, chanHost, withHeaders),
-                        letter.Body);
-                }
-                catch
-                { error = true; }
-
-                if (createReceipt) { await CreateReceiptAsync(letter, error).ConfigureAwait(false); }
-
-                if (error) { break; }
-            }
-
-            await ChannelPool.ReturnChannelAsync(chanHost, error);
         }
 
         public async IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync()
@@ -421,7 +447,7 @@ namespace CookedRabbit.Core
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
             {
-                throw new InvalidOperationException(Strings.ChannelReadErrorMessage);
+                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
             await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())
@@ -447,7 +473,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in letter.LetterMetadata?.CustomFields)
                 {
-                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -455,7 +481,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForLetter;
+            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForLetter;
 
             return props;
         }
@@ -475,7 +501,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in headers)
                 {
-                    if (kvp.Key.StartsWith(Strings.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -483,7 +509,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Strings.HeaderForObjectType] = Strings.HeaderValueForMessage;
+            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             return props;
         }

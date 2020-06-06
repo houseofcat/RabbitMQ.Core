@@ -30,19 +30,19 @@ namespace CookedRabbit.Core
 
         public ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return ConsumerSettings[consumerName];
         }
 
         public ConsumerOptions GetLetterConsumerSettings(string consumerName)
         {
-            if (!LetterConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!LetterConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return LetterConsumerSettings[consumerName];
         }
 
         public ConsumerOptions GetMessageConsumerSettings(string consumerName)
         {
-            if (!MessageConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.NoConsumerSettingsMessage, consumerName));
+            if (!MessageConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return MessageConsumerSettings[consumerName];
         }
     }
