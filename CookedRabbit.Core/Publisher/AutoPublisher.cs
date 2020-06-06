@@ -82,7 +82,7 @@ namespace CookedRabbit.Core
                 if (Encrypt && (hashKey == null || hashKey.Length != 32)) throw new InvalidOperationException(ExceptionMessages.EncrypConfigErrorMessage);
                 _hashKey = hashKey;
 
-                await Publisher.ChannelPool.InitializeAsync().ConfigureAwait(false);
+                await Publisher.InitializeAsync().ConfigureAwait(false);
 
                 _letterQueue = Channel.CreateBounded<Letter>(
                     new BoundedChannelOptions(Config.PublisherSettings.LetterQueueBufferSize)

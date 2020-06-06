@@ -766,7 +766,7 @@ namespace CookedRabbit.Core
                             .Delay(ConsumerSettings.SleepOnIdleInterval)
                             .ConfigureAwait(false);
                     }
-                    catch (Exception ex) 
+                    catch (Exception ex)
                     {
                         _logger.LogError(
                             LogMessages.Consumer.ConsumerPipelineError,

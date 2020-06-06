@@ -475,14 +475,6 @@
             <param name="createReceipt"></param>
             <param name="withHeaders"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Publisher.PublishAsyncEnumerableAsync(System.Collections.Generic.IAsyncEnumerable{CookedRabbit.Core.Letter},System.Boolean,System.Boolean)">
-            <summary>
-            Use this method to sequentially publish all messages of an IAsyncEnumerable (order is not 100% guaranteed).
-            </summary>
-            <param name="letters"></param>
-            <param name="createReceipt"></param>
-            <param name="withHeaders"></param>
-        </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(System.String,Microsoft.Extensions.Logging.ILoggerFactory)">
             <summary>
             Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.

@@ -58,8 +58,8 @@ namespace CookedRabbit.Core.WorkEngines
                 MaxDegreeOfParallelism = maxDegreeOfParallelism,
             };
 
-  
-          _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
+
+            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
         public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, int? bufferSize = null)
         {

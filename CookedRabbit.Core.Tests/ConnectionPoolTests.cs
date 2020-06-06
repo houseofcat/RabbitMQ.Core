@@ -40,8 +40,6 @@ namespace CookedRabbit.Core.Tests
             await connPool
                 .InitializeAsync()
                 .ConfigureAwait(false);
-
-            Assert.True(connPool.CurrentConnectionId > 0);
         }
 
         [Fact]

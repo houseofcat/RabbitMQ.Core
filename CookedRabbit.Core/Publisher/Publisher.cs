@@ -13,11 +13,10 @@ namespace CookedRabbit.Core
 {
     public interface IPublisher
     {
-        IChannelPool ChannelPool { get; }
         Config Config { get; }
         Channel<PublishReceipt> ReceiptBuffer { get; }
 
-        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
+        Task InitializeAsync();
 
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishAsync(string exchangeName, string routingKey, byte[] payload, bool mandatory = false, IBasicProperties messageProperties = null);
@@ -27,26 +26,26 @@ namespace CookedRabbit.Core
         Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
 
+        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
         IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
         ValueTask<PublishReceipt> ReadPublishReceiptAsync();
     }
 
     public class Publisher : IPublisher
     {
-        private ILogger<Publisher> _logger;
+        private readonly ILogger<Publisher> _logger;
+        private readonly IChannelPool _channelPool;
 
+        public Channel<PublishReceipt> ReceiptBuffer { get; set; }
         public Config Config { get; }
-        public IChannelPool ChannelPool { get; }
-
-        public Channel<PublishReceipt> ReceiptBuffer { get; }
 
         public Publisher(Config config)
         {
             Guard.AgainstNull(config, nameof(config));
 
             _logger = LogHelper.GetLogger<Publisher>();
+            _channelPool = new ChannelPool(Config);
             Config = config;
-            ChannelPool = new ChannelPool(Config);
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
         }
 
@@ -55,9 +54,14 @@ namespace CookedRabbit.Core
             Guard.AgainstNull(channelPool, nameof(channelPool));
 
             _logger = LogHelper.GetLogger<Publisher>();
+            _channelPool = channelPool;
             Config = channelPool.Config;
-            ChannelPool = channelPool;
             ReceiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
+        }
+
+        public async Task InitializeAsync()
+        {
+            await _channelPool.InitializeAsync();
         }
 
         // A basic implementation of publish but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
@@ -71,7 +75,7 @@ namespace CookedRabbit.Core
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
             if (messageProperties == null)
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
@@ -102,7 +106,7 @@ namespace CookedRabbit.Core
             }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -121,7 +125,7 @@ namespace CookedRabbit.Core
             Guard.AgainstBothNullOrEmpty(exchangeName, nameof(exchangeName), routingKey, nameof(routingKey));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync().ConfigureAwait(false);
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -143,7 +147,7 @@ namespace CookedRabbit.Core
             }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -162,7 +166,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync();
             if (messageProperties == null)
             {
                 messageProperties = channelHost.Channel.CreateBasicProperties();
@@ -199,7 +203,7 @@ namespace CookedRabbit.Core
             }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -220,7 +224,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await ChannelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync();
 
             try
             {
@@ -244,7 +248,7 @@ namespace CookedRabbit.Core
             }
             finally
             {
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(channelHost, error);
             }
 
@@ -261,7 +265,7 @@ namespace CookedRabbit.Core
         public async Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -292,7 +296,7 @@ namespace CookedRabbit.Core
                         .ConfigureAwait(false);
                 }
 
-                await ChannelPool
+                await _channelPool
                     .ReturnChannelAsync(chanHost, error);
             }
         }
@@ -306,7 +310,7 @@ namespace CookedRabbit.Core
         public async Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -338,7 +342,7 @@ namespace CookedRabbit.Core
                 if (error) { break; }
             }
 
-            await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
+            await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -351,7 +355,7 @@ namespace CookedRabbit.Core
         public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
-            var chanHost = await ChannelPool
+            var chanHost = await _channelPool
                 .GetChannelAsync()
                 .ConfigureAwait(false);
 
@@ -387,7 +391,7 @@ namespace CookedRabbit.Core
                 error = true;
             }
             finally
-            { await ChannelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
+            { await _channelPool.ReturnChannelAsync(chanHost, error).ConfigureAwait(false); }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

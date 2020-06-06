@@ -2,6 +2,9 @@ namespace CookedRabbit.Core
 {
     public static class Constants
     {
+        // RabbitService 
+        public const int EncryptionKeySize = 32; // AES256
+
         // Publisher
         public const string HeaderPrefix = "X-";
 
