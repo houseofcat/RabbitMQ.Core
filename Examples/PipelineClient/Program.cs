@@ -339,24 +339,16 @@ namespace CookedRabbit.Core.PipelineClient
                     .PublishAsync("", _errorQueue, state.ReceivedData.Data, null)
                     .ConfigureAwait(false);
 
-                string body = null;
-                try
+                if (failed)
                 {
-                    body = state.ReceivedData.GetBodyAsUtf8String();
+                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize and publish to ErrorQueue!\r\n{state.ReceivedData.GetBodyAsUtf8String()}\r\n");
                 }
-                catch (Exception ex)
+                else
                 {
-                    if (failed)
-                    {
-                        _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize and publish to ErrorQueue!\r\n{body}\r\n");
-                    }
-                    else
-                    {
-                        _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize. Published to ErrorQueue!\r\n{body}\r\n");
+                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize. Published to ErrorQueue!\r\n{state.ReceivedData.GetBodyAsUtf8String()}\r\n");
 
-                        // So we ack the message
-                        state.ProcessStepSuccess = true;
-                    }
+                    // So we ack the message
+                    state.ProcessStepSuccess = true;
                 }
             }
 

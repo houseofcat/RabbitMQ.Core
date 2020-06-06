@@ -128,7 +128,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task PublishBatchAsync()
+        public Task PublishBatchAsync()
         {
             //var config = new Config();
             //config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");

@@ -649,7 +649,6 @@ namespace CookedRabbit.Core.WorkEngines
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
-
                 _logger.LogTrace(LogMessages.Pipeline.Queued, _pipelineName);
                 return await firstStep.SendAsync(input).ConfigureAwait(false);
             }
@@ -682,7 +681,7 @@ namespace CookedRabbit.Core.WorkEngines
         {
             foreach (var step in Steps)
             {
-                if (step.Block.Completion.IsFaulted)
+                if (step.IsFaulted)
                 {
                     return step.Block.Completion.Exception;
                 }

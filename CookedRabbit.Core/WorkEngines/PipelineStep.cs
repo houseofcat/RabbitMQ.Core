@@ -11,7 +11,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public bool IsFaulted
         {
-            get { return Block.Completion.IsFaulted; }
+            get { return Block?.Completion?.IsFaulted ?? false; }
         }
     }
 }
