@@ -243,7 +243,7 @@ namespace CookedRabbit.Core.Pools
 
             while (true)
             {
-                _logger.LogDebug(LogMessages.ChannelPool.DeadChannelRepair, channelId);
+                _logger.LogDebug(LogMessages.ChannelPool.CreateChannel, channelId);
 
                 var sleep = false;
 
@@ -255,13 +255,15 @@ namespace CookedRabbit.Core.Pools
 
                     if (!await connHost.HealthyAsync().ConfigureAwait(false))
                     {
+                        _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConnection, channelId);
                         sleep = true;
                     }
                 }
                 catch
-                { sleep = true; }
-
-                _logger.LogDebug(LogMessages.ChannelPool.DeadChannelRepairConnection, channelId);
+                {
+                    _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConnection, channelId);
+                    sleep = true;
+                }
 
                 if (!sleep)
                 {
@@ -269,14 +271,14 @@ namespace CookedRabbit.Core.Pools
                     { chanHost = new ChannelHost(channelId, connHost, ackable); }
                     catch
                     {
-                        _logger.LogDebug(LogMessages.ChannelPool.DeadChannelRepairConstruction, channelId);
+                        _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConstruction, channelId);
                         sleep = true;
                     }
                 }
 
                 if (sleep)
                 {
-                    _logger.LogDebug(LogMessages.ChannelPool.DeadChannelRepairSleep, channelId);
+                    _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSleep, channelId);
 
                     await Task
                         .Delay(Config.PoolSettings.SleepOnErrorInterval)
@@ -290,7 +292,7 @@ namespace CookedRabbit.Core.Pools
 
             _flaggedChannels[chanHost.ChannelId] = false;
 
-            _logger.LogDebug(LogMessages.ChannelPool.DeadChannelRepairSuccess, channelId);
+            _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
             return chanHost;
         }
 
