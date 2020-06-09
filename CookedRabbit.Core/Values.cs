@@ -72,11 +72,11 @@ namespace CookedRabbit.Core
             public readonly static string Initialization = "ChannelPool initialize call was made.";
             public readonly static string InitializationComplete = "ChannelPool initialized.";
             public readonly static string DeadChannel = "A dead channel ({0}) was detected... attempting to repair indefinitely.";
-            public readonly static string DeadChannelRepair = "The channel host ({0}) repair loop is executing an iteration...";
-            public readonly static string DeadChannelRepairConnection = "The channel host ({0}) failed because Connection unhealthy.";
-            public readonly static string DeadChannelRepairConstruction = "The channel host ({0}) failed because ChannelHost construction threw exception.";
-            public readonly static string DeadChannelRepairSleep = "The channel host ({0}) repair loop iteration failed. Sleeping...";
-            public readonly static string DeadChannelRepairSuccess = "The channel host ({0}) repair loop finished. Channel restored and flags removed.";
+            public readonly static string CreateChannel = "The channel host ({0}) create loop is executing an iteration...";
+            public readonly static string CreateChannelFailedConnection = "The channel host ({0}) failed because Connection unhealthy.";
+            public readonly static string CreateChannelFailedConstruction = "The channel host ({0}) failed because ChannelHost construction threw exception.";
+            public readonly static string CreateChannelSleep = "The channel host ({0}) create loop iteration failed. Sleeping...";
+            public readonly static string CreateChannelSuccess = "The channel host ({0}) create loop finished. Channel restored and flags removed.";
             public readonly static string ReturningChannel = "The channel host ({0}) was returned to the pool. Flagged? {1}";
             public readonly static string Shutdown = "ChannelPool shutdown was called.";
             public readonly static string ShutdownComplete = "ChannelPool shutdown complete.";
