@@ -2,6 +2,7 @@ using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -190,7 +191,8 @@ namespace CookedRabbit.Core.Service
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
-                if (Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
+                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.GlobalSettings)
+                    && Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
                 {
                     var globalOverrides = Config.GlobalConsumerSettings[consumerSetting.Value.GlobalSettings];
 
