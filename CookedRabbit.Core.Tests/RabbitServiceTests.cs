@@ -22,7 +22,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public void GetMessageConsumer()
         {
-            var consumer = rabbitService.GetMessageConsumer("TestMessageConsumer");
+            var consumer = rabbitService.GetConsumer("TestMessageConsumer");
 
             Assert.NotNull(consumer);
         }
@@ -30,7 +30,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public void GetLetterConsumer()
         {
-            var consumer = rabbitService.GetMessageConsumer("TestMessageConsumer");
+            var consumer = rabbitService.GetConsumer("TestMessageConsumer");
 
             Assert.NotNull(consumer);
         }
@@ -48,7 +48,7 @@ namespace CookedRabbit.Core.Tests
                 .CreateTopologyFromFileAsync("TestTopologyConfig.json")
                 .ConfigureAwait(false);
 
-            var consumer = rabbitService.GetMessageConsumer("TestMessageConsumer");
+            var consumer = rabbitService.GetConsumer("TestMessageConsumer");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);

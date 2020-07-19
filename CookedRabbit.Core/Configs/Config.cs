@@ -22,28 +22,19 @@ namespace CookedRabbit.Core
         public PublisherOptions PublisherSettings { get; set; } = new PublisherOptions();
 
         /// <summary>
+        /// Class to hold the global Consumer settings. Will apply these to every consumer.
+        /// </summary>
+        public IDictionary<string, GlobalConsumerOptions> GlobalConsumerSettings { get; set; } = new Dictionary<string, GlobalConsumerOptions>();
+
+        /// <summary>
         /// Dictionary to hold all the ConsumerSettings using the ConsumerOption class.
         /// </summary>
         public IDictionary<string, ConsumerOptions> ConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
-        public IDictionary<string, ConsumerOptions> LetterConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
-        public IDictionary<string, ConsumerOptions> MessageConsumerSettings { get; set; } = new Dictionary<string, ConsumerOptions>();
 
         public ConsumerOptions GetConsumerSettings(string consumerName)
         {
             if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return ConsumerSettings[consumerName];
-        }
-
-        public ConsumerOptions GetLetterConsumerSettings(string consumerName)
-        {
-            if (!LetterConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
-            return LetterConsumerSettings[consumerName];
-        }
-
-        public ConsumerOptions GetMessageConsumerSettings(string consumerName)
-        {
-            if (!MessageConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
-            return MessageConsumerSettings[consumerName];
         }
     }
 }

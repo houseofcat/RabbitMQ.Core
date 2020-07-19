@@ -50,7 +50,7 @@ namespace CookedRabbit.Core.SimpleClient
                 .QueueLetterAsync(letter);
 
             // Start Consumer
-            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -102,12 +102,12 @@ namespace CookedRabbit.Core.SimpleClient
                 .QueueLetterAsync(letter);
 
             // Start Consumer
-            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
-            _ = Task.Run(() => consumer.ExecutionEngineAsync(ConsumerWorkerAsync));
+            //_ = Task.Run(() => consumer.ExecutionEngineAsync(ConsumerWorkerAsync));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
@@ -141,12 +141,12 @@ namespace CookedRabbit.Core.SimpleClient
             }
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
 
-            _ = Task.Run(() => consumer.ParallelExecutionEngineAsync(ConsumerWorkerAsync, 7));
+            //_ = Task.Run(() => consumer.ParallelExecutionEngineAsync(ConsumerWorkerAsync, 7));
 
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
@@ -180,7 +180,7 @@ namespace CookedRabbit.Core.SimpleClient
             }
 
             // Start Consumer As An Execution Engine
-            var consumer = rabbitService.GetLetterConsumer("ConsumerFromConfig");
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
             await consumer
                 .StartConsumerAsync(false, true)
                 .ConfigureAwait(false);
@@ -190,13 +190,13 @@ namespace CookedRabbit.Core.SimpleClient
             await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
 
-        private static async Task<bool> ConsumerWorkerAsync(ReceivedLetter receivedLetter)
+        private static async Task<bool> ConsumerWorkerAsync(ReceivedData data)
         {
             try
             {
-                var decodedLetter = JsonSerializer.Deserialize<TestMessage>(receivedLetter.Letter.Body);
+                var decodedLetter = JsonSerializer.Deserialize<TestMessage>(data.Letter.Body);
 
-                await Console.Out.WriteLineAsync($"LetterId: {receivedLetter.Letter.LetterId} Received: {decodedLetter.Message}").ConfigureAwait(false);
+                await Console.Out.WriteLineAsync($"LetterId: {data.Letter.LetterId} Received: {decodedLetter.Message}").ConfigureAwait(false);
 
                 // Return true or false to ack / nack the message. Exceptions thrown automatically nack the message.
                 // Strategy would be that you control the retry / permanent error in this method and return true.

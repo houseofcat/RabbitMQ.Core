@@ -20,10 +20,10 @@ namespace CookedRabbit.Core.Tests
         public void BuildSimplePipelineTest()
         {
             // Arrange
-            var pipeline = new Pipeline<ReceivedLetter, WorkState>(5);
+            var pipeline = new Pipeline<ReceivedData, WorkState>(5);
 
             // Act
-            pipeline.AddStep<ReceivedLetter, WorkState>(DeserializeStep);
+            pipeline.AddStep<ReceivedData, WorkState>(DeserializeStep);
             pipeline.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
             pipeline.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
             pipeline.AddStep<WorkState, WorkState>(LogStep);
@@ -37,23 +37,19 @@ namespace CookedRabbit.Core.Tests
                     { _output.WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Finished route unsuccesfully."); }
 
                     // Lastly mark the excution pipeline finished for this message.
-                    state.ReceivedLetter.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
+                    state.ReceivedData.Complete(); // This impacts wait to completion step in the WorkFlowEngine.
                 });
 
             // Assert
             Assert.Equal(pipeline.StepCount, 5);
         }
 
-        private static WorkState DeserializeStep(ReceivedLetter receivedLetter)
+        private static WorkState DeserializeStep(ReceivedData data)
         {
             var state = new WorkState();
             try
             {
-                var decodedLetter = JsonSerializer.Deserialize<Message>(receivedLetter.Letter.Body);
-                state.ReceivedLetter = receivedLetter;
-                state.LetterId = receivedLetter.Letter.LetterId;
-                state.Message = decodedLetter;
-                state.DeserializeStepSuccess = true;
+                var decodedLetter = data.GetTypeFromJsonAsync<Letter>();
             }
             catch
             { state.DeserializeStepSuccess = false; }
@@ -93,7 +89,7 @@ namespace CookedRabbit.Core.Tests
                 _output
                     .WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Acking message...");
 
-                if (state.ReceivedLetter.AckMessage())
+                if (state.ReceivedData.AckMessage())
                 { state.AcknowledgeStepSuccess = true; }
             }
             else
@@ -101,7 +97,7 @@ namespace CookedRabbit.Core.Tests
                 _output
                     .WriteLine($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - LetterId: {state.LetterId} - Nacking message...");
 
-                if (state.ReceivedLetter.NackMessage(true))
+                if (state.ReceivedData.NackMessage(true))
                 { state.AcknowledgeStepSuccess = true; }
             }
 
@@ -125,7 +121,7 @@ namespace CookedRabbit.Core.Tests
         public class WorkState
         {
             public Message Message { get; set; }
-            public ReceivedLetter ReceivedLetter { get; set; }
+            public ReceivedData ReceivedData { get; set; }
             public ulong LetterId { get; set; }
             public bool DeserializeStepSuccess { get; set; }
             public bool ProcessStepSuccess { get; set; }

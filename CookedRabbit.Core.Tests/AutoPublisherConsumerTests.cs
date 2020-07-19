@@ -14,7 +14,7 @@ namespace CookedRabbit.Core.Tests
         private readonly Config config;
         private readonly Topologer topologer;
         private readonly AutoPublisher autoPublisher;
-        private readonly MessageConsumer consumer;
+        private readonly Consumer consumer;
 
         public AutoPublisherConsumerTests(ITestOutputHelper output)
         {
@@ -26,7 +26,7 @@ namespace CookedRabbit.Core.Tests
             topologer.InitializeAsync().GetAwaiter().GetResult();
 
             autoPublisher = new AutoPublisher(channelPool);
-            consumer = new MessageConsumer(channelPool, "TestAutoPublisherConsumerName");
+            consumer = new Consumer(channelPool, "TestAutoPublisherConsumerName");
         }
 
         [Fact]
@@ -101,7 +101,7 @@ namespace CookedRabbit.Core.Tests
             return error;
         }
 
-        private async Task<bool> ConsumeMessagesAsync(MessageConsumer consumer, ulong count)
+        private async Task<bool> ConsumeMessagesAsync(Consumer consumer, ulong count)
         {
             var messageCount = 0ul;
             var error = false;

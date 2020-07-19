@@ -19,6 +19,11 @@
             Class to hold settings for Publisher/AutoPublisher options.
             </summary>
         </member>
+        <member name="P:CookedRabbit.Core.Config.GlobalConsumerSettings">
+            <summary>
+            Class to hold the global Consumer settings. Will apply these to every consumer.
+            </summary>
+        </member>
         <member name="P:CookedRabbit.Core.Config.ConsumerSettings">
             <summary>
             Dictionary to hold all the ConsumerSettings using the ConsumerOption class.
@@ -63,6 +68,11 @@
         <member name="P:CookedRabbit.Core.FactoryOptions.SslSettings">
             <summary>
             Class to hold settings for ChannelFactory/SSL (RabbitMQ) settings.
+            </summary>
+        </member>
+        <member name="T:CookedRabbit.Core.GlobalConsumerOptions">
+            <summary>
+            Global overrides for your consumers.
             </summary>
         </member>
         <member name="P:CookedRabbit.Core.PoolOptions.ConnectionPoolName">
@@ -304,7 +314,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:CookedRabbit.Core.ReceivedData.GetBodyAsUtf8String">
+        <member name="M:CookedRabbit.Core.ReceivedData.GetBodyAsUtf8StringAsync(System.Boolean,System.Boolean)">
             <summary>
             Use this method to retrieve the internal buffer as string.
             <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
@@ -334,7 +344,7 @@
             <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
             <para>Header Example: ("X-CR-OBJECTTYPE", "LETTER")</para>
             <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
-            <em>Note: Always decomprypts Letter bodies to get type regardless of parameters.</em>
+            <em>Note: Always decomcrypts Letter bodies to get type regardless of parameters.</em>
             </summary>
             <typeparam name="TResult"></typeparam>
             <param name="decrypt"></param>
@@ -350,28 +360,6 @@
         <member name="M:CookedRabbit.Core.ReceivedData.Completion">
             <summary>
             A way to await the message until it is marked complete.
-            </summary>
-        </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBody``1(System.Text.Json.JsonSerializerOptions)">
-            <summary>
-            Convert internal Body to type.
-            </summary>
-            <typeparam name="T"></typeparam>
-        </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBodyToLetter">
-            <summary>
-            Convert internal Body to type <see cref="T:CookedRabbit.Core.Letter" />.
-            </summary>
-        </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBodyAsync``1(System.Text.Json.JsonSerializerOptions)">
-            <summary>
-            Convert internal Body as a Stream asynchronously to type T.
-            </summary>
-            <typeparam name="T"></typeparam>
-        </member>
-        <member name="M:CookedRabbit.Core.ReceivedMessage.ConvertJsonBodyToLetterAsync">
-            <summary>
-            Convert internal Body as a Stream asynchronously to type <see cref="T:CookedRabbit.Core.Letter" />.
             </summary>
         </member>
         <member name="M:CookedRabbit.Core.Pools.IChannelPool.GetAckChannelAsync">

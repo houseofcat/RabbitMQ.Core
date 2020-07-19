@@ -29,7 +29,7 @@ namespace CookedRabbit.Core.Tests
             var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             Assert.NotNull(config);
 
-            var con = new MessageConsumer(config, "TestMessageConsumer");
+            var con = new Consumer(config, "TestMessageConsumer");
             Assert.NotNull(con);
         }
 
@@ -39,7 +39,7 @@ namespace CookedRabbit.Core.Tests
             var config = await ConfigReader.ConfigFileReadAsync("TestConfig.json");
             Assert.NotNull(config);
 
-            var con = new MessageConsumer(config, "TestMessageConsumer");
+            var con = new Consumer(config, "TestMessageConsumer");
             Assert.NotNull(con);
 
             await con.ChannelPool.InitializeAsync().ConfigureAwait(false);
@@ -49,7 +49,7 @@ namespace CookedRabbit.Core.Tests
         public async Task CreateConsumerAndStart()
         {
             await topologer.CreateQueueAsync("TestConsumerQueue").ConfigureAwait(false);
-            var con = new MessageConsumer(channelPool, "TestMessageConsumer");
+            var con = new Consumer(channelPool, "TestMessageConsumer");
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
         }
 
@@ -57,7 +57,7 @@ namespace CookedRabbit.Core.Tests
         public async Task CreateConsumerStartAndStop()
         {
             await topologer.CreateQueueAsync("TestConsumerQueue").ConfigureAwait(false);
-            var con = new MessageConsumer(channelPool, "TestMessageConsumer");
+            var con = new Consumer(channelPool, "TestMessageConsumer");
 
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
             await con.StopConsumerAsync().ConfigureAwait(false);

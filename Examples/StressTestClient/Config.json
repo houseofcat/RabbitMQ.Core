@@ -36,36 +36,36 @@
       "QueueName": "StressTestQueue1",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
-      "BehaviorWhenFull": 0
+      "BatchSize": 1,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 1
     },
     "Consumer2": {
       "ConsumerName": "Consumer2",
       "QueueName": "StressTestQueue2",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
-      "BehaviorWhenFull": 0
+      "BatchSize": 1,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 1
     },
     "Consumer3": {
       "ConsumerName": "Consumer3",
       "QueueName": "StressTestQueue3",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
-      "BehaviorWhenFull": 0
+      "BatchSize": 1,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 1
     },
     "Consumer4": {
       "ConsumerName": "Consumer4",
       "QueueName": "StressTestQueue4",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 10,
-      "RabbitMessageBufferSize": 1000,
-      "BehaviorWhenFull": 0
+      "BatchSize": 1,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0
     }
   }
 }

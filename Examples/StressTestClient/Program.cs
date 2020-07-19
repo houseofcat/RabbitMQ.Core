@@ -16,10 +16,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         private static AutoPublisher apub3;
         private static AutoPublisher apub4;
 
-        private static MessageConsumer con1;
-        private static MessageConsumer con2;
-        private static MessageConsumer con3;
-        private static MessageConsumer con4;
+        private static Consumer con1;
+        private static Consumer con2;
+        private static Consumer con3;
+        private static Consumer con4;
 
         // Per Publisher
         private const ulong MessageCount = 250_000;
@@ -72,14 +72,14 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             await Console.Out.WriteLineAsync("- Creating stress test queues!").ConfigureAwait(false);
 
-            foreach (var kvp in config.LetterConsumerSettings)
+            foreach (var kvp in config.ConsumerSettings)
             {
                 await topologer
                     .DeleteQueueAsync(kvp.Value.QueueName)
                     .ConfigureAwait(false);
             }
 
-            foreach (var kvp in config.LetterConsumerSettings)
+            foreach (var kvp in config.ConsumerSettings)
             {
                 await topologer
                     .CreateQueueAsync(kvp.Value.QueueName, true)
@@ -91,10 +91,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await apub3.StartAsync().ConfigureAwait(false);
             await apub4.StartAsync().ConfigureAwait(false);
 
-            con1 = new MessageConsumer(channelPool, "Consumer1");
-            con2 = new MessageConsumer(channelPool, "Consumer2");
-            con3 = new MessageConsumer(channelPool, "Consumer3");
-            con4 = new MessageConsumer(channelPool, "Consumer4");
+            con1 = new Consumer(channelPool, "Consumer1");
+            con2 = new Consumer(channelPool, "Consumer2");
+            con3 = new Consumer(channelPool, "Consumer3");
+            con4 = new Consumer(channelPool, "Consumer4");
             sw.Stop();
 
             await Console
@@ -118,7 +118,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await Console.Out.WriteLineAsync($"- All tests finished in {sw.ElapsedMilliseconds / 60_000.0} minutes!").ConfigureAwait(false);
         }
 
-        private static async Task StartPubSubTestAsync(AutoPublisher autoPublisher, MessageConsumer consumer)
+        private static async Task StartPubSubTestAsync(AutoPublisher autoPublisher, Consumer consumer)
         {
             var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.ConsumerSettings.QueueName, MessageCount);
             var processReceiptsTask = ProcessReceiptsAsync(autoPublisher, MessageCount);
@@ -194,7 +194,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await Console.Out.WriteLineAsync($"- Finished getting receipts.\r\nReceiptCount: {receiptCount} in {sw.ElapsedMilliseconds / 60_000.0} minutes.\r\nErrorCount: {errorCount}").ConfigureAwait(false);
         }
 
-        private static async Task ConsumeMessagesAsync(MessageConsumer consumer, ulong count)
+        private static async Task ConsumeMessagesAsync(Consumer consumer, ulong count)
         {
             var messageCount = 0ul;
             var errorCount = 0ul;

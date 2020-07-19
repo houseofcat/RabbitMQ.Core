@@ -22,13 +22,9 @@ namespace CookedRabbit.Core
         bool Shutdown { get; }
 
         Task DataflowExecutionEngineAsync(Func<TFromQueue, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default);
-        Task ExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync);
-        Task ExecutionEngineAsync(Func<TFromQueue, Task> workAsync);
-        Task ExecutionEngineAsync<TOptions>(Func<TFromQueue, TOptions, Task<bool>> workAsync, TOptions options);
+        Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
 
         ChannelReader<TFromQueue> GetConsumerBuffer();
-        Task ParallelExecutionEngineAsync(Func<TFromQueue, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default);
-        Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
         ValueTask<TFromQueue> ReadAsync();
         Task<IEnumerable<TFromQueue>> ReadUntilEmptyAsync();
         Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true);
@@ -53,9 +49,6 @@ namespace CookedRabbit.Core
 
         public bool Consuming { get; private set; }
         public bool Shutdown { get; private set; }
-
-        private bool AutoAck { get; set; }
-        private bool UseTransientChannel { get; set; }
 
 
         private byte[] HashKey { get; }
@@ -112,13 +105,10 @@ namespace CookedRabbit.Core
             {
                 if (ConsumerSettings.Enabled && !Consuming)
                 {
-                    AutoAck = autoAck;
-                    UseTransientChannel = useTransientChannel;
-
                     DataBuffer = Channel.CreateBounded<ReceivedData>(
-                    new BoundedChannelOptions(ConsumerSettings.BufferSize)
+                    new BoundedChannelOptions(ConsumerSettings.BatchSize.Value)
                     {
-                        FullMode = ConsumerSettings.BehaviorWhenFull
+                        FullMode = ConsumerSettings.BehaviorWhenFull.Value
                     });
 
                     await DataBuffer
@@ -199,10 +189,10 @@ namespace CookedRabbit.Core
                     .Channel
                     .BasicConsume(
                         ConsumerSettings.QueueName,
-                        AutoAck,
+                        ConsumerSettings.AutoAck ?? false,
                         ConsumerSettings.ConsumerName,
-                        ConsumerSettings.NoLocal,
-                        ConsumerSettings.Exclusive,
+                        ConsumerSettings.NoLocal ?? false,
+                        ConsumerSettings.Exclusive ?? false,
                         null,
                         consumer);
             }
@@ -215,10 +205,10 @@ namespace CookedRabbit.Core
                     .Channel
                     .BasicConsume(
                         ConsumerSettings.QueueName,
-                        AutoAck,
+                        ConsumerSettings.AutoAck ?? false,
                         ConsumerSettings.ConsumerName,
-                        ConsumerSettings.NoLocal,
-                        ConsumerSettings.Exclusive,
+                        ConsumerSettings.NoLocal ?? false,
+                        ConsumerSettings.Exclusive ?? false,
                         null,
                         consumer);
             }
@@ -234,14 +224,14 @@ namespace CookedRabbit.Core
         {
             try
             {
-                if (UseTransientChannel)
+                if (ConsumerSettings.UseTransientChannels ?? true)
                 {
                     _logger.LogTrace(LogMessages.Consumer.GettingTransientChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
-                        .GetTransientChannelAsync(!AutoAck)
+                        .GetTransientChannelAsync(!ConsumerSettings.AutoAck.Value)
                         .ConfigureAwait(false);
                 }
-                else if (AutoAck)
+                else if (ConsumerSettings.AutoAck.Value)
                 {
                     _logger.LogTrace(LogMessages.Consumer.GettingChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
@@ -270,7 +260,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.QosPrefetchCount, false);
+                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.BatchSize.Value, false);
                 consumer = new EventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandler;
@@ -283,7 +273,7 @@ namespace CookedRabbit.Core
 
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !ConsumerSettings.AutoAck.Value, HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerMessageReceived,
@@ -317,7 +307,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.QosPrefetchCount, false);
+                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.BatchSize.Value, false);
                 consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.Channel);
 
                 consumer.Received += ReceiveHandlerAsync;
@@ -330,7 +320,7 @@ namespace CookedRabbit.Core
 
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !AutoAck, HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !ConsumerSettings.AutoAck.Value, HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerAsyncMessageReceived,
@@ -438,220 +428,6 @@ namespace CookedRabbit.Core
             }
         }
 
-        public async Task ExecutionEngineAsync(Func<ReceivedData, Task> workAsync)
-        {
-            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
-                {
-                    try
-                    {
-                        _logger.LogTrace(
-                            LogMessages.Consumer.ConsumerExecution,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag);
-
-                        await workAsync(receivedData)
-                            .ConfigureAwait(false);
-
-                        _logger.LogDebug(
-                            LogMessages.Consumer.ConsumerExecutionSuccess,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag);
-
-                        receivedData.AckMessage();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            LogMessages.Consumer.ConsumerExecutionError,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag,
-                            ex.Message);
-
-                        receivedData.NackMessage(true);
-                    }
-                }
-            }
-        }
-
-        public async Task ExecutionEngineAsync(Func<ReceivedData, Task<bool>> workAsync)
-        {
-            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
-                {
-                    try
-                    {
-                        _logger.LogTrace(
-                            LogMessages.Consumer.ConsumerExecution,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag);
-
-                        if (await workAsync(receivedData).ConfigureAwait(false))
-                        {
-                            _logger.LogDebug(
-                                LogMessages.Consumer.ConsumerExecutionSuccess,
-                                ConsumerSettings.ConsumerName,
-                                receivedData.DeliveryTag);
-
-                            receivedData.AckMessage();
-                        }
-                        else
-                        {
-                            _logger.LogWarning(
-                                LogMessages.Consumer.ConsumerExecutionFailure,
-                                ConsumerSettings.ConsumerName,
-                                receivedData.DeliveryTag);
-
-                            receivedData.NackMessage(true);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            LogMessages.Consumer.ConsumerExecutionError,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag,
-                            ex.Message);
-
-                        receivedData.NackMessage(true);
-                    }
-                }
-            }
-        }
-
-        public async Task ExecutionEngineAsync<TOptions>(Func<ReceivedData, TOptions, Task<bool>> workAsync, TOptions options)
-        {
-            while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
-            {
-                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
-                {
-                    try
-                    {
-                        _logger.LogTrace(
-                            LogMessages.Consumer.ConsumerExecution,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag);
-
-                        if (await workAsync(receivedData, options).ConfigureAwait(false))
-                        {
-                            _logger.LogDebug(
-                                LogMessages.Consumer.ConsumerExecutionSuccess,
-                                ConsumerSettings.ConsumerName,
-                                receivedData.DeliveryTag);
-
-                            receivedData.AckMessage();
-                        }
-                        else
-                        {
-                            _logger.LogWarning(
-                                LogMessages.Consumer.ConsumerExecutionFailure,
-                                ConsumerSettings.ConsumerName,
-                                receivedData.DeliveryTag);
-
-                            receivedData.NackMessage(true);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            LogMessages.Consumer.ConsumerExecutionError,
-                            ConsumerSettings.ConsumerName,
-                            receivedData.DeliveryTag,
-                            ex.Message);
-
-                        receivedData.NackMessage(true);
-                    }
-                }
-            }
-        }
-
-        private readonly SemaphoreSlim parallelExecLock = new SemaphoreSlim(1, 1);
-
-        public async Task ParallelExecutionEngineAsync(Func<ReceivedData, Task<bool>> workAsync, int maxDoP = 4, CancellationToken token = default)
-        {
-            await parallelExecLock.WaitAsync().ConfigureAwait(false);
-
-            try
-            {
-                if (token.IsCancellationRequested)
-                { return; }
-
-                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
-                {
-                    if (token.IsCancellationRequested)
-                    { return; }
-
-                    var parallelLock = new SemaphoreSlim(1, maxDoP);
-
-                    try
-                    {
-                        while (DataBuffer.Reader.TryRead(out var receivedData))
-                        {
-                            if (token.IsCancellationRequested)
-                            { return; }
-
-                            if (receivedData != null)
-                            {
-                                await parallelLock.WaitAsync().ConfigureAwait(false);
-
-                                _ = Task.Run(ExecuteWorkAsync);
-
-                                async ValueTask ExecuteWorkAsync()
-                                {
-                                    try
-                                    {
-                                        _logger.LogDebug(
-                                            LogMessages.Consumer.ConsumerParallelExecution,
-                                            ConsumerSettings.ConsumerName,
-                                            receivedData.DeliveryTag);
-
-                                        if (await workAsync(receivedData).ConfigureAwait(false))
-                                        {
-                                            _logger.LogDebug(
-                                                LogMessages.Consumer.ConsumerParallelExecutionSuccess,
-                                                ConsumerSettings.ConsumerName,
-                                                receivedData.DeliveryTag);
-
-                                            receivedData.AckMessage();
-                                        }
-                                        else
-                                        {
-                                            _logger.LogWarning(
-                                                LogMessages.Consumer.ConsumerParallelExecutionFailure,
-                                                ConsumerSettings.ConsumerName,
-                                                receivedData.DeliveryTag);
-
-                                            receivedData.NackMessage(true);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        _logger.LogError(
-                                            LogMessages.Consumer.ConsumerParallelExecutionFailure,
-                                            ConsumerSettings.ConsumerName,
-                                            receivedData.DeliveryTag,
-                                            ex.Message);
-
-                                        receivedData.NackMessage(true);
-                                    }
-                                    finally
-                                    { parallelLock.Release(); }
-                                }
-                            }
-                        }
-
-                        await Task
-                            .Delay(ConsumerSettings.SleepOnIdleInterval)
-                            .ConfigureAwait(false);
-                    }
-                    catch { }
-                }
-            }
-            finally { parallelExecLock.Release(); }
-        }
-
         private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1, 1);
 
         public async Task DataflowExecutionEngineAsync(Func<ReceivedData, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
@@ -688,7 +464,7 @@ namespace CookedRabbit.Core
                         }
 
                         await Task
-                            .Delay(ConsumerSettings.SleepOnIdleInterval)
+                            .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
                             .ConfigureAwait(false);
                     }
                     catch { }
@@ -711,8 +487,6 @@ namespace CookedRabbit.Core
                 if (token.IsCancellationRequested)
                 { return; }
 
-                var workLock = new SemaphoreSlim(1, pipeline.MaxDegreeOfParallelism);
-
                 while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested)
@@ -727,8 +501,6 @@ namespace CookedRabbit.Core
 
                             if (receivedData != null)
                             {
-                                await workLock.WaitAsync().ConfigureAwait(false);
-
                                 try
                                 {
                                     _logger.LogDebug(
@@ -757,13 +529,12 @@ namespace CookedRabbit.Core
                                             receivedData.DeliveryTag);
                                     }
                                 }
-                                finally
-                                { workLock.Release(); }
+                                catch { }
                             }
                         }
 
                         await Task
-                            .Delay(ConsumerSettings.SleepOnIdleInterval)
+                            .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
                             .ConfigureAwait(false);
                     }
                     catch (Exception ex)

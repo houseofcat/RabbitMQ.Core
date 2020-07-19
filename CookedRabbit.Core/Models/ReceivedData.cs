@@ -1,4 +1,5 @@
 using CookedRabbit.Core.Utils;
+using Org.BouncyCastle.Crypto;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -23,8 +24,8 @@ namespace CookedRabbit.Core
         void Complete();
         Task<bool> Completion();
         void Dispose();
-        ReadOnlyMemory<byte> GetBody();
-        string GetBodyAsUtf8String();
+        Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false);
+        Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false);
         Task<TResult> GetTypeFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null);
         Task<IEnumerable<TResult>> GetTypesFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null);
         bool NackMessage(bool requeue);
@@ -38,12 +39,15 @@ namespace CookedRabbit.Core
         public bool Ackable { get; }
         public IModel Channel { get; set; }
         public ulong DeliveryTag { get; }
-        public byte[] Data { get; }
+        public byte[] Data { get; private set; }
         public Letter Letter { get; protected set; }
-        private ReadOnlyMemory<byte> _hashKey { get; }
         public string ContentType { get; private set; }
 
         private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
+
+        private ReadOnlyMemory<byte> _hashKey;
+        private bool _decrypted;
+        private bool _decompressed;
 
         public ReceivedData(
             IModel channel,
@@ -151,63 +155,65 @@ namespace CookedRabbit.Core
 
 
         /// <summary>
-        /// Use this method to retrieve the internal buffer as byte[].
+        /// Use this method to retrieve the internal buffer as byte[]. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "LETTER")</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
-        /// <em>Note: Does not decomcrypt Letter body.</em>
+        /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
         /// <returns></returns>
-        public ReadOnlyMemory<byte> GetBody()
+        public async Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
             {
                 case Constants.HeaderValueForLetter:
 
-                    if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
+                    await CreateLetterFromDataAsync();
 
                     return Letter.Body;
 
                 case Constants.HeaderValueForMessage:
                 default:
 
+                    await DecomcryptDataAsync(decrypt, decompress);
+
                     return Data;
             }
         }
 
         /// <summary>
-        /// Use this method to retrieve the internal buffer as string.
+        /// Use this method to retrieve the internal buffer as string. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "LETTER")</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
-        /// <em>Note: Does not decomcrypt Letter body.</em>
+        /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
         /// <returns></returns>
-        public string GetBodyAsUtf8String()
+        public async Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
             {
                 case Constants.HeaderValueForLetter:
 
-                    if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
+                    await CreateLetterFromDataAsync();
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
                 case Constants.HeaderValueForMessage:
                 default:
 
+                    await DecomcryptDataAsync(decrypt, decompress);
+
                     return Encoding.UTF8.GetString(Data);
             }
         }
 
         /// <summary>
-        /// Use this method to attempt to deserialize into your type based on internal buffer.
+        /// Use this method to attempt to deserialize into your type based on internal buffer. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "LETTER")</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
-        /// <em>Note: Always decomprypts Letter bodies to get type regardless of parameters.</em>
+        /// <em>Note: Always decomcrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="decrypt"></param>
@@ -220,45 +226,18 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
+                    await CreateLetterFromDataAsync();
 
-                    if (Letter.LetterMetadata.Encrypted && _hashKey.Length > 0)
-                    {
-                        Letter.Body = AesEncrypt.Decrypt(Letter.Body, _hashKey);
-                        Letter.LetterMetadata.Encrypted = false;
-                    }
-
-                    if (Letter.LetterMetadata.Compressed)
-                    {
-                        Letter.Body = await Gzip
-                            .DecompressAsync(Letter.Body)
-                            .ConfigureAwait(false);
-
-                        Letter.LetterMetadata.Compressed = false;
-                    }
-
-                    return JsonSerializer.Deserialize<TResult>(Letter.Body, jsonSerializerOptions);
+                    return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
                 case Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJson(Data))
                     {
-                        byte[] data = null;
-                        if (decrypt && _hashKey.Length > 0)
-                        {
-                            data = AesEncrypt.Decrypt(Data, _hashKey);
-                        }
+                        await DecomcryptDataAsync(decrypt, decompress);
 
-                        if (decompress)
-                        {
-                            data = await Gzip
-                                .DecompressAsync(data ?? Data)
-                                .ConfigureAwait(false);
-                        }
-
-                        return JsonSerializer.Deserialize<TResult>(data ?? Data, jsonSerializerOptions);
+                        return JsonSerializer.Deserialize<TResult>(Data.AsSpan(), jsonSerializerOptions);
                     }
                     else
                     { return default(TResult); }
@@ -266,11 +245,11 @@ namespace CookedRabbit.Core
         }
 
         /// <summary>
-        /// Use this method to attempt to deserialize into your types based on internal buffer.
+        /// Use this method to attempt to deserialize into your types based on internal buffer. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "LETTER")</para>
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
-        /// <em>Note: Always decomprypts Letter bodies to get type regardless of parameters.</em>
+        /// <em>Note: Always decomcrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="decrypt"></param>
@@ -283,24 +262,7 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    var types = new List<TResult>();
-                    if (Letter == null)
-                    { Letter = JsonSerializer.Deserialize<Letter>(Data); }
-
-                    if (Letter.LetterMetadata.Encrypted && _hashKey.Length > 0)
-                    {
-                        Letter.Body = AesEncrypt.Decrypt(Letter.Body, _hashKey);
-                        Letter.LetterMetadata.Encrypted = false;
-                    }
-
-                    if (Letter.LetterMetadata.Compressed)
-                    {
-                        Letter.Body = await Gzip
-                            .DecompressAsync(Letter.Body)
-                            .ConfigureAwait(false);
-
-                        Letter.LetterMetadata.Compressed = false;
-                    }
+                    await CreateLetterFromDataAsync();
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
@@ -309,24 +271,53 @@ namespace CookedRabbit.Core
 
                     if (Bytes.IsJsonArray(Data))
                     {
-                        byte[] data = null;
-                        if (decrypt && _hashKey.Length > 0)
-                        {
-                            data = AesEncrypt.Decrypt(Data, _hashKey);
-                        }
+                        await DecomcryptDataAsync(decrypt, decompress);
 
-                        if (decompress)
-                        {
-                            data = await Gzip
-                                .DecompressAsync(data ?? Data)
-                                .ConfigureAwait(false);
-                        }
-
-                        return JsonSerializer.Deserialize<List<TResult>>(data ?? Data, jsonSerializerOptions);
+                        return JsonSerializer.Deserialize<List<TResult>>(Data, jsonSerializerOptions);
                     }
                     else
                     { return default(List<TResult>); }
 
+            }
+        }
+
+        public async Task CreateLetterFromDataAsync()
+        {
+            if (Letter == null)
+            { Letter = JsonSerializer.Deserialize<Letter>(Data); }
+
+            if (!_decrypted && Letter.LetterMetadata.Encrypted && _hashKey.Length > 0)
+            {
+                Letter.Body = AesEncrypt.Decrypt(Letter.Body, _hashKey);
+                Letter.LetterMetadata.Encrypted = false;
+                _decrypted = true;
+            }
+
+            if (!_decompressed && Letter.LetterMetadata.Compressed)
+            {
+                Letter.Body = await Gzip
+                    .DecompressAsync(Letter.Body)
+                    .ConfigureAwait(false);
+
+                Letter.LetterMetadata.Compressed = false;
+                _decompressed = true;
+            }
+        }
+
+        public async Task DecomcryptDataAsync(bool decrypt = false, bool decompress = false)
+        {
+            if (!_decrypted && decrypt && _hashKey.Length > 0)
+            {
+                Data = AesEncrypt.Decrypt(Data, _hashKey);
+                _decrypted = true;
+            }
+
+            if (!_decompressed && decompress)
+            {
+                Data = await Gzip
+                    .DecompressAsync(Data)
+                    .ConfigureAwait(false);
+                _decompressed = true;
             }
         }
 

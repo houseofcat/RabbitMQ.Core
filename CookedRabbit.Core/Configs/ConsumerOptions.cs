@@ -1,26 +1,21 @@
+using CookedRabbit.Core.Configs;
 using System.Collections.Generic;
 using System.Threading.Channels;
 
 namespace CookedRabbit.Core
 {
-    public class ConsumerOptions
+    public class ConsumerOptions : GlobalConsumerOptions
     {
         public bool Enabled { get; set; }
+        public string GlobalSettings { get; set; }
         public string QueueName { get; set; }
         public string ConsumerName { get; set; }
 
-        public string ErrorSuffix { get; set; }
-        public string ErrorQueueName => $"{QueueName}.{ErrorSuffix}";
-
         public string TargetQueueName { get; set; }
-        public IDictionary<string, string> TargetQueues { get; set; }
+        public Dictionary<string, string> TargetQueues { get; set; } = new Dictionary<string, string>();
 
-        public bool NoLocal { get; set; }
-        public bool Exclusive { get; set; }
-        public ushort QosPrefetchCount { get; set; } = 5;
+        public string ErrorQueueName => $"{QueueName}.{ErrorSuffix ?? "Error"}";
 
-        public int BufferSize { get; set; } = 100;
-        public BoundedChannelFullMode BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
-        public int SleepOnIdleInterval { get; set; } = 1000;
+        public ConsumerPipelineOption ConsumerPipelineSettings { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
@@ -13,26 +14,24 @@ namespace CookedRabbit.Core.Service
 {
     public interface IRabbitService
     {
-        Config Config { get; }
         IAutoPublisher AutoPublisher { get; }
         IChannelPool ChannelPool { get; }
-        ITopologer Topologer { get; }
-        bool Initialized { get; }
+        Config Config { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
-        ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; }
-        ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; }
+        bool Initialized { get; }
+        ITopologer Topologer { get; }
 
-        Task ComcryptAsync(ReceivedLetter receivedLetter);
-        Task<bool> CompressAsync(ReceivedLetter receivedLetter);
-        Task DecomcryptAsync(ReceivedLetter receivedLetter);
-        Task<bool> DecompressAsync(ReceivedLetter receivedLetter);
-        bool Decrypt(ReceivedLetter receivedLetter);
-        bool Encrypt(ReceivedLetter receivedLetter);
+        Task ComcryptAsync(Letter letter);
+        Task<bool> CompressAsync(Letter letter);
+        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, int batchSize, Func<int, IPipeline<ReceivedData, TOut>> pipelineBuilder) where TOut : IWorkState;
+        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, int batchSize, IPipeline<ReceivedData, TOut> pipeline) where TOut : IWorkState;
+        Task DecomcryptAsync(Letter letter);
+        Task<bool> DecompressAsync(Letter letter);
+        bool Decrypt(Letter letter);
+        bool Encrypt(Letter letter);
         Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
         Task<T> GetAsync<T>(string queueName);
         IConsumer<ReceivedData> GetConsumer(string consumerName);
-        IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName);
-        IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName);
         Task InitializeAsync();
         Task InitializeAsync(string passphrase, string salt);
         ValueTask ShutdownAsync(bool immediately);
@@ -50,10 +49,6 @@ namespace CookedRabbit.Core.Service
         public ITopologer Topologer { get; }
 
         public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
-        public ConcurrentDictionary<string, IConsumer<ReceivedLetter>> LetterConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedLetter>>();
-        public ConcurrentDictionary<string, IConsumer<ReceivedMessage>> MessageConsumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedMessage>>();
-
-
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
@@ -189,28 +184,63 @@ namespace CookedRabbit.Core.Service
                     .StopConsumerAsync(immediately)
                     .ConfigureAwait(false);
             }
-
-            foreach (var kvp in LetterConsumers)
-            {
-                await kvp
-                    .Value
-                    .StopConsumerAsync(immediately)
-                    .ConfigureAwait(false);
-            }
-
-            foreach (var kvp in MessageConsumers)
-            {
-                await kvp
-                    .Value
-                    .StopConsumerAsync(immediately)
-                    .ConfigureAwait(false);
-            }
         }
 
         private async Task BuildConsumersAsync()
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
+                if (Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
+                {
+                    var globalOverrides = Config.GlobalConsumerSettings[consumerSetting.Value.GlobalSettings];
+
+                    consumerSetting.Value.NoLocal =
+                        globalOverrides.NoLocal
+                        ?? consumerSetting.Value.NoLocal;
+
+                    consumerSetting.Value.Exclusive =
+                        globalOverrides.Exclusive
+                        ?? consumerSetting.Value.Exclusive;
+
+                    consumerSetting.Value.BatchSize =
+                        globalOverrides.BatchSize
+                        ?? consumerSetting.Value.BatchSize;
+
+                    consumerSetting.Value.AutoAck =
+                        globalOverrides.AutoAck
+                        ?? consumerSetting.Value.AutoAck;
+
+                    consumerSetting.Value.UseTransientChannels =
+                        globalOverrides.UseTransientChannels
+                        ?? consumerSetting.Value.UseTransientChannels;
+
+                    consumerSetting.Value.ErrorSuffix =
+                        globalOverrides.ErrorSuffix
+                        ?? consumerSetting.Value.ErrorSuffix;
+
+                    consumerSetting.Value.BehaviorWhenFull =
+                        globalOverrides.BehaviorWhenFull
+                        ?? consumerSetting.Value.BehaviorWhenFull;
+
+                    consumerSetting.Value.SleepOnIdleInterval =
+                        globalOverrides.SleepOnIdleInterval
+                        ?? consumerSetting.Value.SleepOnIdleInterval;
+
+                    if (globalOverrides.GlobalConsumerPipelineSettings != null)
+                    {
+                        if (consumerSetting.Value.ConsumerPipelineSettings == null)
+                        { consumerSetting.Value.ConsumerPipelineSettings = new Configs.ConsumerPipelineOption(); }
+
+                        consumerSetting.Value.ConsumerPipelineSettings.WaitForCompletion =
+                            globalOverrides.GlobalConsumerPipelineSettings.WaitForCompletion
+                            ?? consumerSetting.Value.ConsumerPipelineSettings.WaitForCompletion;
+
+                        consumerSetting.Value.ConsumerPipelineSettings.MaxDegreesOfParallelism =
+                            globalOverrides.GlobalConsumerPipelineSettings.MaxDegreesOfParallelism
+                            ?? consumerSetting.Value.ConsumerPipelineSettings.MaxDegreesOfParallelism;
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
                 {
                     await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
@@ -228,46 +258,29 @@ namespace CookedRabbit.Core.Service
 
                 Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, _hashKey));
             }
+        }
 
-            foreach (var consumerSetting in Config.LetterConsumerSettings)
-            {
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
-                }
+        public IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(
+            string consumerName,
+            int batchSize,
+            Func<int, IPipeline<ReceivedData, TOut>> pipelineBuilder)
+            where TOut : IWorkState
+        {
+            var consumer = GetConsumer(consumerName);
+            var pipeline = pipelineBuilder.Invoke(batchSize);
 
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
-                }
+            return new ConsumerPipeline<TOut>(consumer, pipeline);
+        }
 
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
-                }
+        public IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(
+            string consumerName,
+            int batchSize,
+            IPipeline<ReceivedData, TOut> pipeline)
+            where TOut : IWorkState
+        {
+            var consumer = GetConsumer(consumerName);
 
-                LetterConsumers.TryAdd(consumerSetting.Value.ConsumerName, new LetterConsumer(ChannelPool, consumerSetting.Value, _hashKey));
-            }
-
-            foreach (var consumerSetting in Config.MessageConsumerSettings)
-            {
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
-                }
-
-                MessageConsumers.TryAdd(consumerSetting.Value.ConsumerName, new MessageConsumer(ChannelPool, consumerSetting.Value));
-            }
+            return new ConsumerPipeline<TOut>(consumer, pipeline);
         }
 
         public IConsumer<ReceivedData> GetConsumer(string consumerName)
@@ -276,129 +289,117 @@ namespace CookedRabbit.Core.Service
             return Consumers[consumerName];
         }
 
-        public IConsumer<ReceivedLetter> GetLetterConsumer(string consumerName)
-        {
-            if (!LetterConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
-            return LetterConsumers[consumerName];
-        }
-
-        public IConsumer<ReceivedMessage> GetMessageConsumer(string consumerName)
-        {
-            if (!MessageConsumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
-            return MessageConsumers[consumerName];
-        }
-
-        public async Task DecomcryptAsync(ReceivedLetter receivedLetter)
+        public async Task DecomcryptAsync(Letter letter)
         {
             var decryptFailed = false;
-            if (receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
+            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, _hashKey);
-                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = false;
                 }
                 catch { decryptFailed = true; }
             }
 
-            if (!decryptFailed && receivedLetter.Letter.LetterMetadata.Compressed)
+            if (!decryptFailed && letter.LetterMetadata.Compressed)
             {
                 try
                 {
-                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
-                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                    letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = false;
                 }
                 catch { }
             }
         }
 
-        public async Task ComcryptAsync(ReceivedLetter receivedLetter)
+        public async Task ComcryptAsync(Letter letter)
         {
-            if (receivedLetter.Letter.LetterMetadata.Compressed)
+            if (letter.LetterMetadata.Compressed)
             {
                 try
                 {
-                    receivedLetter.Letter.Body = await Gzip.CompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
-                    receivedLetter.Letter.LetterMetadata.Compressed = true;
+                    letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = true;
                 }
                 catch { }
             }
 
-            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
+            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, _hashKey);
-                    receivedLetter.Letter.LetterMetadata.Encrypted = true;
+                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = true;
                 }
                 catch { }
             }
         }
 
-        public bool Encrypt(ReceivedLetter receivedLetter)
+        public bool Encrypt(Letter letter)
         {
-            if (!receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
+            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Encrypt(receivedLetter.Letter.Body, _hashKey);
-                    receivedLetter.Letter.LetterMetadata.Encrypted = true;
+                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = true;
                 }
                 catch { }
             }
 
-            return receivedLetter.Letter.LetterMetadata.Encrypted;
+            return letter.LetterMetadata.Encrypted;
         }
 
-        public bool Decrypt(ReceivedLetter receivedLetter)
+        public bool Decrypt(Letter letter)
         {
-            if (receivedLetter.Letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
+            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
                 try
                 {
-                    receivedLetter.Letter.Body = AesEncrypt.Decrypt(receivedLetter.Letter.Body, _hashKey);
-                    receivedLetter.Letter.LetterMetadata.Encrypted = false;
+                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = false;
                 }
                 catch { }
             }
 
-            return !receivedLetter.Letter.LetterMetadata.Encrypted;
+            return !letter.LetterMetadata.Encrypted;
         }
 
-        public async Task<bool> CompressAsync(ReceivedLetter receivedLetter)
+        public async Task<bool> CompressAsync(Letter letter)
         {
-            if (receivedLetter.Letter.LetterMetadata.Encrypted)
+            if (letter.LetterMetadata.Encrypted)
             { return false; }
 
-            if (!receivedLetter.Letter.LetterMetadata.Compressed)
+            if (!letter.LetterMetadata.Compressed)
             {
                 try
                 {
-                    receivedLetter.Letter.Body = await Gzip.CompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
-                    receivedLetter.Letter.LetterMetadata.Compressed = true;
+                    letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = true;
                 }
                 catch { }
             }
 
-            return receivedLetter.Letter.LetterMetadata.Compressed;
+            return letter.LetterMetadata.Compressed;
         }
 
-        public async Task<bool> DecompressAsync(ReceivedLetter receivedLetter)
+        public async Task<bool> DecompressAsync(Letter letter)
         {
-            if (receivedLetter.Letter.LetterMetadata.Encrypted)
+            if (letter.LetterMetadata.Encrypted)
             { return false; }
 
-            if (receivedLetter.Letter.LetterMetadata.Compressed)
+            if (letter.LetterMetadata.Compressed)
             {
                 try
                 {
-                    receivedLetter.Letter.Body = await Gzip.DecompressAsync(receivedLetter.Letter.Body).ConfigureAwait(false);
-                    receivedLetter.Letter.LetterMetadata.Compressed = false;
+                    letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = false;
                 }
                 catch { }
             }
 
-            return !receivedLetter.Letter.LetterMetadata.Compressed;
+            return !letter.LetterMetadata.Compressed;
         }
 
         /// <summary>

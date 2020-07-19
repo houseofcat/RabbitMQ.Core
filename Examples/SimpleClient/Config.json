@@ -8,7 +8,6 @@
     "NetRecoveryTimeout": 10,
     "ContinuationTimeout": 10,
     "EnableDispatchConsumersAsync": true,
-    "UseBackgroundThreadsForIO": true,
     "SslSettings": {
       "EnableSsl": false,
       "CertServerName": "",
@@ -27,7 +26,8 @@
     "LetterQueueBufferSize": 10000,
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
-    "AutoPublisherSleepInterval": 1000
+    "AutoPublisherSleepInterval": 1000,
+    "CreatePublishReceipts": true
   },
   "LetterConsumerSettings": {
     "ConsumerFromConfig": {
@@ -38,10 +38,9 @@
       "TargetQueueName": "LetterQueueTwo",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 5,
-      "MessageBufferSize": 100,
+      "BatchSize": 1,
       "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1000
+      "SleepOnIdleInterval": 0
     }
   },
   "MessageConsumerSettings": {
@@ -53,10 +52,9 @@
       "TargetQueueName": "MessageQueueTwo",
       "NoLocal": false,
       "Exclusive": false,
-      "QosPrefetchCount": 5,
-      "MessageBufferSize": 100,
+      "BatchSize": 1,
       "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1000
+      "SleepOnIdleInterval": 1
     }
   }
 }
