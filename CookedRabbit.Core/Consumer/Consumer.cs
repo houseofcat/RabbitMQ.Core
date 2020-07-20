@@ -226,12 +226,13 @@ namespace CookedRabbit.Core
             {
                 if (ConsumerSettings.UseTransientChannels ?? true)
                 {
+                    var autoAck = ConsumerSettings.AutoAck ?? false;
                     _logger.LogTrace(LogMessages.Consumer.GettingTransientChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
-                        .GetTransientChannelAsync(!ConsumerSettings.AutoAck.Value)
+                        .GetTransientChannelAsync(!autoAck)
                         .ConfigureAwait(false);
                 }
-                else if (ConsumerSettings.AutoAck.Value)
+                else if (ConsumerSettings.AutoAck ?? false)
                 {
                     _logger.LogTrace(LogMessages.Consumer.GettingChannelHost, ConsumerSettings.ConsumerName);
                     ConsumingChannelHost = await ChannelPool
@@ -248,10 +249,20 @@ namespace CookedRabbit.Core
             }
             catch { ConsumingChannelHost = null; }
 
-            _logger.LogDebug(
-                LogMessages.Consumer.ChannelEstablished,
-                ConsumerSettings.ConsumerName,
-                ConsumingChannelHost.ChannelId);
+            if (ConsumingChannelHost != null)
+            {
+                _logger.LogDebug(
+                    LogMessages.Consumer.ChannelEstablished,
+                    ConsumerSettings.ConsumerName,
+                    ConsumingChannelHost?.ChannelId ?? 0ul);
+            }
+            else
+            {
+                _logger.LogError(
+                    LogMessages.Consumer.ChannelNotEstablished,
+                    ConsumerSettings.ConsumerName);
+            }
+
         }
 
         private EventingBasicConsumer CreateConsumer()

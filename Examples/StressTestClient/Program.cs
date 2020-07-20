@@ -1,5 +1,6 @@
 ﻿using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
         public static async Task Main()
         {
+            LogHelper.LoggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
             await Console.Out.WriteLineAsync("CookedRabbit.Core StressTest v1.00").ConfigureAwait(false);
             await Console.Out.WriteLineAsync("- StressTest setting everything up...").ConfigureAwait(false);
 

@@ -28,44 +28,140 @@
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
     "AutoPublisherSleepInterval": 1000,
-    "CreatePublishReceipts":  true
+    "CreatePublishReceipts": true,
+    "Encrypt": false,
+    "Compress": false
   },
-  "LetterConsumerSettings": {
+  "GlobalConsumerSettings": {
+    "AggressiveSettings": {
+      "ErrorSuffix": "Error",
+      "BatchSize": 128,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
+      "NoLocal": false,
+      "Exclusive": false,
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": false,
+        "MaxDegreesOfParallelism": 64
+      }
+    },
+    "ModerateSettings": {
+      "ErrorSuffix": "Error",
+      "BatchSize": 48,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 100,
+      "UseTransientChannels": true,
+      "AutoAck": false,
+      "NoLocal": false,
+      "Exclusive": false,
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 24
+      }
+    },
+    "LightSettings": {
+      "ErrorSuffix": "Error",
+      "BatchSize": 8,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 100,
+      "UseTransientChannels": true,
+      "AutoAck": false,
+      "NoLocal": false,
+      "Exclusive": false,
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 4
+      }
+    },
+    "SingleThreaded": {
+      "ErrorSuffix": "Error",
+      "BatchSize": 1,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
+      "NoLocal": false,
+      "Exclusive": false,
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 1
+      }
+    }
+  },
+  "ConsumerSettings": {
     "Consumer1": {
+      "Enabled": true,
+      "GlobalSettings": "AggressiveSettings",
       "ConsumerName": "Consumer1",
       "QueueName": "StressTestQueue1",
+      "ErrorSuffix": "Error",
+      "BatchSize": 50,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
       "NoLocal": false,
       "Exclusive": false,
-      "BatchSize": 1,
-      "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 1
+      }
     },
     "Consumer2": {
+      "Enabled": true,
+      "GlobalSettings": "AggressiveSettings",
       "ConsumerName": "Consumer2",
       "QueueName": "StressTestQueue2",
+      "ErrorSuffix": "Error",
+      "BatchSize": 50,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
       "NoLocal": false,
       "Exclusive": false,
-      "BatchSize": 1,
-      "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 1
+      }
     },
     "Consumer3": {
+      "Enabled": true,
+      "GlobalSettings": "AggressiveSettings",
       "ConsumerName": "Consumer3",
       "QueueName": "StressTestQueue3",
+      "ErrorSuffix": "Error",
+      "BatchSize": 50,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
       "NoLocal": false,
       "Exclusive": false,
-      "BatchSize": 1,
-      "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 1
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 1
+      }
     },
     "Consumer4": {
+      "Enabled": true,
+      "GlobalSettings": "AggressiveSettings",
       "ConsumerName": "Consumer4",
       "QueueName": "StressTestQueue4",
+      "ErrorSuffix": "Error",
+      "BatchSize": 50,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 0,
+      "UseTransientChannels": true,
+      "AutoAck": false,
       "NoLocal": false,
       "Exclusive": false,
-      "BatchSize": 1,
-      "BehaviorWhenFull": 0,
-      "SleepOnIdleInterval": 0
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 1
+      }
     }
   }
 }

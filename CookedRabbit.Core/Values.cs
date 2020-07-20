@@ -107,6 +107,7 @@ namespace CookedRabbit.Core
             public readonly static string GettingChannelHost = "Consumer ({0}) getting a channel.";
             public readonly static string GettingAckChannelHost = "Consumer ({0}) getting a ackable channel host.";
             public readonly static string ChannelEstablished = "Consumer ({0}) channel host ({1}) assigned.";
+            public readonly static string ChannelNotEstablished = "Consumer ({0}) channel host could not be assigned.";
             public readonly static string ConsumerMessageReceived = "Consumer ({0}) message received (DT:{1}). Adding to buffer...";
             public readonly static string ConsumerAsyncMessageReceived = "Consumer ({0}) async message received (DT:{1}). Adding to buffer...";
             public readonly static string ConsumerShutdownEvent = "Consumer ({0}) shutdown event has occurred. Attempting to restart consuming...";
