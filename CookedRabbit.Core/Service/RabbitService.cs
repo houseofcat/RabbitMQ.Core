@@ -19,6 +19,7 @@ namespace CookedRabbit.Core.Service
         IAutoPublisher AutoPublisher { get; }
         IChannelPool ChannelPool { get; }
         Config Config { get; }
+        ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
         bool Initialized { get; }
         ITopologer Topologer { get; }
@@ -34,6 +35,9 @@ namespace CookedRabbit.Core.Service
         Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
         Task<T> GetAsync<T>(string queueName);
         IConsumer<ReceivedData> GetConsumer(string consumerName);
+        ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName);
+        ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName);
+        ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName);
         Task InitializeAsync();
         Task InitializeAsync(string passphrase, string salt);
         ValueTask ShutdownAsync(bool immediately);
