@@ -20,6 +20,6 @@ namespace CookedRabbit.Core
         public BoundedChannelFullMode? BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
         public int? SleepOnIdleInterval { get; set; } = 1000;
 
-        public ConsumerPipelineOption GlobalConsumerPipelineSettings { get; set; }
+        public ConsumerPipelineOptions GlobalConsumerPipelineSettings { get; set; }
     }
 }

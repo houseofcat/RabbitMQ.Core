@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
@@ -50,6 +51,7 @@ namespace CookedRabbit.Core.Service
         public ITopologer Topologer { get; }
 
         public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
+        public ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; } = new ConcurrentDictionary<string, ConsumerOptions>();
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
@@ -68,6 +70,8 @@ namespace CookedRabbit.Core.Service
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
+
+            BuildConsumers();
         }
 
         /// <summary>
@@ -83,6 +87,8 @@ namespace CookedRabbit.Core.Service
             ChannelPool = new ChannelPool(Config);
             AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
+
+            BuildConsumers();
         }
 
         /// <summary>
@@ -101,6 +107,8 @@ namespace CookedRabbit.Core.Service
             ChannelPool = channelPool;
             AutoPublisher = autoPublisher;
             Topologer = toploger;
+
+            BuildConsumers();
         }
 
         public async Task InitializeAsync()
@@ -119,7 +127,7 @@ namespace CookedRabbit.Core.Service
                         .StartAsync()
                         .ConfigureAwait(false);
 
-                    await BuildConsumersAsync().ConfigureAwait(false);
+                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
                     Initialized = true;
                 }
             }
@@ -147,7 +155,7 @@ namespace CookedRabbit.Core.Service
                         .StartAsync(_hashKey)
                         .ConfigureAwait(false);
 
-                    await BuildConsumersAsync().ConfigureAwait(false);
+                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
                     Initialized = true;
                 }
             }
@@ -187,7 +195,7 @@ namespace CookedRabbit.Core.Service
             }
         }
 
-        private async Task BuildConsumersAsync()
+        private void BuildConsumers()
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
@@ -231,7 +239,7 @@ namespace CookedRabbit.Core.Service
                     if (globalOverrides.GlobalConsumerPipelineSettings != null)
                     {
                         if (consumerSetting.Value.ConsumerPipelineSettings == null)
-                        { consumerSetting.Value.ConsumerPipelineSettings = new Configs.ConsumerPipelineOption(); }
+                        { consumerSetting.Value.ConsumerPipelineSettings = new Configs.ConsumerPipelineOptions(); }
 
                         consumerSetting.Value.ConsumerPipelineSettings.WaitForCompletion =
                             globalOverrides.GlobalConsumerPipelineSettings.WaitForCompletion
@@ -243,22 +251,33 @@ namespace CookedRabbit.Core.Service
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.QueueName))
+                if (!string.IsNullOrEmpty(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName))
                 {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.QueueName).ConfigureAwait(false);
+                    ConsumerPipelineSettings.TryAdd(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName, consumerSetting.Value);
                 }
-
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.ErrorQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.ErrorQueueName).ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(consumerSetting.Value.TargetQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumerSetting.Value.TargetQueueName).ConfigureAwait(false);
-                }
-
                 Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, _hashKey));
+            }
+        }
+
+        private async Task FinishSettingUpConsumersAsync()
+        {
+            foreach (var consumer in Consumers)
+            {
+                consumer.Value.HashKey = _hashKey;
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.QueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.TargetQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
+                }
             }
         }
 
@@ -289,6 +308,24 @@ namespace CookedRabbit.Core.Service
         {
             if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return Consumers[consumerName];
+        }
+
+        public ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName)
+        {
+            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
+            return ConsumerPipelineSettings[consumerPipelineName];
+        }
+
+        public ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName)
+        {
+            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
+            return ConsumerPipelineSettings[consumerPipelineName].ConsumerPipelineSettings;
+        }
+
+        public ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName)
+        {
+            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
+            return Consumers[consumerName].ConsumerSettings.ConsumerPipelineSettings;
         }
 
         public async Task DecomcryptAsync(Letter letter)

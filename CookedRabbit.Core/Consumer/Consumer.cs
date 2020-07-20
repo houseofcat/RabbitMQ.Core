@@ -20,6 +20,7 @@ namespace CookedRabbit.Core
         ConsumerOptions ConsumerSettings { get; set; }
         bool Consuming { get; }
         bool Shutdown { get; }
+        ReadOnlyMemory<byte> HashKey { get; set; }
 
         Task DataflowExecutionEngineAsync(Func<TFromQueue, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default);
         Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
@@ -50,8 +51,7 @@ namespace CookedRabbit.Core
         public bool Consuming { get; private set; }
         public bool Shutdown { get; private set; }
 
-
-        private byte[] HashKey { get; }
+        public ReadOnlyMemory<byte> HashKey { get; set; }
 
         public Consumer(Config config, string consumerName, byte[] hashKey = null)
         {

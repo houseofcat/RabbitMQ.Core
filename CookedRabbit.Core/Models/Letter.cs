@@ -14,7 +14,7 @@ namespace CookedRabbit.Core
 
         public Letter() { }
 
-        public Letter(string exchange, string routingKey, byte[] data, LetterMetadata metadata, RoutingOptions routingOptions = null)
+        public Letter(string exchange, string routingKey, byte[] data, LetterMetadata metadata = null, RoutingOptions routingOptions = null)
         {
             Envelope = new Envelope
             {
@@ -23,7 +23,7 @@ namespace CookedRabbit.Core
                 RoutingOptions = routingOptions ?? DefaultRoutingOptions()
             };
             Body = data;
-            LetterMetadata = metadata;
+            LetterMetadata = metadata ?? new LetterMetadata();
         }
 
         public Letter(string exchange, string routingKey, byte[] data, string id, RoutingOptions routingOptions = null)

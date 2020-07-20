@@ -2,6 +2,7 @@
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -58,49 +59,47 @@ namespace CookedRabbit.Core.PipelineClient
                 .CreateQueueAsync("TestRabbitServiceQueue")
                 .ConfigureAwait(false);
 
-            //for (ulong i = 0; i < 100; i++)
-            //{
-            //    var letter = letterTemplate.Clone();
-            //    letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
-            //    letter.LetterId = i;
-            //    await rabbitService
-            //        .AutoPublisher
-            //        .Publisher
-            //        .PublishAsync(letter, true, true)
-            //        .ConfigureAwait(false);
-            //}
+            for (ulong i = 0; i < 100; i++)
+            {
+                var letter = letterTemplate.Clone();
+                letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
+                letter.LetterId = i;
+                await rabbitService
+                    .AutoPublisher
+                    .Publisher
+                    .PublishAsync(letter, true, true)
+                    .ConfigureAwait(false);
+            }
 
-            PublisherOne = Task.Run(
-                async () =>
-                {
-                    await Task.Yield();
-                    // Produce ReceivedLetters
-                    for (ulong i = 0; i < 50_000; i++)
-                    {
-                        var letter = letterTemplate.Clone();
-                        letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
-                        letter.LetterId = i;
-                        await rabbitService
-                            .AutoPublisher
-                            .QueueLetterAsync(letter);
-                    }
-                });
+            //PublisherOne = Task.Run(
+            //    async () =>
+            //    {
+            //        await Task.Yield();
+            //        for (ulong i = 0; i < 100; i++)
+            //        {
+            //            var letter = letterTemplate.Clone();
+            //            letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
+            //            letter.LetterId = i;
+            //            await rabbitService
+            //                .AutoPublisher
+            //                .QueueLetterAsync(letter);
+            //        }
+            //    });
 
-            PublisherTwo = Task.Run(
-                async () =>
-                {
-                    await Task.Yield();
-                    // Produce ReceiveMessages
-                    for (ulong i = 50_000; i < 100_000; i++)
-                    {
-                        var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
-                        await rabbitService
-                            .AutoPublisher
-                            .Publisher
-                            .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
-                            .ConfigureAwait(false);
-                    }
-                });
+            //PublisherTwo = Task.Run(
+            //    async () =>
+            //    {
+            //        await Task.Yield();
+            //        for (ulong i = 100; i < 200; i++)
+            //        {
+            //            var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
+            //            await rabbitService
+            //                .AutoPublisher
+            //                .Publisher
+            //                .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
+            //                .ConfigureAwait(false);
+            //        }
+            //    });
 
             return rabbitService;
         }
@@ -196,13 +195,19 @@ namespace CookedRabbit.Core.PipelineClient
                     .PublishAsync("", _errorQueue, state.ReceivedData.Data, null)
                     .ConfigureAwait(false);
 
+                var stringBody = string.Empty;
+
+                try
+                { stringBody = await state.ReceivedData.GetBodyAsUtf8StringAsync().ConfigureAwait(false); }
+                catch (Exception ex) { _logger.LogError(ex, "What?!"); }
+
                 if (failed)
                 {
-                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize and publish to ErrorQueue!\r\n{await state.ReceivedData.GetBodyAsUtf8StringAsync().ConfigureAwait(false)}\r\n");
+                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize and publish to ErrorQueue!\r\n{stringBody}\r\n");
                 }
                 else
                 {
-                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize. Published to ErrorQueue!\r\n{await state.ReceivedData.GetBodyAsUtf8StringAsync().ConfigureAwait(false)}\r\n");
+                    _logger.LogError($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - This failed to deserialize. Published to ErrorQueue!\r\n{stringBody}\r\n");
 
                     // So we ack the message
                     state.ProcessStepSuccess = true;

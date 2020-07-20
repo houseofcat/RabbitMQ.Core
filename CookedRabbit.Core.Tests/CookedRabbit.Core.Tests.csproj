@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestConfig.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

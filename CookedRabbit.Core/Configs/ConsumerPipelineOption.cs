@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CookedRabbit.Core.Configs
 {
-    public class ConsumerPipelineOption
+    public class ConsumerPipelineOptions
     {
         public string ConsumerPipelineName { get; set; }
         public bool? WaitForCompletion { get; set; }

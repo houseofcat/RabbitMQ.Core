@@ -4,7 +4,7 @@ namespace CookedRabbit.Core
 {
     public static class Bytes
     {
-        public readonly static byte[] Utf8JJsonStartsWith = new byte[] { (byte)'{' };
+        public readonly static byte[] Utf8JsonStartsWith = new byte[] { (byte)'{' };
         public readonly static byte[] Utf8JsonEndsWith = new byte[] { (byte)'}' };
 
         public readonly static byte[] Utf8JsonArrayStartsWith = new byte[] { (byte)'[' };
@@ -14,7 +14,7 @@ namespace CookedRabbit.Core
         {
             return
             // Json
-            (data.StartsWith(Utf8JJsonStartsWith) && data.EndsWith(Utf8JsonEndsWith));
+            (data.StartsWith(Utf8JsonStartsWith) && data.EndsWith(Utf8JsonEndsWith));
         }
 
         public static bool IsJsonArray(ReadOnlySpan<byte> data)

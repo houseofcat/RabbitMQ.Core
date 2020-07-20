@@ -16,6 +16,6 @@ namespace CookedRabbit.Core
 
         public string ErrorQueueName => $"{QueueName}.{ErrorSuffix ?? "Error"}";
 
-        public ConsumerPipelineOption ConsumerPipelineSettings { get; set; }
+        public ConsumerPipelineOptions ConsumerPipelineSettings { get; set; }
     }
 }
