@@ -35,7 +35,7 @@
   "GlobalConsumerSettings": {
     "AggressiveSettings": {
       "ErrorSuffix": "Error",
-      "BatchSize": 256,
+      "BatchSize": 128,
       "BehaviorWhenFull": 0,
       "SleepOnIdleInterval": 0,
       "UseTransientChannels": true,
@@ -44,12 +44,12 @@
       "Exclusive": false,
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": false,
-        "MaxDegreesOfParallelism": 128
+        "MaxDegreesOfParallelism": 64
       }
     },
     "ModerateSettings": {
       "ErrorSuffix": "Error",
-      "BatchSize": 20,
+      "BatchSize": 48,
       "BehaviorWhenFull": 0,
       "SleepOnIdleInterval": 100,
       "UseTransientChannels": true,
@@ -59,6 +59,20 @@
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": true,
         "MaxDegreesOfParallelism": 24
+      }
+    },
+    "LightSettings": {
+      "ErrorSuffix": "Error",
+      "BatchSize": 8,
+      "BehaviorWhenFull": 0,
+      "SleepOnIdleInterval": 100,
+      "UseTransientChannels": true,
+      "AutoAck": false,
+      "NoLocal": false,
+      "Exclusive": false,
+      "GlobalConsumerPipelineSettings": {
+        "WaitForCompletion": true,
+        "MaxDegreesOfParallelism": 4
       }
     },
     "SingleThreaded": {

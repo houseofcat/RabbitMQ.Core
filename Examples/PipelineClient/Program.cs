@@ -70,33 +70,37 @@ namespace CookedRabbit.Core.PipelineClient
             //        .ConfigureAwait(false);
             //}
 
-            PublisherOne = Task.Run(async () =>
-            {
-                // Produce ReceivedLetters
-                for (ulong i = 0; i < 50_000; i++)
+            PublisherOne = Task.Run(
+                async () =>
                 {
-                    var letter = letterTemplate.Clone();
-                    letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
-                    letter.LetterId = i;
-                    await rabbitService
-                        .AutoPublisher
-                        .QueueLetterAsync(letter);
-                }
-            });
+                    await Task.Yield();
+                    // Produce ReceivedLetters
+                    for (ulong i = 0; i < 50_000; i++)
+                    {
+                        var letter = letterTemplate.Clone();
+                        letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
+                        letter.LetterId = i;
+                        await rabbitService
+                            .AutoPublisher
+                            .QueueLetterAsync(letter);
+                    }
+                });
 
-            PublisherTwo = Task.Run(async () =>
-            {
-                // Produce ReceiveMessages
-                for (ulong i = 50_000; i < 100_000; i++)
+            PublisherTwo = Task.Run(
+                async () =>
                 {
-                    var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
-                    await rabbitService
-                        .AutoPublisher
-                        .Publisher
-                        .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
-                        .ConfigureAwait(false);
-                }
-            });
+                    await Task.Yield();
+                    // Produce ReceiveMessages
+                    for (ulong i = 50_000; i < 100_000; i++)
+                    {
+                        var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
+                        await rabbitService
+                            .AutoPublisher
+                            .Publisher
+                            .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
+                            .ConfigureAwait(false);
+                    }
+                });
 
             return rabbitService;
         }
