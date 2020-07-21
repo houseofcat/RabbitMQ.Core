@@ -19,7 +19,6 @@ namespace CookedRabbit.Core.Service
         IChannelPool ChannelPool { get; }
         Config Config { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
-        bool Initialized { get; }
         ITopologer Topologer { get; }
 
         Task ComcryptAsync(Letter letter);
@@ -43,7 +42,6 @@ namespace CookedRabbit.Core.Service
         private byte[] _hashKey { get; set; }
         private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
 
-        public bool Initialized { get; private set; }
         public Config Config { get; }
         public IChannelPool ChannelPool { get; }
         public IPublisher Publisher { get; }
@@ -103,17 +101,12 @@ namespace CookedRabbit.Core.Service
 
             try
             {
-                if (!Initialized)
-                {
-                    await Publisher
-                        .StartAutoPublishAsync(processReceiptAsync)
-                        .ConfigureAwait(false);
+                await Publisher
+                    .StartAutoPublishAsync(processReceiptAsync)
+                    .ConfigureAwait(false);
 
-                    await BuildConsumerTopology()
-                        .ConfigureAwait(false);
-
-                    Initialized = true;
-                }
+                await BuildConsumerTopology()
+                    .ConfigureAwait(false);
             }
             finally
             { _serviceLock.Release(); }
@@ -155,6 +148,9 @@ namespace CookedRabbit.Core.Service
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
+                // Apply the global consumer settings and global consumer pipeline settings
+                // on top of (overriding) individual consumer settings. Opt out by not setting
+                // the global settings field.
                 if (!string.IsNullOrWhiteSpace(consumerSetting.Value.GlobalSettings)
                     && Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
                 {
