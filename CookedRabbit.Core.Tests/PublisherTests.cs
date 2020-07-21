@@ -24,7 +24,7 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var pub = new Publisher(config);
+            var pub = new Publisher(config, new byte[] { });
 
             Assert.NotNull(pub);
         }
@@ -35,8 +35,8 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var pub = new Publisher(config);
-            await pub.InitializeAsync().ConfigureAwait(false);
+            var pub = new Publisher(config, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
 
             Assert.NotNull(pub);
         }
@@ -49,7 +49,7 @@ namespace CookedRabbit.Core.Tests
 
             var chanPool = new ChannelPool(config);
             await chanPool.InitializeAsync().ConfigureAwait(false);
-            var pub = new Publisher(chanPool);
+            var pub = new Publisher(chanPool, new byte[] { });
 
             Assert.NotNull(pub);
         }
@@ -60,7 +60,7 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var pub = new Publisher(config);
+            var pub = new Publisher(config, new byte[] { });
             var letter = RandomData.CreateSimpleRandomLetter("TestQueue", 2000);
 
             await Assert
@@ -74,9 +74,9 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var pub = new Publisher(config);
+            var pub = new Publisher(config, new byte[] { });
             await pub
-                .InitializeAsync()
+                .StartAutoPublishAsync()
                 .ConfigureAwait(false);
 
             var letter = RandomData.CreateSimpleRandomLetter("TestQueue", 2000);
@@ -93,9 +93,9 @@ namespace CookedRabbit.Core.Tests
             const int letterCount = 10_000;
             const int byteCount = 500;
 
-            var pub = new Publisher(config);
+            var pub = new Publisher(config, new byte[] { });
             await pub
-                .InitializeAsync()
+                .StartAutoPublishAsync()
                 .ConfigureAwait(false);
 
             var queueNames = new List<string>

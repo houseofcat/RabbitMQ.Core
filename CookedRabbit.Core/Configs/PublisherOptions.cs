@@ -12,5 +12,6 @@ namespace CookedRabbit.Core
 
         public bool Compress { get; set; }
         public bool Encrypt { get; set; }
+        public bool WithHeaders { get; set; } = true;
     }
 }

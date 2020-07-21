@@ -34,10 +34,7 @@ namespace CookedRabbit.Core.SimpleClient
             var sentMessage = new TestMessage { Message = "Sensitive Message" };
             var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), new LetterMetadata());
 
-            var rabbitService = new RabbitService("Config.json");
-            await rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .ConfigureAwait(false);
+            var rabbitService = new RabbitService("Config.json", "passwordforencryption", "saltforencryption");
 
             await rabbitService
                 .Topologer
@@ -46,7 +43,7 @@ namespace CookedRabbit.Core.SimpleClient
 
             // Queue the letter for delivery by the library.
             await rabbitService
-                .AutoPublisher
+                .Publisher
                 .QueueLetterAsync(letter);
 
             // Start Consumer
@@ -86,10 +83,7 @@ namespace CookedRabbit.Core.SimpleClient
             var sentMessage = new TestMessage { Message = "Sensitive Message" };
             var letter = new Letter("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), new LetterMetadata());
 
-            var rabbitService = new RabbitService("Config.json");
-            await rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .ConfigureAwait(false);
+            var rabbitService = new RabbitService("Config.json", "passwordforencryption", "saltforencryption");
 
             await rabbitService
                 .Topologer
@@ -98,7 +92,7 @@ namespace CookedRabbit.Core.SimpleClient
 
             // Queue the letter for delivery by the library.
             await rabbitService
-                .AutoPublisher
+                .Publisher
                 .QueueLetterAsync(letter);
 
             // Start Consumer
@@ -117,10 +111,7 @@ namespace CookedRabbit.Core.SimpleClient
             await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An ParallelExecutionEngine...").ConfigureAwait(false);
 
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
-            var rabbitService = new RabbitService("Config.json");
-            await rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .ConfigureAwait(false);
+            var rabbitService = new RabbitService("Config.json", "passwordforencryption", "saltforencryption");
 
             await rabbitService
                 .Topologer
@@ -136,7 +127,7 @@ namespace CookedRabbit.Core.SimpleClient
                 sentMessage.Message += $" {i}";
                 letter.Body = JsonSerializer.SerializeToUtf8Bytes(sentMessage);
                 await rabbitService
-                    .AutoPublisher
+                    .Publisher
                     .QueueLetterAsync(letter);
             }
 
@@ -156,10 +147,7 @@ namespace CookedRabbit.Core.SimpleClient
             await Console.Out.WriteLineAsync("Starting SimpleClient w/ Encryption As An DataExecutionEngine...").ConfigureAwait(false);
 
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
-            var rabbitService = new RabbitService("Config.json");
-            await rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .ConfigureAwait(false);
+            var rabbitService = new RabbitService("Config.json", "passwordforencryption", "saltforencryption");
 
             await rabbitService
                 .Topologer
@@ -175,7 +163,7 @@ namespace CookedRabbit.Core.SimpleClient
                 sentMessage.Message += $" {i}";
                 letter.Body = JsonSerializer.SerializeToUtf8Bytes(sentMessage);
                 await rabbitService
-                    .AutoPublisher
+                    .Publisher
                     .QueueLetterAsync(letter);
             }
 

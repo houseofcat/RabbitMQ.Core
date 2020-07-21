@@ -32,27 +32,27 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public void CreateAutoPublisher()
         {
-            var apub = new AutoPublisher(channelPool);
+            var pub = new Publisher(channelPool, new byte[] { });
 
-            Assert.NotNull(apub);
+            Assert.NotNull(pub);
         }
 
         [Fact]
         public async Task CreateAutoPublisherAndStart()
         {
-            var apub = new AutoPublisher(channelPool);
-            await apub.StartAsync().ConfigureAwait(false);
+            var pub = new Publisher(channelPool, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
 
-            Assert.NotNull(apub);
+            Assert.NotNull(pub);
         }
 
         [Fact]
         public async Task CreateAutoPublisherAndPublish()
         {
-            var apub = new AutoPublisher(channelPool);
+            var pub = new Publisher(channelPool, new byte[] { });
 
             var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await apub.QueueLetterAsync(letter));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await pub.QueueLetterAsync(letter));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var apub = new AutoPublisher(config);
+            var apub = new Publisher(config, new byte[] { });
 
             Assert.NotNull(apub);
         }
@@ -72,10 +72,10 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var apub = new AutoPublisher(config);
-            await apub.StartAsync().ConfigureAwait(false);
+            var pub = new Publisher(config, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
 
-            Assert.NotNull(apub);
+            Assert.NotNull(pub);
         }
 
         [Fact]
@@ -84,11 +84,11 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var apub = new AutoPublisher(config);
-            await apub.StartAsync().ConfigureAwait(false);
+            var pub = new Publisher(config, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
 
             var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
-            await apub.QueueLetterAsync(letter).ConfigureAwait(false);
+            await pub.QueueLetterAsync(letter).ConfigureAwait(false);
         }
 
         [Fact]
@@ -97,8 +97,8 @@ namespace CookedRabbit.Core.Tests
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
-            var apub = new AutoPublisher(config);
-            await apub.StartAsync().ConfigureAwait(false);
+            var pub = new Publisher(config, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
             var finished = false;
             const ulong count = 10000;
 
@@ -109,7 +109,7 @@ namespace CookedRabbit.Core.Tests
                     var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
                     letter.LetterId = i;
 
-                    await apub.QueueLetterAsync(letter).ConfigureAwait(false);
+                    await pub.QueueLetterAsync(letter).ConfigureAwait(false);
                 }
 
                 finished = true;
@@ -117,18 +117,18 @@ namespace CookedRabbit.Core.Tests
 
             while (!finished) { await Task.Delay(1).ConfigureAwait(false); }
 
-            await apub.StopAsync().ConfigureAwait(false);
+            await pub.StopAutoPublishAsync().ConfigureAwait(false);
         }
 
         [Fact]
         public async Task CreateAutoPublisherQueueConcurrentPublishAndProcessReceipts()
         {
-            var apub = new AutoPublisher(channelPool);
-            await apub.StartAsync().ConfigureAwait(false);
+            var pub = new Publisher(channelPool, new byte[] { });
+            await pub.StartAutoPublishAsync().ConfigureAwait(false);
             const ulong count = 10000;
 
-            var processReceiptsTask = ProcessReceiptsAsync(apub, count);
-            var publishLettersTask = PublishLettersAsync(apub, count);
+            var processReceiptsTask = ProcessReceiptsAsync(pub, count);
+            var publishLettersTask = PublishLettersAsync(pub, count);
 
             while (!publishLettersTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
@@ -142,7 +142,7 @@ namespace CookedRabbit.Core.Tests
             Assert.False(processReceiptsTask.Result);
         }
 
-        private async Task PublishLettersAsync(AutoPublisher apub, ulong count)
+        private async Task PublishLettersAsync(Publisher pub, ulong count)
         {
             var sw = Stopwatch.StartNew();
             for (ulong i = 0; i < count; i++)
@@ -150,18 +150,18 @@ namespace CookedRabbit.Core.Tests
                 var letter = RandomData.CreateSimpleRandomLetter("AutoPublisherTestQueue");
                 letter.LetterId = i;
 
-                await apub.QueueLetterAsync(letter).ConfigureAwait(false);
+                await pub.QueueLetterAsync(letter).ConfigureAwait(false);
             }
             sw.Stop();
 
             output.WriteLine($"Finished queueing all letters in {sw.ElapsedMilliseconds} ms.");
         }
 
-        private async Task<bool> ProcessReceiptsAsync(AutoPublisher apub, ulong count)
+        private async Task<bool> ProcessReceiptsAsync(Publisher pub, ulong count)
         {
             await Task.Yield();
 
-            var buffer = apub.GetReceiptBufferReader();
+            var buffer = pub.GetReceiptBufferReader();
             var receiptCount = 0ul;
             var error = false;
 
@@ -177,7 +177,7 @@ namespace CookedRabbit.Core.Tests
             }
             sw.Stop();
 
-            await apub.StopAsync().ConfigureAwait(false);
+            await pub.StopAutoPublishAsync().ConfigureAwait(false);
 
             output.WriteLine($"Finished getting receipts on all published letters in {sw.ElapsedMilliseconds} ms.");
 

@@ -12,11 +12,7 @@ namespace CookedRabbit.Core.Tests
 
         public RabbitServiceTests(ITestOutputHelper output)
         {
-            rabbitService = new RabbitService("TestConfig.json");
-
-            rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .GetAwaiter().GetResult();
+            rabbitService = new RabbitService("TestConfig.json", "passwordforencryption", "saltforencryption");
         }
 
         [Fact]
@@ -38,10 +34,7 @@ namespace CookedRabbit.Core.Tests
         [Fact]
         public async Task ProductionBug_CantFindConsumer_WhenStartingMessageConsumers()
         {
-            var rabbitService = new RabbitService("TestConfig.json");
-            await rabbitService
-                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
-                .ConfigureAwait(false);
+            var rabbitService = new RabbitService("TestConfig.json", "passwordforencryption", "saltforencryption");
 
             await rabbitService
                 .Topologer
