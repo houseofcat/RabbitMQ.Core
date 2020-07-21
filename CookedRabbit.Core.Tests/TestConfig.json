@@ -1,81 +1,81 @@
 {
-    "FactorySettings": {
-        "Uri": "amqp://guest:guest@localhost:5672/",
-        "MaxChannelsPerConnection": 100,
-        "HeartbeatInterval": 6,
-        "AutoRecovery": true,
-        "TopologyRecovery": true,
-        "NetRecoveryTimeout": 10,
-        "ContinuationTimeout": 10,
-        "EnableDispatchConsumersAsync": false,
-        "UseBackgroundThreadsForIO": true,
-        "SslSettings": {
-            "EnableSsl": false,
-            "CertServerName": "",
-            "LocalCertPath": "",
-            "LocalCertPassword": "",
-            "ProtocolVersions": 3072
-        }
-    },
-    "PoolSettings": {
-        "ConnectionPoolName": "TestServiceName",
-        "MaxConnections": 5,
-        "MaxChannels": 25,
-        "SleepOnErrorInterval": 1000
-    },
-    "PublisherSettings": {
-        "LetterQueueBufferSize": 10000,
-        "PriorityLetterQueueBufferSize": 100,
-        "BehaviorWhenFull": 0,
-        "AutoPublisherSleepInterval": 1000,
-        "CreatePublishReceipts":  true
-    },
-    "LetterConsumerSettings": {
-        "TestLetterConsumer": {
-            "ConsumerName": "TestLetterConsumer",
-            "QueueName": "TestConsumerQueue",
-            "NoLocal": false,
-            "Exclusive": false,
-            "QosPrefetchCount": 5,
-            "RabbitMessageBufferSize": 100,
-            "BehaviorWhenFull": 0,
-            "Enabled": true,
-            "SleepOnIdleInterval": 1000
-        },
-        "TestAutoPublisherConsumerName": {
-            "ConsumerName": "TestAutoPublisherConsumerName",
-            "QueueName": "TestAutoPublisherConsumerQueue",
-            "NoLocal": false,
-            "Exclusive": false,
-            "QosPrefetchCount": 5,
-            "RabbitMessageBufferSize": 100,
-            "BehaviorWhenFull": 0,
-            "Enabled": true,
-            "SleepOnIdleInterval": 1000
-        }
-    },
-    "MessageConsumerSettings": {
-        "TestMessageConsumer": {
-            "ConsumerName": "TestMessageConsumer",
-            "QueueName": "TestConsumerQueue",
-            "NoLocal": false,
-            "Exclusive": false,
-            "QosPrefetchCount": 10,
-            "RabbitMessageBufferSize": 1000,
-            "BehaviorWhenFull": 0,
-            "Enabled": true,
-            "SleepOnIdleInterval": 1000
-        },
-        "TestAutoPublisherConsumerName": {
-            "ConsumerName": "TestAutoPublisherConsumerName",
-            "QueueName": "TestAutoPublisherConsumerQueue",
-            "NoLocal": false,
-            "Exclusive": false,
-            "QosPrefetchCount": 5,
-            "RabbitMessageBufferSize": 100,
-            "BehaviorWhenFull": 0,
-            "Enabled": true,
-            "SleepOnIdleInterval": 1000
-        }
+  "FactorySettings": {
+    "Uri": "amqp://guest:guest@localhost:5672/",
+    "MaxChannelsPerConnection": 100,
+    "HeartbeatInterval": 6,
+    "AutoRecovery": true,
+    "TopologyRecovery": true,
+    "NetRecoveryTimeout": 10,
+    "ContinuationTimeout": 10,
+    "EnableDispatchConsumersAsync": false,
+    "UseBackgroundThreadsForIO": true,
+    "SslSettings": {
+      "EnableSsl": false,
+      "CertServerName": "",
+      "LocalCertPath": "",
+      "LocalCertPassword": "",
+      "ProtocolVersions": 3072
     }
+  },
+  "PoolSettings": {
+    "ServiceName": "TestServiceName",
+    "MaxConnections": 5,
+    "MaxChannels": 25,
+    "SleepOnErrorInterval": 1000
+  },
+  "PublisherSettings": {
+    "LetterQueueBufferSize": 10000,
+    "PriorityLetterQueueBufferSize": 100,
+    "BehaviorWhenFull": 0,
+    "AutoPublisherSleepInterval": 1000,
+    "CreatePublishReceipts": true
+  },
+  "LetterConsumerSettings": {
+    "TestLetterConsumer": {
+      "ConsumerName": "TestLetterConsumer",
+      "QueueName": "TestConsumerQueue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "RabbitMessageBufferSize": 100,
+      "BehaviorWhenFull": 0,
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
+    },
+    "TestAutoPublisherConsumerName": {
+      "ConsumerName": "TestAutoPublisherConsumerName",
+      "QueueName": "TestAutoPublisherConsumerQueue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "RabbitMessageBufferSize": 100,
+      "BehaviorWhenFull": 0,
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
+    }
+  },
+  "MessageConsumerSettings": {
+    "TestMessageConsumer": {
+      "ConsumerName": "TestMessageConsumer",
+      "QueueName": "TestConsumerQueue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 10,
+      "RabbitMessageBufferSize": 1000,
+      "BehaviorWhenFull": 0,
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
+    },
+    "TestAutoPublisherConsumerName": {
+      "ConsumerName": "TestAutoPublisherConsumerName",
+      "QueueName": "TestAutoPublisherConsumerQueue",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "RabbitMessageBufferSize": 100,
+      "BehaviorWhenFull": 0,
+      "Enabled": true,
+      "SleepOnIdleInterval": 1000
+    }
+  }
 }

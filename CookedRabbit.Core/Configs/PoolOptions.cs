@@ -5,7 +5,7 @@ namespace CookedRabbit.Core
         /// <summary>
         /// Value to configure the ConnectionPool prefix for display names on RabbitMQ server.
         /// </summary>
-        public string ConnectionPoolName { get; set; } = string.Empty;
+        public string ServiceName { get; set; } = string.Empty;
 
         /// <summary>
         /// Number of connections to be created in the ConnectionPool. Used in round-robin to create channels.
