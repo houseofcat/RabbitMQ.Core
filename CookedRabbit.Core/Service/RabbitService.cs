@@ -92,10 +92,10 @@ namespace CookedRabbit.Core.Service
 
             BuildConsumers();
 
-            InitializeAsync(passphrase, salt).GetAwaiter().GetResult();
+            StartAsync(passphrase, salt).GetAwaiter().GetResult();
         }
 
-        private async Task InitializeAsync(string passphrase, string salt, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
+        private async Task StartAsync(string passphrase, string salt, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 

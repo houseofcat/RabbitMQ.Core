@@ -40,9 +40,9 @@ namespace CookedRabbit.Core
         private readonly IChannelPool _channelPool;
         private readonly SemaphoreSlim _pubLock = new SemaphoreSlim(1, 1);
         private readonly bool _withHeaders;
-        public readonly bool _compress;
-        public readonly bool _encrypt;
-        public readonly bool _createPublishReceipts;
+        private readonly bool _compress;
+        private readonly bool _encrypt;
+        private readonly bool _createPublishReceipts;
 
         private Channel<Letter> _letterQueue;
         private Channel<PublishReceipt> _receiptBuffer;
@@ -76,7 +76,12 @@ namespace CookedRabbit.Core
 
             _channelPool = channelPool;
             _channelPool.InitializeAsync().GetAwaiter().GetResult();
-            _receiptBuffer = Channel.CreateUnbounded<PublishReceipt>();
+            _receiptBuffer = Channel.CreateUnbounded<PublishReceipt>(
+                new UnboundedChannelOptions
+                {
+                    SingleWriter = false,
+                    SingleReader = true,
+                });
 
             _withHeaders = Config.PublisherSettings.WithHeaders;
             _createPublishReceipts = Config.PublisherSettings.CreatePublishReceipts;
