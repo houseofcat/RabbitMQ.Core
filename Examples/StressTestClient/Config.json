@@ -18,7 +18,7 @@
     }
   },
   "PoolSettings": {
-    "ConnectionPoolName": "StressTestConsole",
+    "ServiceName": "StressTestConsole",
     "MaxConnections": 10,
     "MaxChannels": 50,
     "SleepOnErrorInterval": 1000
