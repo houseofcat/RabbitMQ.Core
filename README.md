@@ -7,8 +7,9 @@
 
 #### Versions Explained
 
-v1.0.x - Modern development based on v5.1.2 official client (NetCore v2.2-3.1) | NetStandard (2.0-2.1))  
-v1.0.60x - Future development based on v6.0.0 official client (NetCore v3.1)
+v1.0.x - Modern development based on v5.1.2 official client (NetCore v2.2-3.1 | NetStandard (2.0-2.1)    
+v1.0.60x - Current development based on v6.0.0 official client (NetStandard 2.1 | NetCore v3.1)  
+v1.0.610 - Current development based on v6.1.0 official client (NetStandard 2.1 | NetCore v3.1 | Net5.0)  
  
  * RabbitMQ.Core.Client [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/v6.0.0)  
  
