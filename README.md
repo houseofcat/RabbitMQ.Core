@@ -25,7 +25,7 @@ v2.0.x - Modern development based on RabbitMQ.Core.Client v5.1.2 - all new work 
 v2.6.x - Modern development based on RabbitMQ.Core.Client v6.0.0 - all new work (NetCore 3.1).   
 v3.0.0-v3.2.1 - Major library overhaul to pipelines and Consumer consolidation and a lot of cleanup.  
 v3.3.0+ - Removing legacy/older consumers. NET5.0 support begins.  
-v4.x.x - Rewrite connectivity to mirror improvements made in TurboCookedRabbitv2.  
+v4.x.x - Simplifying everything, rewriting connectivity to mirror improvements made in TurboCookedRabbitv2.  
 
  * CookedRabbit.Core [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core)  
 
