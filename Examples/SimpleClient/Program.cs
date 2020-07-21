@@ -36,7 +36,7 @@ namespace CookedRabbit.Core.SimpleClient
 
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService
@@ -88,7 +88,7 @@ namespace CookedRabbit.Core.SimpleClient
 
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService
@@ -119,7 +119,7 @@ namespace CookedRabbit.Core.SimpleClient
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService
@@ -158,7 +158,7 @@ namespace CookedRabbit.Core.SimpleClient
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
             var rabbitService = new RabbitService("Config.json");
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService

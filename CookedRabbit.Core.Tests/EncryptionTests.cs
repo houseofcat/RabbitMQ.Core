@@ -93,8 +93,15 @@ namespace CookedRabbit.Core.Tests
                 "Config.json",
                 null);
 
+            async ValueTask ProcessReceipts(PublishReceipt receipt)
+            {
+                if (receipt.IsError && receipt.OriginalLetter != null) {
+                    await rabbitService.AutoPublisher.QueueLetterAsync(receipt.OriginalLetter);
+                }
+            }
+
             await rabbitService
-                .InitializeAsync(Passphrase, Salt)
+                .InitializeAsync(ProcessReceipts, Passphrase, Salt)
                 .ConfigureAwait(false);
 
             var message = new Message { StringMessage = $"Sensitive ReceivedLetter 0", MessageId = 0 };

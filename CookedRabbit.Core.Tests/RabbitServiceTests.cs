@@ -15,7 +15,7 @@ namespace CookedRabbit.Core.Tests
             rabbitService = new RabbitService("TestConfig.json");
 
             rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .GetAwaiter().GetResult();
         }
 
@@ -40,7 +40,7 @@ namespace CookedRabbit.Core.Tests
         {
             var rabbitService = new RabbitService("TestConfig.json");
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService

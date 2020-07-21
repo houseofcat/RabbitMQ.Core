@@ -23,12 +23,8 @@ namespace CookedRabbit.Core
         Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
-        Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
+        Task PublishManyAsBatchAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
         Task PublishManyAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true);
-
-        ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync();
-        IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync();
-        ValueTask<PublishReceipt> ReadPublishReceiptAsync();
     }
 
     public class Publisher : IPublisher
@@ -36,7 +32,7 @@ namespace CookedRabbit.Core
         private readonly ILogger<Publisher> _logger;
         private readonly IChannelPool _channelPool;
 
-        public Channel<PublishReceipt> ReceiptBuffer { get; set; }
+        public Channel<PublishReceipt> ReceiptBuffer { get; }
         public Config Config { get; }
 
         public Publisher(Config config)
@@ -352,7 +348,7 @@ namespace CookedRabbit.Core
         /// <param name="letters"></param>
         /// <param name="createReceipt"></param>
         /// <param name="withHeaders"></param>
-        public async Task PublishManyAsGroupAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
+        public async Task PublishManyAsBatchAsync(IList<Letter> letters, bool createReceipt, bool withHeaders = true)
         {
             var error = false;
             var chanHost = await _channelPool
@@ -371,7 +367,7 @@ namespace CookedRabbit.Core
                             letters[i].Envelope.RoutingKey,
                             letters[i].Envelope.RoutingOptions.Mandatory,
                             BuildProperties(letters[i], chanHost, withHeaders),
-                            JsonSerializer.SerializeToUtf8Bytes(letters[i]));
+                            JsonSerializer.SerializeToUtf8Bytes(letters[i]).AsMemory());
 
                         if (createReceipt)
                         {
@@ -409,51 +405,6 @@ namespace CookedRabbit.Core
                 .Writer
                 .WriteAsync(new PublishReceipt { LetterId = letter.LetterId, IsError = error, OriginalLetter = error ? letter : null })
                 .ConfigureAwait(false);
-        }
-
-        public async ValueTask<ChannelReader<PublishReceipt>> GetReceiptBufferReaderAsync()
-        {
-            if (!await ReceiptBuffer
-                .Reader
-                .WaitToReadAsync()
-                .ConfigureAwait(false))
-            {
-                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
-            }
-
-            return ReceiptBuffer.Reader;
-        }
-
-        public async ValueTask<PublishReceipt> ReadPublishReceiptAsync()
-        {
-            if (!await ReceiptBuffer
-                .Reader
-                .WaitToReadAsync()
-                .ConfigureAwait(false))
-            {
-                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
-            }
-
-            return await ReceiptBuffer
-                .Reader
-                .ReadAsync()
-                .ConfigureAwait(false);
-        }
-
-        public async IAsyncEnumerable<PublishReceipt> ReadAllPublishReceiptsAsync()
-        {
-            if (!await ReceiptBuffer
-                .Reader
-                .WaitToReadAsync()
-                .ConfigureAwait(false))
-            {
-                throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
-            }
-
-            await foreach (var receipt in ReceiptBuffer.Reader.ReadAllAsync())
-            {
-                yield return receipt;
-            }
         }
 
         private IBasicProperties BuildProperties(Letter letter, IChannelHost channelHost, bool withHeaders)

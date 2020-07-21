@@ -3,7 +3,6 @@ using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -38,8 +37,8 @@ namespace CookedRabbit.Core.Service
         ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName);
         ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName);
         ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName);
-        Task InitializeAsync();
-        Task InitializeAsync(string passphrase, string salt);
+        Task InitializeAsync(bool requeuePublishFailures, string passphrase, string salt);
+        Task InitializeAsync(Func<PublishReceipt, ValueTask> processReceiptAsync, string passphrase, string salt);
         ValueTask ShutdownAsync(bool immediately);
     }
 
@@ -115,7 +114,7 @@ namespace CookedRabbit.Core.Service
             BuildConsumers();
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(Func<PublishReceipt, ValueTask> processReceiptAsync, string passphrase, string salt)
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 
@@ -123,12 +122,19 @@ namespace CookedRabbit.Core.Service
             {
                 if (!Initialized)
                 {
+                    if (!string.IsNullOrWhiteSpace(passphrase))
+                    {
+                        _hashKey = await ArgonHash
+                            .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
+                            .ConfigureAwait(false);
+                    }
+
                     await ChannelPool
                         .InitializeAsync()
                         .ConfigureAwait(false);
 
                     await AutoPublisher
-                        .StartAsync()
+                        .StartAsync(processReceiptAsync, _hashKey)
                         .ConfigureAwait(false);
 
                     await FinishSettingUpConsumersAsync().ConfigureAwait(false);
@@ -139,7 +145,7 @@ namespace CookedRabbit.Core.Service
             { _serviceLock.Release(); }
         }
 
-        public async Task InitializeAsync(string passphrase, string salt)
+        public async Task InitializeAsync(bool requeueFailedPublishReceipts, string passphrase, string salt)
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 
@@ -147,17 +153,29 @@ namespace CookedRabbit.Core.Service
             {
                 if (!Initialized)
                 {
-                    _hashKey = await ArgonHash
-                        .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
-                        .ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(passphrase))
+                    {
+                        _hashKey = await ArgonHash
+                            .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
+                            .ConfigureAwait(false);
+                    }
 
                     await ChannelPool
                         .InitializeAsync()
                         .ConfigureAwait(false);
 
-                    await AutoPublisher
-                        .StartAsync(_hashKey)
-                        .ConfigureAwait(false);
+                    if (requeueFailedPublishReceipts)
+                    {
+                        await AutoPublisher
+                            .StartAsync(ProcessReceiptAsync, _hashKey)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await AutoPublisher
+                            .StartAsync(null, _hashKey)
+                            .ConfigureAwait(false);
+                    }
 
                     await FinishSettingUpConsumersAsync().ConfigureAwait(false);
                     Initialized = true;
@@ -165,6 +183,15 @@ namespace CookedRabbit.Core.Service
             }
             finally
             { _serviceLock.Release(); }
+        }
+
+        // Super simple version to bake in requeueing of all failed to publish messages.
+        private async ValueTask ProcessReceiptAsync(PublishReceipt receipt)
+        {
+            if (receipt.IsError && receipt.OriginalLetter != null)
+            {
+                await AutoPublisher.QueueLetterAsync(receipt.OriginalLetter);
+            }
         }
 
         public async ValueTask ShutdownAsync(bool immediately)

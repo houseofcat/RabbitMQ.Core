@@ -51,7 +51,7 @@ namespace CookedRabbit.Core.PipelineClient
                 loggerFactory);
 
             await rabbitService
-                .InitializeAsync("passwordforencryption", "saltforencryption")
+                .InitializeAsync(true, "passwordforencryption", "saltforencryption")
                 .ConfigureAwait(false);
 
             await rabbitService

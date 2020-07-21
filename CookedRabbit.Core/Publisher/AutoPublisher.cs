@@ -20,9 +20,8 @@ namespace CookedRabbit.Core
 
         ChannelReader<PublishReceipt> GetReceiptBufferReader();
         ValueTask QueueLetterAsync(Letter letter, bool priority = false);
-        Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync);
-        Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject);
-        Task StartAsync(byte[] hashKey = null);
+
+        Task StartAsync(Func<PublishReceipt, ValueTask> processReceiptAsync, byte[] hashKey = null);
         Task StopAsync(bool immediately = false);
     }
 
@@ -69,7 +68,7 @@ namespace CookedRabbit.Core
             _withHeaders = withHeaders;
         }
 
-        public async Task StartAsync(byte[] hashKey = null)
+        public async Task StartAsync(Func<PublishReceipt, ValueTask> processReceiptAsync = null, byte[] hashKey = null)
         {
             await _pubLock.WaitAsync().ConfigureAwait(false);
 
@@ -97,6 +96,9 @@ namespace CookedRabbit.Core
 
                 _publishingTask = Task.Run(() => ProcessDeliveriesAsync(_letterQueue.Reader).ConfigureAwait(false));
                 _publishingPriorityTask = Task.Run(() => ProcessDeliveriesAsync(_priorityLetterQueue.Reader).ConfigureAwait(false));
+
+
+                await SetProcessReceiptsAsync(processReceiptAsync);
 
                 Initialized = true;
                 Shutdown = false;
@@ -199,7 +201,7 @@ namespace CookedRabbit.Core
                         letter.LetterMetadata.Compressed = Compress;
                     }
 
-                    if (Encrypt && (_hashKey != null || _hashKey.Length == 0))
+                    if (Encrypt && _hashKey != null && _hashKey.Length == Constants.EncryptionKeySize)
                     {
                         letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
                         letter.LetterMetadata.Encrypted = Encrypt;
@@ -214,7 +216,7 @@ namespace CookedRabbit.Core
             }
         }
 
-        public async Task SetProcessReceiptsAsync(Func<PublishReceipt, Task> processReceiptAsync)
+        private async Task SetProcessReceiptsAsync(Func<PublishReceipt, ValueTask> processReceiptAsync)
         {
             await _pubLock.WaitAsync().ConfigureAwait(false);
 
@@ -222,33 +224,14 @@ namespace CookedRabbit.Core
             {
                 if (_processReceiptsAsync == null && processReceiptAsync != null)
                 {
-                    _processReceiptsAsync = Task.Run(async () =>
-                    {
-                        await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                    _processReceiptsAsync = Task.Run(
+                        async () =>
                         {
-                            await processReceiptAsync(receipt).ConfigureAwait(false);
-                        }
-                    });
-                }
-            }
-            finally { _pubLock.Release(); }
-        }
-
-        public async Task SetProcessReceiptsAsync<TIn>(Func<PublishReceipt, TIn, Task> processReceiptAsync, TIn inputObject)
-        {
-            await _pubLock.WaitAsync().ConfigureAwait(false);
-
-            try
-            {
-                if (_processReceiptsAsync == null && processReceiptAsync != null)
-                {
-                    _processReceiptsAsync = Task.Run(async () =>
-                    {
-                        await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
-                        {
-                            await processReceiptAsync(receipt, inputObject).ConfigureAwait(false);
-                        }
-                    });
+                            await foreach (var receipt in GetReceiptBufferReader().ReadAllAsync())
+                            {
+                                await processReceiptAsync(receipt).ConfigureAwait(false);
+                            }
+                        });
                 }
             }
             finally { _pubLock.Release(); }
