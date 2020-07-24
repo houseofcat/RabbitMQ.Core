@@ -91,11 +91,8 @@ namespace CookedRabbit.Core.Tests
         {
             var rabbitService = new RabbitService(
                 "Config.json",
-                null);
-
-            await rabbitService
-                .InitializeAsync(Passphrase, Salt)
-                .ConfigureAwait(false);
+                Passphrase,
+                Salt);
 
             var message = new Message { StringMessage = $"Sensitive ReceivedLetter 0", MessageId = 0 };
             var data = JsonSerializer.SerializeToUtf8Bytes(message);

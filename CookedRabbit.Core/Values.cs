@@ -23,7 +23,7 @@ namespace CookedRabbit.Core
     public static class ExceptionMessages
     {
         // AutoPublisher
-        public readonly static string InitializeError = "AutoPublisher is not initialized or is shutdown.";
+        public readonly static string AutoPublisherNotStartedError = "AutoPublisher has not been started.";
 
         // General
         public readonly static string QueueChannelError = "Can't queue a letter to a closed Threading.Channel.";

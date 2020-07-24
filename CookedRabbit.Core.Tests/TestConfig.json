@@ -18,7 +18,7 @@
     }
   },
   "PoolSettings": {
-    "ConnectionPoolName": "TestServiceName",
+    "ServiceName": "TestServiceName",
     "MaxConnections": 5,
     "MaxChannels": 25,
     "SleepOnErrorInterval": 1000

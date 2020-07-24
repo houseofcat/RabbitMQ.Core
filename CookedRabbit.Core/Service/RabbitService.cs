@@ -3,7 +3,6 @@ using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -16,12 +15,10 @@ namespace CookedRabbit.Core.Service
 {
     public interface IRabbitService
     {
-        IAutoPublisher AutoPublisher { get; }
+        IPublisher Publisher { get; }
         IChannelPool ChannelPool { get; }
         Config Config { get; }
-        ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
-        bool Initialized { get; }
         ITopologer Topologer { get; }
 
         Task ComcryptAsync(Letter letter);
@@ -35,11 +32,8 @@ namespace CookedRabbit.Core.Service
         Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
         Task<T> GetAsync<T>(string queueName);
         IConsumer<ReceivedData> GetConsumer(string consumerName);
-        ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName);
-        ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName);
-        ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName);
-        Task InitializeAsync();
-        Task InitializeAsync(string passphrase, string salt);
+        IConsumer<ReceivedData> GetConsumerByPipelineName(string consumerPipelineName);
+
         ValueTask ShutdownAsync(bool immediately);
     }
 
@@ -48,120 +42,71 @@ namespace CookedRabbit.Core.Service
         private byte[] _hashKey { get; set; }
         private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
 
-        public bool Initialized { get; private set; }
         public Config Config { get; }
         public IChannelPool ChannelPool { get; }
-        public IAutoPublisher AutoPublisher { get; }
+        public IPublisher Publisher { get; }
         public ITopologer Topologer { get; }
 
         public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
-        public ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; } = new ConcurrentDictionary<string, ConsumerOptions>();
+        private ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineNameToConsumerSetting { get; } = new ConcurrentDictionary<string, ConsumerOptions>();
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="fileNamePath"></param>
         /// <param name="loggerFactory"></param>
-        public RabbitService(string fileNamePath, ILoggerFactory loggerFactory = null)
-        {
-            LogHelper.LoggerFactory = loggerFactory;
-
-            Config = ConfigReader
-                .ConfigFileReadAsync(fileNamePath)
-                .GetAwaiter()
-                .GetResult();
-
-            ChannelPool = new ChannelPool(Config);
-            AutoPublisher = new AutoPublisher(ChannelPool);
-            Topologer = new Topologer(ChannelPool);
-
-            BuildConsumers();
-        }
+        public RabbitService(string fileNamePath, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
+            : this(
+                  ConfigReader
+                    .ConfigFileReadAsync(fileNamePath)
+                    .GetAwaiter()
+                    .GetResult(),
+                  passphrase,
+                  salt,
+                  loggerFactory,
+                  processReceiptAsync)
+        { }
 
         /// <summary>
         /// Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="config"></param>
         /// <param name="loggerFactory"></param>
-        public RabbitService(Config config, ILoggerFactory loggerFactory = null)
+        public RabbitService(Config config, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
         {
             LogHelper.LoggerFactory = loggerFactory;
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-            AutoPublisher = new AutoPublisher(ChannelPool);
+            ChannelPool.InitializeAsync().GetAwaiter().GetResult();
+
+            if (!string.IsNullOrWhiteSpace(passphrase))
+            {
+                _hashKey = ArgonHash
+                    .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
+                    .GetAwaiter().GetResult();
+            }
+
+            Publisher = new Publisher(ChannelPool, _hashKey);
             Topologer = new Topologer(ChannelPool);
 
             BuildConsumers();
+
+            StartAsync(passphrase, salt).GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Use this constructor with DependencyInjection. Config's values are only used for RabbitService-esque settings and for building of Consumers.
-        /// </summary>
-        /// <param name="config"></param>
-        /// <param name="channelPool"></param>
-        /// <param name="autoPublisher"></param>
-        /// <param name="toploger"></param>
-        /// <param name="loggerFactory"></param>
-        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger, ILoggerFactory loggerFactory = null)
-        {
-            LogHelper.LoggerFactory = loggerFactory;
-
-            Config = config;
-            ChannelPool = channelPool;
-            AutoPublisher = autoPublisher;
-            Topologer = toploger;
-
-            BuildConsumers();
-        }
-
-        public async Task InitializeAsync()
+        private async Task StartAsync(string passphrase, string salt, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                if (!Initialized)
-                {
-                    await ChannelPool
-                        .InitializeAsync()
-                        .ConfigureAwait(false);
+                await Publisher
+                    .StartAutoPublishAsync(processReceiptAsync)
+                    .ConfigureAwait(false);
 
-                    await AutoPublisher
-                        .StartAsync()
-                        .ConfigureAwait(false);
-
-                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
-                    Initialized = true;
-                }
-            }
-            finally
-            { _serviceLock.Release(); }
-        }
-
-        public async Task InitializeAsync(string passphrase, string salt)
-        {
-            await _serviceLock.WaitAsync().ConfigureAwait(false);
-
-            try
-            {
-                if (!Initialized)
-                {
-                    _hashKey = await ArgonHash
-                        .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
-                        .ConfigureAwait(false);
-
-                    await ChannelPool
-                        .InitializeAsync()
-                        .ConfigureAwait(false);
-
-                    await AutoPublisher
-                        .StartAsync(_hashKey)
-                        .ConfigureAwait(false);
-
-                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
-                    Initialized = true;
-                }
+                await BuildConsumerTopology()
+                    .ConfigureAwait(false);
             }
             finally
             { _serviceLock.Release(); }
@@ -173,8 +118,8 @@ namespace CookedRabbit.Core.Service
 
             try
             {
-                await AutoPublisher
-                    .StopAsync(immediately)
+                await Publisher
+                    .StopAutoPublishAsync(immediately)
                     .ConfigureAwait(false);
 
                 await StopAllConsumers(immediately)
@@ -203,6 +148,9 @@ namespace CookedRabbit.Core.Service
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
+                // Apply the global consumer settings and global consumer pipeline settings
+                // on top of (overriding) individual consumer settings. Opt out by not setting
+                // the global settings field.
                 if (!string.IsNullOrWhiteSpace(consumerSetting.Value.GlobalSettings)
                     && Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
                 {
@@ -261,13 +209,13 @@ namespace CookedRabbit.Core.Service
 
                 if (!string.IsNullOrEmpty(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName))
                 {
-                    ConsumerPipelineSettings.TryAdd(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName, consumerSetting.Value);
+                    ConsumerPipelineNameToConsumerSetting.TryAdd(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName, consumerSetting.Value);
                 }
                 Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, _hashKey));
             }
         }
 
-        private async Task FinishSettingUpConsumersAsync()
+        private async Task BuildConsumerTopology()
         {
             foreach (var consumer in Consumers)
             {
@@ -318,22 +266,11 @@ namespace CookedRabbit.Core.Service
             return Consumers[consumerName];
         }
 
-        public ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName)
+        public IConsumer<ReceivedData> GetConsumerByPipelineName(string consumerPipelineName)
         {
-            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
-            return ConsumerPipelineSettings[consumerPipelineName];
-        }
-
-        public ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName)
-        {
-            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
-            return ConsumerPipelineSettings[consumerPipelineName].ConsumerPipelineSettings;
-        }
-
-        public ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName)
-        {
-            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
-            return Consumers[consumerName].ConsumerSettings.ConsumerPipelineSettings;
+            if (!ConsumerPipelineNameToConsumerSetting.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
+            if (!Consumers.ContainsKey(ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName));
+            return Consumers[ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName];
         }
 
         public async Task DecomcryptAsync(Letter letter)

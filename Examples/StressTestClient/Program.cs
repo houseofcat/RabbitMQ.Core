@@ -12,10 +12,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
         private static Config config;
         private static Topologer topologer;
 
-        private static AutoPublisher apub1;
-        private static AutoPublisher apub2;
-        private static AutoPublisher apub3;
-        private static AutoPublisher apub4;
+        private static Publisher apub1;
+        private static Publisher apub2;
+        private static Publisher apub3;
+        private static Publisher apub4;
 
         private static Consumer con1;
         private static Consumer con2;
@@ -67,10 +67,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             topologer = new Topologer(channelPool);
 
-            apub1 = new AutoPublisher(channelPool);
-            apub2 = new AutoPublisher(channelPool);
-            apub3 = new AutoPublisher(channelPool);
-            apub4 = new AutoPublisher(channelPool);
+            apub1 = new Publisher(channelPool, new byte[] { });
+            apub2 = new Publisher(channelPool, new byte[] { });
+            apub3 = new Publisher(channelPool, new byte[] { });
+            apub4 = new Publisher(channelPool, new byte[] { });
 
             await Console.Out.WriteLineAsync("- Creating stress test queues!").ConfigureAwait(false);
 
@@ -88,10 +88,10 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                     .ConfigureAwait(false);
             }
 
-            await apub1.StartAsync().ConfigureAwait(false);
-            await apub2.StartAsync().ConfigureAwait(false);
-            await apub3.StartAsync().ConfigureAwait(false);
-            await apub4.StartAsync().ConfigureAwait(false);
+            await apub1.StartAutoPublishAsync().ConfigureAwait(false);
+            await apub2.StartAutoPublishAsync().ConfigureAwait(false);
+            await apub3.StartAutoPublishAsync().ConfigureAwait(false);
+            await apub4.StartAutoPublishAsync().ConfigureAwait(false);
 
             con1 = new Consumer(channelPool, "Consumer1");
             con2 = new Consumer(channelPool, "Consumer2");
@@ -120,7 +120,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await Console.Out.WriteLineAsync($"- All tests finished in {sw.ElapsedMilliseconds / 60_000.0} minutes!").ConfigureAwait(false);
         }
 
-        private static async Task StartPubSubTestAsync(AutoPublisher autoPublisher, Consumer consumer)
+        private static async Task StartPubSubTestAsync(Publisher autoPublisher, Consumer consumer)
         {
             var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.ConsumerSettings.QueueName, MessageCount);
             var processReceiptsTask = ProcessReceiptsAsync(autoPublisher, MessageCount);
@@ -132,13 +132,13 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             while (!processReceiptsTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
 
-            await autoPublisher.StopAsync().ConfigureAwait(false);
+            await autoPublisher.StopAutoPublishAsync().ConfigureAwait(false);
 
             while (!consumeMessagesTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
         }
 
-        private static async Task PublishLettersAsync(AutoPublisher apub, string queueName, ulong count)
+        private static async Task PublishLettersAsync(Publisher apub, string queueName, ulong count)
         {
             var sw = Stopwatch.StartNew();
             for (ulong i = 0; i < count; i++)
@@ -168,7 +168,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                 .ConfigureAwait(false);
         }
 
-        private static async Task ProcessReceiptsAsync(AutoPublisher apub, ulong count)
+        private static async Task ProcessReceiptsAsync(Publisher apub, ulong count)
         {
             var buffer = apub.GetReceiptBufferReader();
             var receiptCount = 0ul;

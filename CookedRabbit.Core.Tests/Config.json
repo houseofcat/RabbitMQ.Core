@@ -18,7 +18,7 @@
     }
   },
   "PoolSettings": {
-    "ConnectionPoolName": "PipelineClient",
+    "ServiceName": "PipelineClient",
     "MaxConnections": 5,
     "MaxChannels": 25,
     "SleepOnErrorInterval": 1000
