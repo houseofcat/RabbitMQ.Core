@@ -75,7 +75,7 @@
             Global overrides for your consumers.
             </summary>
         </member>
-        <member name="P:CookedRabbit.Core.PoolOptions.ConnectionPoolName">
+        <member name="P:CookedRabbit.Core.PoolOptions.ServiceName">
             <summary>
             Value to configure the ConnectionPool prefix for display names on RabbitMQ server.
             </summary>
@@ -454,7 +454,7 @@
             <param name="createReceipt"></param>
             <param name="withHeaders"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Publisher.PublishManyAsGroupAsync(System.Collections.Generic.IList{CookedRabbit.Core.Letter},System.Boolean,System.Boolean)">
+        <member name="M:CookedRabbit.Core.Publisher.PublishManyAsBatchAsync(System.Collections.Generic.IList{CookedRabbit.Core.Letter},System.Boolean,System.Boolean)">
             <summary>
             Use this method when a group of letters who have the same properties (deliverymode, messagetype, priority).
             <para>Receipt with no error indicates that we successfully handed off to internal library, not necessarily published.</para>
@@ -463,28 +463,18 @@
             <param name="createReceipt"></param>
             <param name="withHeaders"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(System.String,Microsoft.Extensions.Logging.ILoggerFactory)">
+        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(System.String,System.String,System.String,Microsoft.Extensions.Logging.ILoggerFactory,System.Func{CookedRabbit.Core.PublishReceipt,System.Threading.Tasks.ValueTask})">
             <summary>
             Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="fileNamePath"></param>
             <param name="loggerFactory"></param>
         </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,Microsoft.Extensions.Logging.ILoggerFactory)">
+        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,System.String,System.String,Microsoft.Extensions.Logging.ILoggerFactory,System.Func{CookedRabbit.Core.PublishReceipt,System.Threading.Tasks.ValueTask})">
             <summary>
             Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="config"></param>
-            <param name="loggerFactory"></param>
-        </member>
-        <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,CookedRabbit.Core.Pools.IChannelPool,CookedRabbit.Core.IAutoPublisher,CookedRabbit.Core.ITopologer,Microsoft.Extensions.Logging.ILoggerFactory)">
-            <summary>
-            Use this constructor with DependencyInjection. Config's values are only used for RabbitService-esque settings and for building of Consumers.
-            </summary>
-            <param name="config"></param>
-            <param name="channelPool"></param>
-            <param name="autoPublisher"></param>
-            <param name="toploger"></param>
             <param name="loggerFactory"></param>
         </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.GetAsync(System.String)">
