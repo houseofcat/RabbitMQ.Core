@@ -4,10 +4,10 @@ using System.Text;
 
 namespace CookedRabbit.Core.Configs
 {
-    public class ConsumerPipelineOptions
+    public class GlobalConsumerPipelineOptions
     {
-        public string ConsumerPipelineName { get; set; }
         public bool? WaitForCompletion { get; set; }
         public int? MaxDegreesOfParallelism { get; set; } = Environment.ProcessorCount;
+        public bool? EnsureOrdered { get; set; }
     }
 }

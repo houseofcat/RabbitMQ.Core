@@ -26,8 +26,8 @@ namespace CookedRabbit.Core.Service
 
         Task ComcryptAsync(Letter letter);
         Task<bool> CompressAsync(Letter letter);
-        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, int batchSize, Func<int, IPipeline<ReceivedData, TOut>> pipelineBuilder) where TOut : IWorkState;
-        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, int batchSize, IPipeline<ReceivedData, TOut> pipeline) where TOut : IWorkState;
+        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, int batchSize, bool? ensureOrdered, Func<int, bool?, IPipeline<ReceivedData, TOut>> pipelineBuilder) where TOut : IWorkState;
+        IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(string consumerName, IPipeline<ReceivedData, TOut> pipeline) where TOut : IWorkState;
         Task DecomcryptAsync(Letter letter);
         Task<bool> DecompressAsync(Letter letter);
         bool Decrypt(Letter letter);
@@ -252,6 +252,10 @@ namespace CookedRabbit.Core.Service
                         consumerSetting.Value.ConsumerPipelineSettings.MaxDegreesOfParallelism =
                             globalOverrides.GlobalConsumerPipelineSettings.MaxDegreesOfParallelism
                             ?? consumerSetting.Value.ConsumerPipelineSettings.MaxDegreesOfParallelism;
+
+                        consumerSetting.Value.ConsumerPipelineSettings.EnsureOrdered =
+                            globalOverrides.GlobalConsumerPipelineSettings.EnsureOrdered
+                            ?? consumerSetting.Value.ConsumerPipelineSettings.EnsureOrdered;
                     }
                 }
 
@@ -288,18 +292,18 @@ namespace CookedRabbit.Core.Service
         public IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(
             string consumerName,
             int batchSize,
-            Func<int, IPipeline<ReceivedData, TOut>> pipelineBuilder)
+            bool? ensureOrdered,
+            Func<int, bool?, IPipeline<ReceivedData, TOut>> pipelineBuilder)
             where TOut : IWorkState
         {
             var consumer = GetConsumer(consumerName);
-            var pipeline = pipelineBuilder.Invoke(batchSize);
+            var pipeline = pipelineBuilder.Invoke(batchSize, ensureOrdered);
 
             return new ConsumerPipeline<TOut>(consumer, pipeline);
         }
 
         public IConsumerPipeline<TOut> CreateConsumerPipeline<TOut>(
             string consumerName,
-            int batchSize,
             IPipeline<ReceivedData, TOut> pipeline)
             where TOut : IWorkState
         {

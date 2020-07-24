@@ -2,7 +2,8 @@
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Text;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -10,12 +11,25 @@ namespace CookedRabbit.Core.PipelineClient
 {
     public static class Program
     {
+        public static Stopwatch SW { get; set; }
+        public static ulong GlobalCount = 10000;
+        public static bool EnsureOrdered = true;
+        public static int MaxDoP = 64;
+        public static Random Rand = new Random();
+
         public static async Task Main()
         {
             var consumerPipelineExample = new ConsumerPipelineExample();
             await consumerPipelineExample
                 .RunPipelineExecutionAsync()
                 .ConfigureAwait(false);
+
+            SW.Stop();
+            await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}");
+            await Console.Out.WriteLineAsync($"Ensure Ordered: {EnsureOrdered}");
+            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {SW.ElapsedMilliseconds} milliseconds.");
+            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (SW.ElapsedMilliseconds/1.0) * 1000.0} msg/s.");
+            await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
     }
 
@@ -35,10 +49,9 @@ namespace CookedRabbit.Core.PipelineClient
             _rabbitService = await SetupAsync().ConfigureAwait(false);
             _errorQueue = _rabbitService.Config.GetConsumerSettings("ConsumerFromConfig").ErrorQueueName;
 
-            var consumerPipeline = _rabbitService.CreateConsumerPipeline("ConsumerFromConfig", 32, BuildPipeline);
+            var consumerPipeline = _rabbitService.CreateConsumerPipeline("ConsumerFromConfig", Program.MaxDoP, Program.EnsureOrdered, BuildPipeline);
+            Program.SW = Stopwatch.StartNew();
             await consumerPipeline.StartAsync().ConfigureAwait(false);
-
-            await Console.In.ReadLineAsync().ConfigureAwait(false);
         }
 
         private async Task<RabbitService> SetupAsync()
@@ -59,7 +72,7 @@ namespace CookedRabbit.Core.PipelineClient
                 .CreateQueueAsync("TestRabbitServiceQueue")
                 .ConfigureAwait(false);
 
-            for (ulong i = 0; i < 100; i++)
+            for (var i = 0ul; i < Program.GlobalCount; i++)
             {
                 var letter = letterTemplate.Clone();
                 letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
@@ -104,12 +117,13 @@ namespace CookedRabbit.Core.PipelineClient
             return rabbitService;
         }
 
-        public IPipeline<ReceivedData, WorkState> BuildPipeline(int maxDoP)
+        public IPipeline<ReceivedData, WorkState> BuildPipeline(int maxDoP, bool? ensureOrdered = null)
         {
             var pipeline = new Pipeline<ReceivedData, WorkState>(
                 maxDoP,
                 healthCheckInterval: TimeSpan.FromSeconds(10),
-                pipelineName: "ConsumerPipelineExample");
+                pipelineName: "ConsumerPipelineExample",
+                ensureOrdered);
 
             pipeline.AddAsyncStep<ReceivedData, WorkState>(DeserializeStepAsync);
             pipeline.AddAsyncStep<WorkState, WorkState>(ProcessStepAsync);
@@ -186,6 +200,9 @@ namespace CookedRabbit.Core.PipelineClient
                 _logger.LogDebug($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Received: {state.Message?.StringMessage}");
 
                 state.ProcessStepSuccess = true;
+
+                // Simulate processing.
+                await Task.Delay(Program.Rand.Next(1, 100));
             }
             else
             {
@@ -239,6 +256,24 @@ namespace CookedRabbit.Core.PipelineClient
             }
 
             return state;
+        }
+    }
+
+    public static class Extensions
+    {
+        private const long Billion = 1_000_000_000L;
+        private const long Million = 1_000_000L;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long ElapsedNanoseconds(this Stopwatch watch)
+        {
+            return (long)((double)watch.ElapsedTicks / Stopwatch.Frequency * Billion);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long ElapsedMicroseconds(this Stopwatch watch)
+        {
+            return (long)((double)watch.ElapsedTicks / Stopwatch.Frequency * Million);
         }
     }
 }

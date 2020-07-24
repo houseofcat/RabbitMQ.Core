@@ -8,6 +8,29 @@ using System.Threading.Tasks.Dataflow;
 
 namespace CookedRabbit.Core.WorkEngines
 {
+    public interface IPipeline<TIn, TOut>
+    {
+        int MaxDegreeOfParallelism { get; }
+        bool Ready { get; }
+        int StepCount { get; }
+        List<PipelineStep> Steps { get; }
+
+        void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        void AddAsyncSteps<TLocalIn, TLocalOut>(int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null, params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions);
+        void AddAsyncSteps<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>>[] stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        void AddAsyncSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, Task<TLocalOut>>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        void AddStep<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut> stepFunc, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        void AddSteps<TLocalIn, TLocalOut>(int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null, params Func<TLocalIn, TLocalOut>[] stepFunctions);
+        void AddSteps<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut>[] stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        void AddSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, TLocalOut>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
+        Task<bool> AwaitCompletionAsync();
+        void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline);
+        void Finalize(Action<TOut> finalizeStep = null);
+        void Finalize(Func<TOut, Task> finalizeStep = null);
+        Exception GetAnyPipelineStepsFault();
+        Task<bool> QueueForExecutionAsync(TIn input);
+    }
+
     // Great lesson/template found here.
     // https://michaelscodingspot.com/pipeline-implementations-csharp-3/
 
@@ -27,7 +50,7 @@ namespace CookedRabbit.Core.WorkEngines
         public bool Ready { get; private set; }
         public int StepCount { get; private set; }
 
-        public Pipeline(int maxDegreeOfParallelism, int? bufferSize = null)
+        public Pipeline(int maxDegreeOfParallelism, bool? ensureOrdered = null, int? bufferSize = null)
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
 
@@ -42,7 +65,7 @@ namespace CookedRabbit.Core.WorkEngines
             _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
 
-        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, int? bufferSize = null)
+        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, bool? ensureOrdered = null, int? bufferSize = null)
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
             _healthCheckInterval = healthCheckInterval;
@@ -60,8 +83,8 @@ namespace CookedRabbit.Core.WorkEngines
 
             _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
-        
-        public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, int? bufferSize = null)
+
+        public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, bool? ensureOrdered = null, int? bufferSize = null)
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
             _healthCheckTask = Task.Run(() => healthCheck);
@@ -80,11 +103,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddAsyncStep<TLocalIn, TLocalOut>(
             Func<TLocalIn, Task<TLocalOut>> stepFunc,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
             var pipelineStep = new PipelineStep
             {
                 IsAsync = true,
@@ -131,11 +155,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddAsyncSteps<TLocalIn, TLocalOut>(
             Func<TLocalIn, Task<TLocalOut>>[] stepFunctions,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Length; i++)
             {
@@ -186,11 +211,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddAsyncSteps<TLocalIn, TLocalOut>(
             List<Func<TLocalIn, Task<TLocalOut>>> stepFunctions,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
@@ -240,12 +266,13 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void AddAsyncSteps<TLocalIn, TLocalOut>(
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null,
             params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Length; i++)
             {
@@ -296,11 +323,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddStep<TLocalIn, TLocalOut>(
             Func<TLocalIn, TLocalOut> stepFunc,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
             var pipelineStep = new PipelineStep
             {
                 IsAsync = false,
@@ -346,11 +374,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddSteps<TLocalIn, TLocalOut>(
             Func<TLocalIn, TLocalOut>[] stepFunctions,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Length; i++)
             {
@@ -401,11 +430,12 @@ namespace CookedRabbit.Core.WorkEngines
         public void AddSteps<TLocalIn, TLocalOut>(
             List<Func<TLocalIn, TLocalOut>> stepFunctions,
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
@@ -455,12 +485,13 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void AddSteps<TLocalIn, TLocalOut>(
             int? localMaxDoP = null,
+            bool? ensureOrdered = null,
             int? bufferSizeOverride = null,
             params Func<TLocalIn, TLocalOut>[] stepFunctions)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, bufferSizeOverride);
+            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Length; i++)
             {
@@ -690,13 +721,14 @@ namespace CookedRabbit.Core.WorkEngines
             return null;
         }
 
-        private ExecutionDataflowBlockOptions GetExecuteStepOptions(int? maxDoPOverride, int? bufferSizeOverride)
+        private ExecutionDataflowBlockOptions GetExecuteStepOptions(int? maxDoPOverride, bool? ensureOrdered, int? bufferSizeOverride)
         {
             var options = _executeStepOptions;
             if (maxDoPOverride != null || bufferSizeOverride != null)
             {
                 options = new ExecutionDataflowBlockOptions();
 
+                options.EnsureOrdered = ensureOrdered ?? options.EnsureOrdered;
                 options.MaxDegreeOfParallelism = maxDoPOverride ?? options.MaxDegreeOfParallelism;
                 options.BoundedCapacity = bufferSizeOverride ?? options.BoundedCapacity;
             }

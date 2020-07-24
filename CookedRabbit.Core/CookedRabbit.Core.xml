@@ -697,16 +697,6 @@
             <param name="minLength"></param>
             <param name="maxLength"></param>
         </member>
-        <member name="M:CookedRabbit.Core.WorkEngines.IPipeline`2.ChainPipeline``1(CookedRabbit.Core.WorkEngines.Pipeline{`0,`1})">
-            <summary>
-            Allows the chaining of steps from one type matched Pipeline to another.
-            <para>The pipeline steps get added to the parent pipeline for logical consistency.</para>
-            <para>TLocalIn refers to the output of the last step and input of the first step. They have to match, both in type and asynchrounous pattern.</para>
-            <para>Because we don't have the original StepFunction, the blocks have to have matching inputs/outputs therefore async can attach to async, sync to sync.</para>
-            </summary>
-            <typeparam name="TLocalIn"></typeparam>
-            <param name="pipeline"></param>
-        </member>
         <member name="M:CookedRabbit.Core.WorkEngines.Pipeline`2.ChainPipeline``1(CookedRabbit.Core.WorkEngines.Pipeline{`0,`1})">
             <summary>
             Allows the chaining of steps from one type matched Pipeline to another.

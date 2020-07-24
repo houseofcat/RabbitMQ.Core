@@ -29,7 +29,7 @@
     "BehaviorWhenFull": 0,
     "AutoPublisherSleepInterval": 0,
     "CreatePublishReceipts": true,
-    "Compress": false,
+    "Compress": true,
     "Encrypt": true
   },
   "GlobalConsumerSettings": {
@@ -44,7 +44,8 @@
       "Exclusive": false,
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": false,
-        "MaxDegreesOfParallelism": 64
+        "MaxDegreesOfParallelism": 64,
+        "EnsureOrdered": false
       }
     },
     "ModerateSettings": {
@@ -58,7 +59,8 @@
       "Exclusive": false,
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": true,
-        "MaxDegreesOfParallelism": 24
+        "MaxDegreesOfParallelism": 24,
+        "EnsureOrdered": false
       }
     },
     "LightSettings": {
@@ -72,7 +74,8 @@
       "Exclusive": false,
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": true,
-        "MaxDegreesOfParallelism": 4
+        "MaxDegreesOfParallelism": 4,
+        "EnsureOrdered": false
       }
     },
     "SingleThreaded": {
@@ -86,7 +89,8 @@
       "Exclusive": false,
       "GlobalConsumerPipelineSettings": {
         "WaitForCompletion": true,
-        "MaxDegreesOfParallelism": 1
+        "MaxDegreesOfParallelism": 1,
+        "EnsureOrdered": false
       }
     }
   },
