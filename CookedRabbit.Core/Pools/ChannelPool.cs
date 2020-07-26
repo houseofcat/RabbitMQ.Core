@@ -101,10 +101,6 @@ namespace CookedRabbit.Core.Pools
             {
                 if (!Initialized)
                 {
-                    await _connectionPool
-                        .InitializeAsync()
-                        .ConfigureAwait(false);
-
                     await CreateChannelsAsync()
                         .ConfigureAwait(false);
 

@@ -61,8 +61,8 @@ namespace CookedRabbit.Core
     {
         public static class ConnectionPool
         {
-            public readonly static string Initialization = "ConnectionPool initialize call was made.";
-            public readonly static string InitializationComplete = "ConnectionPool initialized.";
+            public readonly static string CreateConnections = "ConnectionPool creating Connections...";
+            public readonly static string CreateConnectionsComplete = "ConnectionPool initialized.";
             public readonly static string CreateConnectionException = "Connection () failed to be created.";
             public readonly static string Shutdown = "ConnectionPool shutdown was called.";
             public readonly static string ShutdownComplete = "ConnectionPool shutdown complete.";

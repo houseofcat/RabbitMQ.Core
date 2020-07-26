@@ -12,12 +12,10 @@ namespace CookedRabbit.Core.Pools
     public interface IConnectionPool
     {
         Config Config { get; }
-        bool Initialized { get; }
-        bool Shutdown { get; }
 
         IConnection CreateConnection(string connectionName);
         ValueTask<IConnectionHost> GetConnectionAsync();
-        Task InitializeAsync();
+
         Task ShutdownAsync();
     }
 
@@ -29,8 +27,6 @@ namespace CookedRabbit.Core.Pools
         private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
         private ulong _currentConnectionId { get; set; }
 
-        public bool Initialized { get; private set; }
-        public bool Shutdown { get; private set; }
         public Config Config { get; }
 
         public ConnectionPool(Config config)
@@ -42,6 +38,8 @@ namespace CookedRabbit.Core.Pools
 
             _connections = Channel.CreateBounded<IConnectionHost>(Config.PoolSettings.MaxConnections);
             _connectionFactory = CreateConnectionFactory();
+
+            CreateConnectionsAsync().GetAwaiter().GetResult();
         }
 
         private ConnectionFactory CreateConnectionFactory()
@@ -76,42 +74,18 @@ namespace CookedRabbit.Core.Pools
 
         public IConnection CreateConnection(string connectionName) => _connectionFactory.CreateConnection(connectionName);
 
-        public async Task InitializeAsync()
-        {
-            _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
-
-            await _poolLock
-                .WaitAsync()
-                .ConfigureAwait(false);
-
-            try
-            {
-                if (!Initialized)
-                {
-                    await CreateConnectionsAsync()
-                        .ConfigureAwait(false);
-
-                    Initialized = true;
-                    Shutdown = false;
-                }
-            }
-            finally
-            { _poolLock.Release(); }
-
-            _logger.LogTrace(LogMessages.ConnectionPool.Initialization);
-        }
-
         private async Task CreateConnectionsAsync()
         {
+            _logger.LogTrace(LogMessages.ConnectionPool.CreateConnections);
+
             for (int i = 0; i < Config.PoolSettings.MaxConnections; i++)
             {
                 var serviceName = string.IsNullOrEmpty(Config.PoolSettings.ServiceName) ? $"CookedRabbit:{i}" : $"{Config.PoolSettings.ServiceName}:{i}";
                 try
                 {
-                    var connection = _connectionFactory.CreateConnection(serviceName);
                     await _connections
                         .Writer
-                        .WriteAsync(new ConnectionHost(_currentConnectionId++, connection));
+                        .WriteAsync(new ConnectionHost(_currentConnectionId++, CreateConnection(serviceName)));
                 }
                 catch (Exception ex)
                 {
@@ -119,12 +93,13 @@ namespace CookedRabbit.Core.Pools
                     throw; // Non Optional Throw
                 }
             }
+
+            _logger.LogTrace(LogMessages.ConnectionPool.CreateConnectionsComplete);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<IConnectionHost> GetConnectionAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ValidationMessage);
             if (!await _connections
                 .Reader
                 .WaitToReadAsync()
@@ -148,30 +123,12 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(ExceptionMessages.ShutdownValidationMessage);
-
             _logger.LogTrace(LogMessages.ConnectionPool.Shutdown);
 
             await _poolLock
                 .WaitAsync()
                 .ConfigureAwait(false);
 
-            if (!Shutdown)
-            {
-                await CloseConnectionsAsync()
-                    .ConfigureAwait(false);
-
-                Shutdown = true;
-                Initialized = false;
-            }
-
-            _poolLock.Release();
-
-            _logger.LogTrace(LogMessages.ConnectionPool.ShutdownComplete);
-        }
-
-        private async Task CloseConnectionsAsync()
-        {
             _connections.Writer.Complete();
 
             await _connections.Reader.WaitToReadAsync().ConfigureAwait(false);
@@ -181,6 +138,10 @@ namespace CookedRabbit.Core.Pools
                 { connHost.Close(); }
                 catch { }
             }
+
+            _poolLock.Release();
+
+            _logger.LogTrace(LogMessages.ConnectionPool.ShutdownComplete);
         }
     }
 }
