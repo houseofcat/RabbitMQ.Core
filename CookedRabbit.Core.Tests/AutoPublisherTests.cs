@@ -24,7 +24,6 @@ namespace CookedRabbit.Core.Tests
             config.PublisherSettings.CreatePublishReceipts = true;
 
             channelPool = new ChannelPool(config);
-            channelPool.InitializeAsync().GetAwaiter().GetResult();
 
             topologer = new Topologer(channelPool);
         }

@@ -15,6 +15,7 @@ namespace CookedRabbit.Core.Pools
 
         IConnection CreateConnection(string connectionName);
         ValueTask<IConnectionHost> GetConnectionAsync();
+        ValueTask ReturnConnectionAsync(IConnectionHost connHost);
 
         Task ShutdownAsync();
     }
@@ -108,17 +109,39 @@ namespace CookedRabbit.Core.Pools
                 throw new InvalidOperationException(ExceptionMessages.GetConnectionErrorMessage);
             }
 
-            var connHost = await _connections
-                .Reader
-                .ReadAsync()
-                .ConfigureAwait(false);
+            while (true)
+            {
+                var connHost = await _connections
+                    .Reader
+                    .ReadAsync();
+
+                // Connection Health Check
+                var healthy = await connHost.HealthyAsync().ConfigureAwait(false);
+                if (!healthy)
+                {
+                    await ReturnConnectionAsync(connHost);
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
+                    continue;
+                }
+
+                return connHost;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async ValueTask ReturnConnectionAsync(IConnectionHost connHost)
+        {
+            if (!await _connections
+                    .Writer
+                    .WaitToWriteAsync()
+                    .ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(ExceptionMessages.GetConnectionErrorMessage);
+            }
 
             await _connections
                 .Writer
-                .WriteAsync(connHost)
-                .ConfigureAwait(false);
-
-            return connHost;
+                .WriteAsync(connHost);
         }
 
         public async Task ShutdownAsync()

@@ -63,7 +63,6 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             config = await ConfigReader.ConfigFileReadAsync("Config.json");
 
             var channelPool = new ChannelPool(config);
-            await channelPool.InitializeAsync();
 
             topologer = new Topologer(channelPool);
 

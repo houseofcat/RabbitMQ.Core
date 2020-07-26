@@ -36,11 +36,6 @@ namespace CookedRabbit.Core.Tests
             var chanPool = new ChannelPool(config);
 
             Assert.NotNull(chanPool);
-
-            await chanPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
-
             Assert.True(chanPool.CurrentChannelId > 0);
         }
 
@@ -82,10 +77,6 @@ namespace CookedRabbit.Core.Tests
             var successCount = 0;
             const int loopCount = 100_000;
             var chanPool = new ChannelPool(config);
-
-            await chanPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
 
             var sw = Stopwatch.StartNew();
 

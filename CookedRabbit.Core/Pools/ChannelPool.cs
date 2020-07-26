@@ -13,7 +13,6 @@ namespace CookedRabbit.Core.Pools
     {
         Config Config { get; }
         ulong CurrentChannelId { get; }
-        bool Initialized { get; }
         bool Shutdown { get; }
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace CookedRabbit.Core.Pools
         /// <param name="ackable"></param>
         /// <returns><see cref="IChannelHost"/></returns>
         ValueTask<IChannelHost> GetTransientChannelAsync(bool ackable);
-        Task InitializeAsync();
+
         ValueTask ReturnChannelAsync(IChannelHost chanHost, bool flagChannel = false);
         Task ShutdownAsync();
     }
@@ -62,7 +61,6 @@ namespace CookedRabbit.Core.Pools
         // A 0 indicates TransientChannels.
         public ulong CurrentChannelId { get; private set; } = 1;
         public bool Shutdown { get; private set; }
-        public bool Initialized { get; private set; }
 
         public ChannelPool(Config config)
         {
@@ -75,6 +73,8 @@ namespace CookedRabbit.Core.Pools
             _flaggedChannels = new ConcurrentDictionary<ulong, bool>();
             _channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
             _ackChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
+
+            CreateChannelsAsync().GetAwaiter().GetResult();
         }
 
         public ChannelPool(ConnectionPool connPool)
@@ -87,54 +87,28 @@ namespace CookedRabbit.Core.Pools
             _flaggedChannels = new ConcurrentDictionary<ulong, bool>();
             _channels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
             _ackChannels = Channel.CreateBounded<IChannelHost>(Config.PoolSettings.MaxChannels);
-        }
 
-        public async Task InitializeAsync()
-        {
-            _logger.LogTrace(LogMessages.ChannelPool.Initialization);
-
-            await _poolLock
-                .WaitAsync()
-                .ConfigureAwait(false);
-
-            try
-            {
-                if (!Initialized)
-                {
-                    await CreateChannelsAsync()
-                        .ConfigureAwait(false);
-
-                    Initialized = true;
-                    Shutdown = false;
-                }
-            }
-            finally { _poolLock.Release(); }
-
-            _logger.LogTrace(LogMessages.ChannelPool.InitializationComplete);
+            CreateChannelsAsync().GetAwaiter().GetResult();
         }
 
         private async Task CreateChannelsAsync()
         {
             for (int i = 0; i < Config.PoolSettings.MaxChannels; i++)
             {
-                var connHost = await _connectionPool
-                    .GetConnectionAsync()
-                    .ConfigureAwait(false);
+                var chanHost = await CreateChannelAsync(CurrentChannelId++, false);
 
                 await _channels
                     .Writer
-                    .WriteAsync(new ChannelHost(CurrentChannelId++, connHost, false));
+                    .WriteAsync(chanHost);
             }
 
             for (int i = 0; i < Config.PoolSettings.MaxChannels; i++)
             {
-                var connHost = await _connectionPool
-                    .GetConnectionAsync()
-                    .ConfigureAwait(false);
+                var chanHost = await CreateChannelAsync(CurrentChannelId++, true);
 
                 await _ackChannels
                     .Writer
-                    .WriteAsync(new ChannelHost(CurrentChannelId++, connHost, true));
+                    .WriteAsync(chanHost);
             }
         }
 
@@ -149,7 +123,8 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<IChannelHost> GetChannelAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
+            if (Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
+
             if (!await _channels
                 .Reader
                 .WaitToReadAsync()
@@ -169,12 +144,8 @@ namespace CookedRabbit.Core.Pools
             {
                 _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
-                // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
-                // is they would like to replace it.
-                chanHost.Close();
-
-                chanHost = await CreateChannelAsync(chanHost.ChannelId, chanHost.Ackable)
-                    .ConfigureAwait(false);
+                var success = false;
+                while (!success) { success = chanHost.MakeChannel(); }
             }
 
             return chanHost;
@@ -191,7 +162,8 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<IChannelHost> GetAckChannelAsync()
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
+            if (Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
+
             if (!await _ackChannels
                 .Reader
                 .WaitToReadAsync()
@@ -211,12 +183,8 @@ namespace CookedRabbit.Core.Pools
             {
                 _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
-                // Most likely this is closed, but if a user flags a healthy channel, the behavior implied/assumed
-                // is they would like to replace it.
-                chanHost.Close();
-
-                chanHost = await CreateChannelAsync(chanHost.ChannelId, chanHost.Ackable)
-                    .ConfigureAwait(false);
+                var success = false;
+                while (!success) { success = chanHost.MakeChannel(); }
             }
 
             return chanHost;
@@ -239,41 +207,37 @@ namespace CookedRabbit.Core.Pools
 
             while (true)
             {
-                _logger.LogDebug(LogMessages.ChannelPool.CreateChannel, channelId);
+                _logger.LogTrace(LogMessages.ChannelPool.CreateChannel, channelId);
 
                 var sleep = false;
 
+                // Get ConnectionHost
                 try
-                {
-                    connHost = await _connectionPool
-                        .GetConnectionAsync()
-                        .ConfigureAwait(false);
-
-                    if (!await connHost.HealthyAsync().ConfigureAwait(false))
-                    {
-                        _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConnection, channelId);
-                        sleep = true;
-                    }
-                }
+                { connHost = await _connectionPool.GetConnectionAsync().ConfigureAwait(false); }
                 catch
                 {
-                    _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConnection, channelId);
+                    _logger.LogTrace(LogMessages.ChannelPool.CreateChannelFailedConnection, channelId);
                     sleep = true;
                 }
 
+                // Create a Channel Host
                 if (!sleep)
                 {
                     try
                     { chanHost = new ChannelHost(channelId, connHost, ackable); }
                     catch
                     {
-                        _logger.LogDebug(LogMessages.ChannelPool.CreateChannelFailedConstruction, channelId);
+                        _logger.LogTrace(LogMessages.ChannelPool.CreateChannelFailedConstruction, channelId);
                         sleep = true;
                     }
                 }
 
+                // Sleep on failure.
                 if (sleep)
                 {
+                    if (connHost != null)
+                    { await _connectionPool.ReturnConnectionAsync(connHost); } // Return Connection (or lose them.)
+
                     _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSleep, channelId);
 
                     await Task
@@ -287,8 +251,8 @@ namespace CookedRabbit.Core.Pools
             }
 
             _flaggedChannels[chanHost.ChannelId] = false;
-
             _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
+
             return chanHost;
         }
 
@@ -304,7 +268,7 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask ReturnChannelAsync(IChannelHost chanHost, bool flagChannel = false)
         {
-            if (!Initialized || Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
+            if (Shutdown) throw new InvalidOperationException(ExceptionMessages.ChannelPoolValidationMessage);
 
             _flaggedChannels[chanHost.ChannelId] = flagChannel;
 
@@ -328,8 +292,6 @@ namespace CookedRabbit.Core.Pools
 
         public async Task ShutdownAsync()
         {
-            if (!Initialized) throw new InvalidOperationException(ExceptionMessages.ChannelPoolShutdownValidationMessage);
-
             _logger.LogTrace(LogMessages.ChannelPool.Shutdown);
 
             await _poolLock
@@ -342,7 +304,6 @@ namespace CookedRabbit.Core.Pools
                     .ConfigureAwait(false);
 
                 Shutdown = true;
-                Initialized = false;
 
                 await _connectionPool
                     .ShutdownAsync()

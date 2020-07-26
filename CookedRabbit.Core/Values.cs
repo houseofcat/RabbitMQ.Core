@@ -59,6 +59,12 @@ namespace CookedRabbit.Core
 
     public static class LogMessages
     {
+        public static class ChannelHost
+        {
+            public readonly static string FlowControlled = "Flow control detected on ChannelHost {0}";
+            public readonly static string FlowControlFinished = "Flow control is finished on ChannelHost {0}";
+        }
+
         public static class ConnectionPool
         {
             public readonly static string CreateConnections = "ConnectionPool creating Connections...";
@@ -74,7 +80,7 @@ namespace CookedRabbit.Core
             public readonly static string InitializationComplete = "ChannelPool initialized.";
             public readonly static string DeadChannel = "A dead channel ({0}) was detected... attempting to repair indefinitely.";
             public readonly static string CreateChannel = "The channel host ({0}) create loop is executing an iteration...";
-            public readonly static string CreateChannelFailedConnection = "The channel host ({0}) failed because Connection unhealthy.";
+            public readonly static string CreateChannelFailedConnection = "The channel host ({0}) failed because Connection is unhealthy.";
             public readonly static string CreateChannelFailedConstruction = "The channel host ({0}) failed because ChannelHost construction threw exception.";
             public readonly static string CreateChannelSleep = "The channel host ({0}) create loop iteration failed. Sleeping...";
             public readonly static string CreateChannelSuccess = "The channel host ({0}) create loop finished. Channel restored and flags removed.";

@@ -36,10 +36,6 @@ namespace CookedRabbit.Core.Tests
             var connPool = new ConnectionPool(config);
 
             Assert.NotNull(connPool);
-
-            await connPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
         }
 
         [Fact]
@@ -71,8 +67,6 @@ namespace CookedRabbit.Core.Tests
             var successCount = 0;
             const int loopCount = 100_000;
             var connPool = new ConnectionPool(config);
-
-            await connPool.InitializeAsync().ConfigureAwait(false);
 
             var sw = Stopwatch.StartNew();
 

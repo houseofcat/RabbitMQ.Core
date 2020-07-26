@@ -21,10 +21,6 @@ namespace CookedRabbit.Core.Benchmark
             config.PoolSettings.MaxConnections = 5;
 
             ConnectionPool = new ConnectionPool(config);
-
-            await ConnectionPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
         }
 
         [GlobalCleanup]

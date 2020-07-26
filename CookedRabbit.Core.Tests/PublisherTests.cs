@@ -48,7 +48,6 @@ namespace CookedRabbit.Core.Tests
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
 
             var chanPool = new ChannelPool(config);
-            await chanPool.InitializeAsync().ConfigureAwait(false);
             var pub = new Publisher(chanPool, new byte[] { });
 
             Assert.NotNull(pub);

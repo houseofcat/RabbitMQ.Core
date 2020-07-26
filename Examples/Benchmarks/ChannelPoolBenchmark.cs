@@ -24,14 +24,6 @@ namespace CookedRabbit.Core.Benchmark
 
             ChannelPool = new ChannelPool(config);
             ConnectionPool = new ConnectionPool(config);
-
-            await ChannelPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
-
-            await ConnectionPool
-                .InitializeAsync()
-                .ConfigureAwait(false);
         }
 
         [GlobalCleanup]

@@ -11,7 +11,6 @@ namespace CookedRabbit.Core
     {
         Config Config { get; }
 
-        Task InitializeAsync();
         Task<bool> BindExchangeToExchangeAsync(string childExchangeName, string parentExchangeName, string routingKey = "", IDictionary<string, object> args = null);
         Task<bool> BindQueueToExchangeAsync(string queueName, string exchangeName, string routingKey = "", IDictionary<string, object> args = null);
         Task<bool> CreateExchangeAsync(string exchangeName, string exchangeType, bool durable = true, bool autoDelete = false, IDictionary<string, object> args = null);
@@ -43,11 +42,6 @@ namespace CookedRabbit.Core
 
             Config = channelPool.Config;
             _channelPool = channelPool;
-        }
-
-        public async Task InitializeAsync()
-        {
-            await _channelPool.InitializeAsync();
         }
 
         public async Task CreateTopologyAsync(TopologyConfig topologyConfig)

@@ -75,7 +75,6 @@ namespace CookedRabbit.Core
             }
 
             _channelPool = channelPool;
-            _channelPool.InitializeAsync().GetAwaiter().GetResult();
             _receiptBuffer = Channel.CreateUnbounded<PublishReceipt>(
                 new UnboundedChannelOptions
                 {

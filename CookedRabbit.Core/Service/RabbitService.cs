@@ -78,7 +78,6 @@ namespace CookedRabbit.Core.Service
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-            ChannelPool.InitializeAsync().GetAwaiter().GetResult();
 
             if (!string.IsNullOrWhiteSpace(passphrase))
             {

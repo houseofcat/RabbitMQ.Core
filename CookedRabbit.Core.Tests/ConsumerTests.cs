@@ -23,7 +23,6 @@ namespace CookedRabbit.Core.Tests
             config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
 
             channelPool = new ChannelPool(config);
-            channelPool.InitializeAsync().GetAwaiter().GetResult();
             topologer = new Topologer(config);
             rabbitService = new RabbitService("Config.json", null, null, null, null);
         }
@@ -46,8 +45,6 @@ namespace CookedRabbit.Core.Tests
 
             var con = new Consumer(config, "TestMessageConsumer");
             Assert.NotNull(con);
-
-            await con.ChannelPool.InitializeAsync().ConfigureAwait(false);
         }
 
         [Fact]

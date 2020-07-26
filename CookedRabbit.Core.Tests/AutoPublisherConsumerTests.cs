@@ -23,7 +23,6 @@ namespace CookedRabbit.Core.Tests
 
             var channelPool = new ChannelPool(config);
             topologer = new Topologer(channelPool);
-            topologer.InitializeAsync().GetAwaiter().GetResult();
 
             publisher = new Publisher(channelPool, new byte[] { });
             consumer = new Consumer(channelPool, "TestAutoPublisherConsumerName");
