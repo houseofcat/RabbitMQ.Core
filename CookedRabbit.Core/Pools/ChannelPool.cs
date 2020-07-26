@@ -253,6 +253,9 @@ namespace CookedRabbit.Core.Pools
             _flaggedChannels[chanHost.ChannelId] = false;
             _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
 
+            if (connHost != null)
+            { await _connectionPool.ReturnConnectionAsync(connHost); } // Return Connection (or lose them.)
+
             return chanHost;
         }
 

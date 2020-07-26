@@ -12,7 +12,8 @@ namespace CookedRabbit.Core.PipelineClient
 {
     public static class Program
     {
-        public static Stopwatch Stopwatch { get; set; }
+        public static Stopwatch Stopwatch;
+        public static LogLevel LogLevel = LogLevel.Trace;
         public static long GlobalCount = 1000;
         public static bool EnsureOrdered = true;
         public static bool AwaitShutdown = true;
@@ -86,7 +87,7 @@ namespace CookedRabbit.Core.PipelineClient
         private async Task<RabbitService> SetupAsync()
         {
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(Program.LogLevel));
             _logger = loggerFactory.CreateLogger<ConsumerPipelineExample>();
             var rabbitService = new RabbitService(
                 "Config.json",
