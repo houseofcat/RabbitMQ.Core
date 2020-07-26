@@ -588,10 +588,6 @@ namespace CookedRabbit.Core
                         if (token.IsCancellationRequested)
                         { return; }
                     }
-
-                    await Task
-                        .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
-                        .ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)

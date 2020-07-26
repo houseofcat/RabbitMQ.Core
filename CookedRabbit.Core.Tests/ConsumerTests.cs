@@ -1,4 +1,5 @@
 using CookedRabbit.Core.Pools;
+using CookedRabbit.Core.Service;
 using CookedRabbit.Core.Utils;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,6 +13,7 @@ namespace CookedRabbit.Core.Tests
         private readonly Config config;
         private readonly IChannelPool channelPool;
         private readonly Topologer topologer;
+        private readonly IRabbitService rabbitService;
 
         public ConsumerTests(ITestOutputHelper output)
         {
@@ -21,6 +23,7 @@ namespace CookedRabbit.Core.Tests
             channelPool = new ChannelPool(config);
             channelPool.InitializeAsync().GetAwaiter().GetResult();
             topologer = new Topologer(config);
+            rabbitService = new RabbitService("Config.json", null, null, null, null);
         }
 
         [Fact]
@@ -61,6 +64,16 @@ namespace CookedRabbit.Core.Tests
 
             await con.StartConsumerAsync(true, true).ConfigureAwait(false);
             await con.StopConsumerAsync().ConfigureAwait(false);
+        }
+
+        [Fact]
+        public async Task StartAndStopTesting()
+        {
+            var consumer = rabbitService.GetConsumer("ConsumerFromConfig");
+
+            await consumer.StartConsumerAsync(true, true).ConfigureAwait(false);
+            await consumer.StopConsumerAsync().ConfigureAwait(false);
+            await consumer.StartConsumerAsync(true, true).ConfigureAwait(false);
         }
     }
 }

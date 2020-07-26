@@ -30,12 +30,12 @@ namespace CookedRabbit.Core
 
         public static ILogger<TCategoryName> GetLogger<TCategoryName>()
         {
-            return _factory.CreateLogger<TCategoryName>();
+            return LoggerFactory.CreateLogger<TCategoryName>();
         }
 
         public static void AddProvider(ILoggerProvider provider)
         {
-            _factory.AddProvider(provider);
+            LoggerFactory.AddProvider(provider);
         }
     }
 }
