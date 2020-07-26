@@ -5,53 +5,81 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CookedRabbit.Core.PipelineClient
 {
     public static class Program
     {
-        public static Stopwatch SW { get; set; }
-        public static ulong GlobalCount = 10000;
-        public static bool EnsureOrdered = true;
+        public static Stopwatch Stopwatch { get; set; }
+        public static long GlobalCount = 1000;
+        public static bool EnsureOrdered = false;
+        public static bool AwaitShutdown = true;
+        public static bool LogOutcome = false;
+        public static bool UseStreamPipeline = false;
         public static int MaxDoP = 64;
         public static Random Rand = new Random();
 
         public static async Task Main()
         {
             var consumerPipelineExample = new ConsumerPipelineExample();
+            await Console.Out.WriteLineAsync("About to run Client... press a key to continue!");
+            await Console.In.ReadLineAsync(); // memory snapshot baseline
+
             await consumerPipelineExample
-                .RunPipelineExecutionAsync()
+                .RunExampleAsync()
                 .ConfigureAwait(false);
 
-            SW.Stop();
+            await Console.Out.WriteLineAsync("Statistics!");
             await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}");
             await Console.Out.WriteLineAsync($"Ensure Ordered: {EnsureOrdered}");
-            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {SW.ElapsedMilliseconds} milliseconds.");
-            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (SW.ElapsedMilliseconds/1.0) * 1000.0} msg/s.");
-            await Console.In.ReadLineAsync().ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {Stopwatch.ElapsedMilliseconds} milliseconds.");
+            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0} msg/s.");
+            await Console.Out.WriteLineAsync("Client Finished! Press key to start shutdown!");
+            await Console.In.ReadLineAsync(); // checking for memory leak (snapshots)
+            await consumerPipelineExample.ShutdownAsync();
+            await Console.Out.WriteLineAsync("All finished cleanup!");
+            await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
         }
     }
 
     public class ConsumerPipelineExample
     {
-        private string _errorQueue;
         private IRabbitService _rabbitService;
         private ILogger<ConsumerPipelineExample> _logger;
+        private IConsumerPipeline<WorkState> _consumerPipeline;
 
         private static Task PublisherOne { get; set; }
         private static Task PublisherTwo { get; set; }
 
-        public async Task RunPipelineExecutionAsync()
+        private string _errorQueue;
+        private long _targetCount;
+        private long _currentMessageCount;
+
+        public async Task RunExampleAsync()
         {
-            await Console.Out.WriteLineAsync("Starting ConsumerPipelineExample...").ConfigureAwait(false);
+            _targetCount = Program.GlobalCount;
+            await Console.Out.WriteLineAsync("Running example...").ConfigureAwait(false);
 
             _rabbitService = await SetupAsync().ConfigureAwait(false);
             _errorQueue = _rabbitService.Config.GetConsumerSettings("ConsumerFromConfig").ErrorQueueName;
 
-            var consumerPipeline = _rabbitService.CreateConsumerPipeline("ConsumerFromConfig", Program.MaxDoP, Program.EnsureOrdered, BuildPipeline);
-            Program.SW = Stopwatch.StartNew();
-            await consumerPipeline.StartAsync().ConfigureAwait(false);
+            _consumerPipeline = _rabbitService.CreateConsumerPipeline("ConsumerFromConfig", Program.MaxDoP, Program.EnsureOrdered, BuildPipeline);
+            Program.Stopwatch = Stopwatch.StartNew();
+            await _consumerPipeline.StartAsync(Program.UseStreamPipeline).ConfigureAwait(false);
+            if (Program.AwaitShutdown)
+            {
+                await Console.Out.WriteLineAsync("Awaiting full ConsumerPipeline finish...").ConfigureAwait(false);
+                await _consumerPipeline.AwaitCompletionAsync();
+            }
+            Program.Stopwatch.Stop();
+            await Console.Out.WriteLineAsync("Example finished...").ConfigureAwait(false);
+        }
+
+        public async Task ShutdownAsync()
+        {
+            await _rabbitService.ShutdownAsync(false);
         }
 
         private async Task<RabbitService> SetupAsync()
@@ -70,35 +98,35 @@ namespace CookedRabbit.Core.PipelineClient
                 .CreateQueueAsync("TestRabbitServiceQueue")
                 .ConfigureAwait(false);
 
-            for (var i = 0ul; i < Program.GlobalCount; i++)
+            for (var i = 0L; i < _targetCount; i++)
             {
                 var letter = letterTemplate.Clone();
                 letter.Body = JsonSerializer.SerializeToUtf8Bytes(new Message { StringMessage = $"Sensitive ReceivedLetter {i}", MessageId = i });
-                letter.LetterId = i;
+                letter.LetterId = (ulong)i;
                 await rabbitService
                     .Publisher
                     .PublishAsync(letter, true, true)
                     .ConfigureAwait(false);
             }
-            
-            PublisherTwo = Task.Run(
-                async () =>
-                {
-                    await Task.Yield();
-                    for (ulong i = 100; i < 200; i++)
-                    {
-                        var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
-                        await rabbitService
-                            .Publisher
-                            .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
-                            .ConfigureAwait(false);
-                    }
-                });
+
+            //PublisherTwo = Task.Run(
+            //    async () =>
+            //    {
+            //        await Task.Yield();
+            //        for (ulong i = 100; i < 200; i++)
+            //        {
+            //            var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
+            //            await rabbitService
+            //                .Publisher
+            //                .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
+            //                .ConfigureAwait(false);
+            //        }
+            //    });
 
             return rabbitService;
         }
 
-        public IPipeline<ReceivedData, WorkState> BuildPipeline(int maxDoP, bool? ensureOrdered = null)
+        private IPipeline<ReceivedData, WorkState> BuildPipeline(int maxDoP, bool? ensureOrdered = null)
         {
             var pipeline = new Pipeline<ReceivedData, WorkState>(
                 maxDoP,
@@ -111,15 +139,28 @@ namespace CookedRabbit.Core.PipelineClient
             pipeline.AddAsyncStep<WorkState, WorkState>(AckMessageAsync);
 
             pipeline
-                .Finalize((state) =>
+                .Finalize(async (state) =>
                 {
-                    if (state.AllStepsSuccess)
-                    { _logger.LogInformation($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route successfully."); }
-                    else
-                    { _logger.LogInformation($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route unsuccesfully."); }
+                    if (Program.LogOutcome)
+                    {
+                        if (state.AllStepsSuccess)
+                        { _logger.LogInformation($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route successfully."); }
+                        else
+                        { _logger.LogInformation($"{DateTime.Now:yyyy/MM/dd hh:mm:ss.fff} - Id: {state.Message?.MessageId} - Finished route unsuccesfully."); }
+                    }
 
                     // Lastly mark the excution pipeline finished for this message.
                     state.ReceivedData?.Complete(); // This impacts wait to completion step in the Pipeline.
+
+                    if (Program.AwaitShutdown)
+                    {
+                        Interlocked.Increment(ref _currentMessageCount);
+                        if (_currentMessageCount == _targetCount - 1)
+                        {
+
+                            await _consumerPipeline.StopAsync();
+                        }
+                    }
                 });
 
             return pipeline;
@@ -127,7 +168,7 @@ namespace CookedRabbit.Core.PipelineClient
 
         public class Message
         {
-            public ulong MessageId { get; set; }
+            public long MessageId { get; set; }
             public string StringMessage { get; set; }
         }
 

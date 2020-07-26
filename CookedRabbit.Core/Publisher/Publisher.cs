@@ -102,7 +102,13 @@ namespace CookedRabbit.Core
 
                 _publishingTask = Task.Run(() => ProcessDeliveriesAsync(_letterQueue.Reader).ConfigureAwait(false));
 
-                await SetProcessReceiptsAsync(processReceiptAsync);
+                if (processReceiptAsync == null)
+                { processReceiptAsync = ProcessReceiptAsync; }
+
+                if (_processReceiptsAsync == null)
+                {
+                    _processReceiptsAsync = Task.Run(() => ProcessReceiptsAsync(processReceiptAsync));
+                }
 
                 AutoPublisherStarted = true;
             }
@@ -194,37 +200,25 @@ namespace CookedRabbit.Core
             }
         }
 
-        private async Task SetProcessReceiptsAsync(Func<PublishReceipt, ValueTask> processReceiptAsync)
+        private async Task ProcessReceiptsAsync(Func<PublishReceipt, ValueTask> processReceiptAsync)
         {
-            await _pubLock.WaitAsync().ConfigureAwait(false);
-
-            try
+            await foreach (var receipt in _receiptBuffer.Reader.ReadAllAsync())
             {
-                if (processReceiptAsync == null)
-                { processReceiptAsync = ProcessReceiptAsync; }
-
-                if (_processReceiptsAsync == null)
-                {
-                    _processReceiptsAsync = Task.Run(
-                        async () =>
-                        {
-                            await foreach (var receipt in _receiptBuffer.Reader.ReadAllAsync())
-                            {
-                                await processReceiptAsync(receipt).ConfigureAwait(false);
-                            }
-                        });
-                }
+                await processReceiptAsync(receipt).ConfigureAwait(false);
             }
-            finally { _pubLock.Release(); }
         }
 
         // Super simple version to bake in requeueing of all failed to publish messages.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async ValueTask ProcessReceiptAsync(PublishReceipt receipt)
         {
             if (receipt.IsError && receipt.OriginalLetter != null)
             {
+                _logger.LogWarning($"Failed publish for letter ({receipt.OriginalLetter.LetterId}). Retrying with AutoPublishing...");
                 await QueueLetterAsync(receipt.OriginalLetter);
+            }
+            else if (receipt.IsError)
+            {
+                _logger.LogError($"Failed publish for letter ({receipt.OriginalLetter.LetterId}). Unable to retry as the original letter was not received.");
             }
         }
 

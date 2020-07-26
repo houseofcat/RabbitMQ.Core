@@ -7,23 +7,26 @@ namespace CookedRabbit.Core.WorkEngines
     public interface IConsumerPipeline<TOut> where TOut : IWorkState
     {
         string ConsumerPipelineName { get; }
-        ConsumerOptions Options { get; set; }
+        ConsumerOptions Options { get; }
 
-        Task StartAsync();
+        Task AwaitCompletionAsync();
+        Task StartAsync(bool useStream);
         Task StopAsync();
     }
 
     public class ConsumerPipeline<TOut> : IConsumerPipeline<TOut> where TOut : IWorkState
     {
         public string ConsumerPipelineName { get; }
-        public ConsumerOptions Options { get; set; }
+        public ConsumerOptions Options { get; }
 
         private IConsumer<ReceivedData> Consumer { get; }
         private IPipeline<ReceivedData, TOut> Pipeline { get; }
         private Task FeedPipelineWithDataTasks { get; set; }
-        private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly SemaphoreSlim cpLock = new SemaphoreSlim(1, 1);
+        private TaskCompletionSource<bool> _completionSource;
+        private CancellationTokenSource _cancellationTokenSource;
         private bool _started;
+
+        private readonly SemaphoreSlim cpLock = new SemaphoreSlim(1, 1);
 
         public ConsumerPipeline(
             IConsumer<ReceivedData> consumer,
@@ -37,26 +40,48 @@ namespace CookedRabbit.Core.WorkEngines
             ConsumerPipelineName = !string.IsNullOrWhiteSpace(consumer.ConsumerSettings.ConsumerPipelineSettings.ConsumerPipelineName)
                 ? consumer.ConsumerSettings.ConsumerPipelineSettings.ConsumerPipelineName
                 : "Unknown";
-
-            _cancellationTokenSource = new CancellationTokenSource();
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(bool useStream)
         {
             await cpLock.WaitAsync();
 
             try
             {
-                await Consumer
-                    .StartConsumerAsync(
-                        Options.AutoAck.Value,
-                        Options.UseTransientChannels.Value)
-                    .ConfigureAwait(false);
-
-                if (Consumer.Consuming)
+                if (!_started)
                 {
-                    _started = true;
-                    FeedPipelineWithDataTasks = FeedThePipelineEngineAsync(_cancellationTokenSource.Token);
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    _completionSource = new TaskCompletionSource<bool>();
+
+                    await Consumer
+                        .StartConsumerAsync(
+                            Options.AutoAck.Value,
+                            Options.UseTransientChannels.Value)
+                        .ConfigureAwait(false);
+
+                    if (Consumer.Started)
+                    {
+                        if (useStream)
+                        {
+                            FeedPipelineWithDataTasks = Task.Run(
+                                () =>
+                                Consumer.PipelineStreamEngineAsync(
+                                    Pipeline,
+                                    Options.ConsumerPipelineSettings.WaitForCompletion.Value,
+                                    _cancellationTokenSource.Token));
+                        }
+                        else
+                        {
+                            FeedPipelineWithDataTasks = Task.Run(
+                                () =>
+                                Consumer.PipelineExecutionEngineAsync(
+                                    Pipeline,
+                                    Options.ConsumerPipelineSettings.WaitForCompletion.Value,
+                                    _cancellationTokenSource.Token));
+                        }
+
+                        _started = true;
+                    }
                 }
             }
             catch { }
@@ -75,12 +100,17 @@ namespace CookedRabbit.Core.WorkEngines
                     if (_started)
                     {
                         _cancellationTokenSource.Cancel();
+
+                        await Consumer
+                            .StopConsumerAsync(false);
+
                         if (FeedPipelineWithDataTasks != null)
                         {
                             await FeedPipelineWithDataTasks;
                             FeedPipelineWithDataTasks = null;
                         }
                         _started = false;
+                        _completionSource.SetResult(true);
                     }
                 }
                 catch { }
@@ -88,18 +118,9 @@ namespace CookedRabbit.Core.WorkEngines
             }
         }
 
-        private async Task FeedThePipelineEngineAsync(CancellationToken token)
+        public async Task AwaitCompletionAsync()
         {
-            while (_started)
-            {
-                if (token.IsCancellationRequested)
-                { return; }
-
-                await Consumer
-                    .PipelineExecutionEngineAsync(Pipeline, Options.ConsumerPipelineSettings.WaitForCompletion.Value, token);
-
-                await Task.Delay(Options.SleepOnIdleInterval.Value);
-            }
+            await _completionSource.Task;
         }
     }
 }

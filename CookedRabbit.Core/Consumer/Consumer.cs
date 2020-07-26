@@ -18,12 +18,13 @@ namespace CookedRabbit.Core
         Channel<TFromQueue> DataBuffer { get; }
         Config Config { get; }
         ConsumerOptions ConsumerSettings { get; set; }
-        bool Consuming { get; }
-        bool Shutdown { get; }
+        bool Started { get; }
+
         ReadOnlyMemory<byte> HashKey { get; set; }
 
         Task DataflowExecutionEngineAsync(Func<TFromQueue, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default);
         Task PipelineExecutionEngineAsync<TLocalOut>(IPipeline<TFromQueue, TLocalOut> pipeline, bool waitForCompletion, CancellationToken token = default);
+        Task PipelineStreamEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default);
 
         ChannelReader<TFromQueue> GetConsumerBuffer();
         ValueTask<TFromQueue> ReadAsync();
@@ -48,8 +49,8 @@ namespace CookedRabbit.Core
 
         public ConsumerOptions ConsumerSettings { get; set; }
 
-        public bool Consuming { get; private set; }
-        public bool Shutdown { get; private set; }
+        public bool Started { get; private set; }
+        private bool Shutdown { get; set; }
 
         public ReadOnlyMemory<byte> HashKey { get; set; }
 
@@ -99,11 +100,9 @@ namespace CookedRabbit.Core
                 .WaitAsync()
                 .ConfigureAwait(false);
 
-            _logger.LogTrace(LogMessages.Consumer.Started, ConsumerSettings.ConsumerName);
-
             try
             {
-                if (ConsumerSettings.Enabled && !Consuming)
+                if (ConsumerSettings.Enabled && !Started)
                 {
                     DataBuffer = Channel.CreateBounded<ReceivedData>(
                     new BoundedChannelOptions(ConsumerSettings.BatchSize.Value)
@@ -126,8 +125,7 @@ namespace CookedRabbit.Core
 
                     _logger.LogDebug(LogMessages.Consumer.Started, ConsumerSettings.ConsumerName);
 
-                    Consuming = true;
-                    Shutdown = false;
+                    Started = true;
                 }
             }
             finally { _conLock.Release(); }
@@ -143,27 +141,28 @@ namespace CookedRabbit.Core
 
             try
             {
-                DataBuffer.Writer.Complete();
+                if (Started)
+                {
+                    Shutdown = true;
+                    DataBuffer.Writer.Complete();
 
-                if (immediate)
-                {
-                    ConsumingChannelHost.Close();
-                }
-                else
-                {
+                    if (immediate)
+                    {
+                        ConsumingChannelHost.Close();
+                    }
+
                     await DataBuffer
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
-                }
 
-                Shutdown = true;
+                    Started = false;
+                    _logger.LogDebug(
+                        LogMessages.Consumer.StoppedConsumer,
+                        ConsumerSettings.ConsumerName);
+                }
             }
             finally { _conLock.Release(); }
-
-            _logger.LogDebug(
-                LogMessages.Consumer.StoppedConsumer,
-                ConsumerSettings.ConsumerName);
         }
 
         private async Task<bool> StartConsumingAsync()
@@ -304,12 +303,7 @@ namespace CookedRabbit.Core
 
         private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
         {
-            if (!Shutdown)
-            {
-                bool success;
-                do { success = await StartConsumingAsync().ConfigureAwait(false); }
-                while (!success);
-            }
+            await HandleUnexpectedShutdownAsync();
         }
 
         private AsyncEventingBasicConsumer CreateAsyncConsumer()
@@ -351,6 +345,11 @@ namespace CookedRabbit.Core
 
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
+            await HandleUnexpectedShutdownAsync();
+        }
+
+        private async Task HandleUnexpectedShutdownAsync()
+        {
             if (!Shutdown)
             {
                 bool success;
@@ -362,7 +361,7 @@ namespace CookedRabbit.Core
 
                     success = await StartConsumingAsync().ConfigureAwait(false);
                 }
-                while (!success);
+                while (!Shutdown && !success);
             }
         }
 
@@ -487,6 +486,64 @@ namespace CookedRabbit.Core
 
         private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
+        public async Task PipelineStreamEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
+        {
+            await pipeExecLock
+                .WaitAsync(2000)
+                .ConfigureAwait(false);
+
+            try
+            {
+                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync(token))
+                {
+                    if (receivedData == null) { continue; }
+
+                    _logger.LogDebug(
+                        LogMessages.Consumer.ConsumerPipelineQueueing,
+                        ConsumerSettings.ConsumerName,
+                        receivedData.DeliveryTag);
+
+                    await pipeline
+                        .QueueForExecutionAsync(receivedData)
+                        .ConfigureAwait(false);
+
+                    if (waitForCompletion)
+                    {
+                        _logger.LogTrace(
+                            LogMessages.Consumer.ConsumerPipelineWaiting,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
+                        await receivedData
+                            .Completion()
+                            .ConfigureAwait(false);
+
+                        _logger.LogTrace(
+                            LogMessages.Consumer.ConsumerPipelineWaitingDone,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+                    }
+
+                    if (token.IsCancellationRequested)
+                    { return; }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    LogMessages.Consumer.ConsumerPipelineActionCancelled,
+                    ConsumerSettings.ConsumerName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    LogMessages.Consumer.ConsumerPipelineError,
+                    ConsumerSettings.ConsumerName,
+                    ex.Message);
+            }
+            finally { pipeExecLock.Release(); }
+        }
+
         public async Task PipelineExecutionEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
             await pipeExecLock
@@ -495,67 +552,60 @@ namespace CookedRabbit.Core
 
             try
             {
-                if (token.IsCancellationRequested)
-                { return; }
 
                 while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    if (token.IsCancellationRequested)
-                    { return; }
-
-                    try
+                    while (DataBuffer.Reader.TryRead(out var receivedData))
                     {
-                        while (DataBuffer.Reader.TryRead(out var receivedData))
+                        if (receivedData == null) { continue; }
+
+                        _logger.LogDebug(
+                            LogMessages.Consumer.ConsumerPipelineQueueing,
+                            ConsumerSettings.ConsumerName,
+                            receivedData.DeliveryTag);
+
+                        await pipeline
+                            .QueueForExecutionAsync(receivedData)
+                            .ConfigureAwait(false);
+
+                        if (waitForCompletion)
                         {
-                            if (token.IsCancellationRequested)
-                            { return; }
+                            _logger.LogTrace(
+                                LogMessages.Consumer.ConsumerPipelineWaiting,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
 
-                            if (receivedData != null)
-                            {
-                                try
-                                {
-                                    _logger.LogDebug(
-                                        LogMessages.Consumer.ConsumerPipelineQueueing,
-                                        ConsumerSettings.ConsumerName,
-                                        receivedData.DeliveryTag);
+                            await receivedData
+                                .Completion()
+                                .ConfigureAwait(false);
 
-                                    await pipeline
-                                        .QueueForExecutionAsync(receivedData)
-                                        .ConfigureAwait(false);
-
-                                    if (waitForCompletion)
-                                    {
-                                        _logger.LogTrace(
-                                            LogMessages.Consumer.ConsumerPipelineWaiting,
-                                            ConsumerSettings.ConsumerName,
-                                            receivedData.DeliveryTag);
-
-                                        await receivedData
-                                            .Completion()
-                                            .ConfigureAwait(false);
-
-                                        _logger.LogTrace(
-                                            LogMessages.Consumer.ConsumerPipelineWaitingDone,
-                                            ConsumerSettings.ConsumerName,
-                                            receivedData.DeliveryTag);
-                                    }
-                                }
-                                catch { }
-                            }
+                            _logger.LogTrace(
+                                LogMessages.Consumer.ConsumerPipelineWaitingDone,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
                         }
 
-                        await Task
-                            .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
-                            .ConfigureAwait(false);
+                        if (token.IsCancellationRequested)
+                        { return; }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            LogMessages.Consumer.ConsumerPipelineError,
-                            ConsumerSettings.ConsumerName,
-                            ex.Message);
-                    }
+
+                    await Task
+                        .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
+                        .ConfigureAwait(false);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation(
+                    LogMessages.Consumer.ConsumerPipelineActionCancelled,
+                    ConsumerSettings.ConsumerName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    LogMessages.Consumer.ConsumerPipelineError,
+                    ConsumerSettings.ConsumerName,
+                    ex.Message);
             }
             finally { pipeExecLock.Release(); }
         }

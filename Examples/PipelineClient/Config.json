@@ -27,8 +27,8 @@
     "PriorityLetterQueueBufferSize": 100,
     "BehaviorWhenFull": 0,
     "CreatePublishReceipts": true,
-    "Compress": true,
-    "Encrypt": true
+    "Compress": false,
+    "Encrypt": false
   },
   "GlobalConsumerSettings": {
     "AggressiveSettings": {
