@@ -10,7 +10,6 @@ namespace CookedRabbit.Core.WorkEngines
 {
     public interface IPipeline<TIn, TOut>
     {
-        int MaxDegreeOfParallelism { get; }
         bool Ready { get; }
         int StepCount { get; }
         List<PipelineStep> Steps { get; }
@@ -25,8 +24,8 @@ namespace CookedRabbit.Core.WorkEngines
         void AddSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, TLocalOut>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         Task<bool> AwaitCompletionAsync();
         void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline);
-        void Finalize(Action<TOut> finalizeStep = null);
-        void Finalize(Func<TOut, Task> finalizeStep = null);
+        void Finalize(Action<TOut> finalizeStep);
+        void Finalize(Func<TOut, Task> finalizeStep);
         Exception GetAnyPipelineStepsFault();
         Task<bool> QueueForExecutionAsync(TIn input);
     }
@@ -40,13 +39,11 @@ namespace CookedRabbit.Core.WorkEngines
         private readonly SemaphoreSlim _pipeLock = new SemaphoreSlim(1, 1);
         private readonly ExecutionDataflowBlockOptions _executeStepOptions;
         private readonly DataflowLinkOptions _linkStepOptions;
-        private readonly int? _bufferSize;
         private readonly TimeSpan _healthCheckInterval;
         private readonly Task _healthCheckTask;
         private readonly string _pipelineName;
 
         public List<PipelineStep> Steps { get; private set; } = new List<PipelineStep>();
-        public int MaxDegreeOfParallelism { get; private set; }
         public bool Ready { get; private set; }
         public int StepCount { get; private set; }
 
@@ -54,50 +51,21 @@ namespace CookedRabbit.Core.WorkEngines
         {
             _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
 
-            MaxDegreeOfParallelism = maxDegreeOfParallelism;
-            _bufferSize = bufferSize;
             _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
             _executeStepOptions = new ExecutionDataflowBlockOptions
             {
                 MaxDegreeOfParallelism = maxDegreeOfParallelism,
             };
 
+            _executeStepOptions.EnsureOrdered = ensureOrdered ?? _executeStepOptions.EnsureOrdered;
             _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
 
-        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, bool? ensureOrdered = null, int? bufferSize = null)
+        public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, bool? ensureOrdered = null, int? bufferSize = null) : this(maxDegreeOfParallelism, ensureOrdered, bufferSize)
         {
-            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
-            _healthCheckInterval = healthCheckInterval;
             _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
+            _healthCheckInterval = healthCheckInterval;
             _healthCheckTask = Task.Run(() => SimplePipelineHealthTaskAsync());
-
-            MaxDegreeOfParallelism = maxDegreeOfParallelism;
-            _bufferSize = bufferSize;
-            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
-            _executeStepOptions = new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = maxDegreeOfParallelism,
-            };
-
-
-            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
-        }
-
-        public Pipeline(int maxDegreeOfParallelism, Func<Task> healthCheck, bool? ensureOrdered = null, int? bufferSize = null)
-        {
-            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
-            _healthCheckTask = Task.Run(() => healthCheck);
-
-            MaxDegreeOfParallelism = maxDegreeOfParallelism;
-            _bufferSize = bufferSize;
-            _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
-            _executeStepOptions = new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = maxDegreeOfParallelism,
-            };
-
-            _executeStepOptions.BoundedCapacity = bufferSize ?? _executeStepOptions.BoundedCapacity;
         }
 
         public void AddAsyncStep<TLocalIn, TLocalOut>(
@@ -723,16 +691,18 @@ namespace CookedRabbit.Core.WorkEngines
 
         private ExecutionDataflowBlockOptions GetExecuteStepOptions(int? maxDoPOverride, bool? ensureOrdered, int? bufferSizeOverride)
         {
-            var options = _executeStepOptions;
-            if (maxDoPOverride != null || bufferSizeOverride != null)
+            if (maxDoPOverride.HasValue || ensureOrdered.HasValue || bufferSizeOverride.HasValue)
             {
-                options = new ExecutionDataflowBlockOptions();
+                var newOptions = new ExecutionDataflowBlockOptions();
 
-                options.EnsureOrdered = ensureOrdered ?? options.EnsureOrdered;
-                options.MaxDegreeOfParallelism = maxDoPOverride ?? options.MaxDegreeOfParallelism;
-                options.BoundedCapacity = bufferSizeOverride ?? options.BoundedCapacity;
+                newOptions.EnsureOrdered = ensureOrdered ?? _executeStepOptions.EnsureOrdered;
+                newOptions.MaxDegreeOfParallelism = maxDoPOverride ?? _executeStepOptions.MaxDegreeOfParallelism;
+                newOptions.BoundedCapacity = bufferSizeOverride ?? _executeStepOptions.BoundedCapacity;
+
+                return newOptions;
             }
-            return options;
+
+            return _executeStepOptions;
         }
 
         private async Task SimplePipelineHealthTaskAsync()
@@ -744,9 +714,9 @@ namespace CookedRabbit.Core.WorkEngines
                 await Task.Delay(_healthCheckInterval).ConfigureAwait(false);
 
                 var ex = GetAnyPipelineStepsFault();
-                if (ex != null) // No Steps are Faulted... Hooray!
+                if (ex != null)
                 { _logger.LogCritical(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
-                else
+                else  // No Steps are Faulted... Hooray!
                 { _logger.LogDebug(LogMessages.Pipeline.Healthy, _pipelineName); }
             }
         }

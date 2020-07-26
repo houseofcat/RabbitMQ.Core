@@ -14,7 +14,7 @@ namespace CookedRabbit.Core.PipelineClient
     {
         public static Stopwatch Stopwatch { get; set; }
         public static long GlobalCount = 1000;
-        public static bool EnsureOrdered = false;
+        public static bool EnsureOrdered = true;
         public static bool AwaitShutdown = true;
         public static bool LogOutcome = false;
         public static bool UseStreamPipeline = false;
@@ -32,8 +32,9 @@ namespace CookedRabbit.Core.PipelineClient
                 .ConfigureAwait(false);
 
             await Console.Out.WriteLineAsync("Statistics!");
-            await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}");
-            await Console.Out.WriteLineAsync($"Ensure Ordered: {EnsureOrdered}");
+            await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}, Ensure Ordered: {EnsureOrdered}");
+            await Console.Out.WriteLineAsync($"AwaitShutdown: {AwaitShutdown}, LogOutcome: {LogOutcome}");
+            await Console.Out.WriteLineAsync($"UseStreamPipeline: {UseStreamPipeline}");
             await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {Stopwatch.ElapsedMilliseconds} milliseconds.");
             await Console.Out.WriteLineAsync($"Rate {GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0} msg/s.");
             await Console.Out.WriteLineAsync("Client Finished! Press key to start shutdown!");

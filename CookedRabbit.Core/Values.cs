@@ -123,6 +123,8 @@ namespace CookedRabbit.Core
             public readonly static string ConsumerParallelExecutionFailure = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) was unsuccesful... nacking.";
             public readonly static string ConsumerParallelExecutionError = "Consumer ({0}) parallel executing unit of work (ReceivedData:DT:{1}) triggered an error. Error: {2}";
 
+            public readonly static string ConsumerDataflowActionCancelled = "Consumer ({0}) dataflow engine actions were cancelled.";
+            public readonly static string ConsumerDataflowError = "Consumer ({0}) dataflow engine encountered an error. Error: {1}";
             public readonly static string ConsumerDataflowQueueing = "Consumer ({0}) dataflow engine queueing unit of work (ReceivedData:DT:{1}).";
             public readonly static string ConsumerPipelineQueueing = "Consumer ({0}) pipeline engine queueing unit of work (ReceivedData:DT:{1}).";
             public readonly static string ConsumerPipelineWaiting = "Consumer ({0}) pipeline engine waiting on completion of unit of work (ReceivedData:DT:{1})...";

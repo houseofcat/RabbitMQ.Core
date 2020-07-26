@@ -62,15 +62,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async ValueTask EnqueueWorkAsync(ReceivedData receivedData)
         {
-            try
-            { await _block.SendAsync(receivedData).ConfigureAwait(false); }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    LogMessages.DataflowEngine.ExecutionError,
-                    receivedData.DeliveryTag,
-                    ex.Message);
-            }
+            await _block.SendAsync(receivedData).ConfigureAwait(false);
         }
     }
 }

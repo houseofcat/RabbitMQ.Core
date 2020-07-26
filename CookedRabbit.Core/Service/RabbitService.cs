@@ -184,10 +184,6 @@ namespace CookedRabbit.Core.Service
                         globalOverrides.BehaviorWhenFull
                         ?? consumerSetting.Value.BehaviorWhenFull;
 
-                    consumerSetting.Value.SleepOnIdleInterval =
-                        globalOverrides.SleepOnIdleInterval
-                        ?? consumerSetting.Value.SleepOnIdleInterval;
-
                     if (globalOverrides.GlobalConsumerPipelineSettings != null)
                     {
                         if (consumerSetting.Value.ConsumerPipelineSettings == null)

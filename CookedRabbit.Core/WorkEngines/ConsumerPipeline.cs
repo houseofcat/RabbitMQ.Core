@@ -91,31 +91,28 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task StopAsync()
         {
-            if (_started)
+            await cpLock.WaitAsync();
+
+            try
             {
-                await cpLock.WaitAsync();
-
-                try
+                if (_started)
                 {
-                    if (_started)
+                    _cancellationTokenSource.Cancel();
+
+                    await Consumer
+                        .StopConsumerAsync(false);
+
+                    if (FeedPipelineWithDataTasks != null)
                     {
-                        _cancellationTokenSource.Cancel();
-
-                        await Consumer
-                            .StopConsumerAsync(false);
-
-                        if (FeedPipelineWithDataTasks != null)
-                        {
-                            await FeedPipelineWithDataTasks;
-                            FeedPipelineWithDataTasks = null;
-                        }
-                        _started = false;
-                        _completionSource.SetResult(true);
+                        await FeedPipelineWithDataTasks;
+                        FeedPipelineWithDataTasks = null;
                     }
+                    _started = false;
+                    _completionSource.SetResult(true);
                 }
-                catch { }
-                finally { cpLock.Release(); }
             }
+            catch { }
+            finally { cpLock.Release(); }
         }
 
         public async Task AwaitCompletionAsync()

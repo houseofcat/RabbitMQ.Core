@@ -445,41 +445,40 @@ namespace CookedRabbit.Core
 
             try
             {
-                if (token.IsCancellationRequested)
-                { return; }
 
                 var dataflowEngine = new DataflowEngine(workBodyAsync, maxDoP);
 
-                while (await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false))
+                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    if (token.IsCancellationRequested)
-                    { return; }
-
-                    try
+                    while (DataBuffer.Reader.TryRead(out var receivedData))
                     {
-                        while (DataBuffer.Reader.TryRead(out var receivedData))
+                        if (receivedData != null)
                         {
-                            if (receivedData != null)
-                            {
-                                _logger.LogDebug(
-                                    LogMessages.Consumer.ConsumerDataflowQueueing,
-                                    ConsumerSettings.ConsumerName,
-                                    receivedData.DeliveryTag);
+                            _logger.LogDebug(
+                                LogMessages.Consumer.ConsumerDataflowQueueing,
+                                ConsumerSettings.ConsumerName,
+                                receivedData.DeliveryTag);
 
-                                await dataflowEngine
-                                    .EnqueueWorkAsync(receivedData)
-                                    .ConfigureAwait(false);
-                            }
+                            await dataflowEngine
+                                .EnqueueWorkAsync(receivedData)
+                                .ConfigureAwait(false);
                         }
-
-                        await Task
-                            .Delay(ConsumerSettings.SleepOnIdleInterval.Value)
-                            .ConfigureAwait(false);
                     }
-                    catch { }
                 }
             }
-            catch { }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    LogMessages.Consumer.ConsumerDataflowActionCancelled,
+                    ConsumerSettings.ConsumerName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    LogMessages.Consumer.ConsumerDataflowError,
+                    ConsumerSettings.ConsumerName,
+                    ex.Message);
+            }
             finally { dataFlowExecLock.Release(); }
         }
 
@@ -551,7 +550,6 @@ namespace CookedRabbit.Core
 
             try
             {
-
                 while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
                     while (DataBuffer.Reader.TryRead(out var receivedData))
