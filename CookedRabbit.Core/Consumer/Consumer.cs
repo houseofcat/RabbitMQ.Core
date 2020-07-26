@@ -17,7 +17,7 @@ namespace CookedRabbit.Core
         IChannelPool ChannelPool { get; }
         Channel<TFromQueue> DataBuffer { get; }
         Config Config { get; }
-        ConsumerOptions ConsumerSettings { get; set; }
+        ConsumerOptions ConsumerSettings { get; }
         bool Started { get; }
 
         ReadOnlyMemory<byte> HashKey { get; set; }
@@ -47,7 +47,7 @@ namespace CookedRabbit.Core
 
         private IChannelHost ConsumingChannelHost { get; set; }
 
-        public ConsumerOptions ConsumerSettings { get; set; }
+        public ConsumerOptions ConsumerSettings { get; private set; }
 
         public bool Started { get; private set; }
         private bool Shutdown { get; set; }
@@ -94,8 +94,6 @@ namespace CookedRabbit.Core
 
         public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
         {
-            ConsumerSettings = Config.GetConsumerSettings(ConsumerSettings.ConsumerName);
-
             await _conLock
                 .WaitAsync()
                 .ConfigureAwait(false);
@@ -104,6 +102,7 @@ namespace CookedRabbit.Core
             {
                 if (ConsumerSettings.Enabled && !Started)
                 {
+                    Shutdown = false;
                     DataBuffer = Channel.CreateBounded<ReceivedData>(
                     new BoundedChannelOptions(ConsumerSettings.BatchSize.Value)
                     {
