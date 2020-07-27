@@ -52,9 +52,6 @@ namespace CookedRabbit.Core.PipelineClient
         private ILogger<ConsumerPipelineExample> _logger;
         private IConsumerPipeline<WorkState> _consumerPipeline;
 
-        private static Task PublisherOne { get; set; }
-        private static Task PublisherTwo { get; set; }
-
         private string _errorQueue;
         private long _targetCount;
         private long _currentMessageCount;
@@ -110,20 +107,6 @@ namespace CookedRabbit.Core.PipelineClient
                     .PublishAsync(letter, true, true)
                     .ConfigureAwait(false);
             }
-
-            //PublisherTwo = Task.Run(
-            //    async () =>
-            //    {
-            //        await Task.Yield();
-            //        for (ulong i = 100; i < 200; i++)
-            //        {
-            //            var sentMessage = new Message { StringMessage = $"Sensitive ReceivedMessage {i}", MessageId = i };
-            //            await rabbitService
-            //                .Publisher
-            //                .PublishAsync("", "TestRabbitServiceQueue", JsonSerializer.SerializeToUtf8Bytes(sentMessage), null)
-            //                .ConfigureAwait(false);
-            //        }
-            //    });
 
             return rabbitService;
         }
@@ -279,24 +262,6 @@ namespace CookedRabbit.Core.PipelineClient
             }
 
             return state;
-        }
-    }
-
-    public static class Extensions
-    {
-        private const long Billion = 1_000_000_000L;
-        private const long Million = 1_000_000L;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long ElapsedNanoseconds(this Stopwatch watch)
-        {
-            return (long)((double)watch.ElapsedTicks / Stopwatch.Frequency * Billion);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long ElapsedMicroseconds(this Stopwatch watch)
-        {
-            return (long)((double)watch.ElapsedTicks / Stopwatch.Frequency * Million);
         }
     }
 }

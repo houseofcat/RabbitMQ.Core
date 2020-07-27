@@ -19,6 +19,7 @@ namespace CookedRabbit.Core
 
         ChannelReader<PublishReceipt> GetReceiptBufferReader();
         Task PublishAsync(Letter letter, bool createReceipt, bool withHeaders = true);
+        Task PublishWithConfirmationAsync(Letter letter, bool createReceipt, bool withHeaders = true);
         Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, bool mandatory = false, IBasicProperties messageProperties = null);
         Task<bool> PublishAsync(string exchangeName, string routingKey, ReadOnlyMemory<byte> payload, IDictionary<string, object> headers = null, byte? priority = 0, bool mandatory = false);
         Task<bool> PublishBatchAsync(string exchangeName, string routingKey, IList<ReadOnlyMemory<byte>> payloads, bool mandatory = false, IBasicProperties messageProperties = null);
@@ -43,6 +44,7 @@ namespace CookedRabbit.Core
         private readonly bool _compress;
         private readonly bool _encrypt;
         private readonly bool _createPublishReceipts;
+        private readonly TimeSpan _waitForConfirmation;
 
         private Channel<Letter> _letterQueue;
         private Channel<PublishReceipt> _receiptBuffer;
@@ -85,6 +87,7 @@ namespace CookedRabbit.Core
             _withHeaders = Config.PublisherSettings.WithHeaders;
             _createPublishReceipts = Config.PublisherSettings.CreatePublishReceipts;
             _compress = Config.PublisherSettings.Compress;
+            _waitForConfirmation = TimeSpan.FromMilliseconds(Config.PublisherSettings.WaitForConfirmationTimeoutInMilliseconds);
         }
 
         public async Task StartAutoPublishAsync(Func<PublishReceipt, ValueTask> processReceiptAsync = null)
@@ -123,7 +126,6 @@ namespace CookedRabbit.Core
                 if (AutoPublisherStarted)
                 {
                     _letterQueue.Writer.Complete();
-                    _receiptBuffer.Writer.Complete();
 
                     if (!immediately)
                     {
@@ -196,7 +198,7 @@ namespace CookedRabbit.Core
 
                     _logger.LogDebug(LogMessages.AutoPublisher.LetterPublished, letter.LetterId, letter.LetterMetadata?.Id);
 
-                    await PublishAsync(letter, _createPublishReceipts, _withHeaders)
+                    await PublishWithConfirmationAsync(letter, _createPublishReceipts, _withHeaders)
                         .ConfigureAwait(false);
                 }
             }
@@ -441,6 +443,56 @@ namespace CookedRabbit.Core
                     letter.Envelope.RoutingOptions?.Mandatory ?? false,
                     BuildProperties(letter, chanHost, withHeaders),
                     JsonSerializer.SerializeToUtf8Bytes(letter));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(
+                    LogMessages.Publisher.PublishLetterFailed,
+                    $"{letter.Envelope.Exchange}->{letter.Envelope.RoutingKey}",
+                    letter.LetterId,
+                    ex.Message);
+
+                error = true;
+            }
+            finally
+            {
+                if (createReceipt)
+                {
+                    await CreateReceiptAsync(letter, error)
+                        .ConfigureAwait(false);
+                }
+
+                await _channelPool
+                    .ReturnChannelAsync(chanHost, error);
+            }
+        }
+
+        /// <summary>
+        /// Acquires an ackable channel from the channel pool, then publishes message based on the letter/envelope parameters and waits for confirmation.
+        /// <para>Only throws exception when failing to acquire channel or when creating a receipt after the ReceiptBuffer is closed.</para>
+        /// </summary>
+        /// <param name="letter"></param>
+        /// <param name="createReceipt"></param>
+        /// <param name="withHeaders"></param>
+        public async Task PublishWithConfirmationAsync(Letter letter, bool createReceipt, bool withHeaders = true)
+        {
+            var error = false;
+            var chanHost = await _channelPool
+                .GetAckChannelAsync()
+                .ConfigureAwait(false);
+
+            try
+            {
+                chanHost.Channel.WaitForConfirmsOrDie(_waitForConfirmation);
+
+                chanHost.Channel.BasicPublish(
+                    letter.Envelope.Exchange,
+                    letter.Envelope.RoutingKey,
+                    letter.Envelope.RoutingOptions?.Mandatory ?? false,
+                    BuildProperties(letter, chanHost, withHeaders),
+                    JsonSerializer.SerializeToUtf8Bytes(letter));
+
+                chanHost.Channel.WaitForConfirmsOrDie(_waitForConfirmation);
             }
             catch (Exception ex)
             {
