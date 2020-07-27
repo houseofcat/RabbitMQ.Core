@@ -3,7 +3,6 @@ using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +12,7 @@ namespace CookedRabbit.Core.PipelineClient
     public static class Program
     {
         public static Stopwatch Stopwatch;
-        public static LogLevel LogLevel = LogLevel.Trace;
+        public static LogLevel LogLevel = LogLevel.Information;
         public static long GlobalCount = 1000;
         public static bool EnsureOrdered = true;
         public static bool AwaitShutdown = true;
