@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,6 +49,7 @@ namespace CookedRabbit.Core.Pools
             MakeChannel();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MakeChannel()
         {
             hostLock.Wait();
@@ -103,7 +105,7 @@ namespace CookedRabbit.Core.Pools
         {
             var connectionHealthy = await ConnectionHost.HealthyAsync().ConfigureAwait(false);
 
-            return connectionHealthy && !FlowControlled && Channel.IsOpen;
+            return connectionHealthy && !FlowControlled && Channel?.IsOpen && false;
         }
 
         private const int CloseCode = 200;
