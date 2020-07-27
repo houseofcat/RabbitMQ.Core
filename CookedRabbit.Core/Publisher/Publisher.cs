@@ -198,7 +198,7 @@ namespace CookedRabbit.Core
 
                     _logger.LogDebug(LogMessages.AutoPublisher.LetterPublished, letter.LetterId, letter.LetterMetadata?.Id);
 
-                    await PublishWithConfirmationAsync(letter, _createPublishReceipts, _withHeaders)
+                    await PublishAsync(letter, _createPublishReceipts, _withHeaders)
                         .ConfigureAwait(false);
                 }
             }
@@ -470,6 +470,7 @@ namespace CookedRabbit.Core
         /// <summary>
         /// Acquires an ackable channel from the channel pool, then publishes message based on the letter/envelope parameters and waits for confirmation.
         /// <para>Only throws exception when failing to acquire channel or when creating a receipt after the ReceiptBuffer is closed.</para>
+        /// <para>Not fully ready for production yet.</para>
         /// </summary>
         /// <param name="letter"></param>
         /// <param name="createReceipt"></param>
@@ -484,6 +485,7 @@ namespace CookedRabbit.Core
             try
             {
                 chanHost.Channel.WaitForConfirmsOrDie(_waitForConfirmation);
+
 
                 chanHost.Channel.BasicPublish(
                     letter.Envelope.Exchange,

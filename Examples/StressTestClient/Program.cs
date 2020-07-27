@@ -10,6 +10,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
     public static class Program
     {
         private static Config config;
+        private static ChannelPool channelPool;
         private static Topologer topologer;
 
         private static Publisher apub1;
@@ -34,7 +35,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             var setupFailed = false;
             try
-            { await SetupWithSharedChannelPoolAsync().ConfigureAwait(false); }
+            { await SetupAsync().ConfigureAwait(false); }
             catch (Exception ex)
             {
                 setupFailed = true;
@@ -54,15 +55,21 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                 { await Console.Out.WriteLineAsync($"- StressTest failed with exception {ex.Message}.").ConfigureAwait(false); }
             }
 
-            await Console.In.ReadLineAsync().ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"- Press any key to begin shutdown.").ConfigureAwait(false);
+            Console.ReadKey();
+
+            await ShutdownAsync();
+
+            await Console.Out.WriteLineAsync($"- Press any key to close.").ConfigureAwait(false);
+            Console.ReadKey();
         }
 
-        private static async Task SetupWithSharedChannelPoolAsync()
+        private static async Task SetupAsync()
         {
             var sw = Stopwatch.StartNew();
             config = await ConfigReader.ConfigFileReadAsync("Config.json");
 
-            var channelPool = new ChannelPool(config);
+            channelPool = new ChannelPool(config);
 
             topologer = new Topologer(channelPool);
 
@@ -119,6 +126,11 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             await Console.Out.WriteLineAsync($"- All tests finished in {sw.ElapsedMilliseconds / 60_000.0} minutes!").ConfigureAwait(false);
         }
 
+        private static async Task ShutdownAsync()
+        {
+            await channelPool.ShutdownAsync();
+        }
+
         private static async Task StartPubSubTestAsync(Publisher autoPublisher, Consumer consumer)
         {
             var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.ConsumerSettings.QueueName, MessageCount);
@@ -135,6 +147,9 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
             while (!consumeMessagesTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
+
+            await consumer.StopConsumerAsync();
+            await Console.Out.WriteLineAsync($"- Consumer ({consumer.ConsumerSettings.ConsumerName}) stopped.").ConfigureAwait(false);
         }
 
         private static async Task PublishLettersAsync(Publisher apub, string queueName, ulong count)
@@ -142,22 +157,19 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             var sw = Stopwatch.StartNew();
             for (ulong i = 0; i < count; i++)
             {
-                await Task.Run(async () =>
+                var letter = RandomData.CreateSimpleRandomLetter(queueName, MessageSize);
+                letter.Envelope.RoutingOptions.DeliveryMode = 1;
+                letter.LetterId = i;
+
+                await apub.QueueLetterAsync(letter).ConfigureAwait(false);
+
+                if (letter.LetterId % 10_000 == 0)
                 {
-                    var letter = RandomData.CreateSimpleRandomLetter(queueName, MessageSize);
-                    letter.Envelope.RoutingOptions.DeliveryMode = 1;
-                    letter.LetterId = i;
-
-                    await apub.QueueLetterAsync(letter).ConfigureAwait(false);
-
-                    if (letter.LetterId % 10_000 == 0)
-                    {
-                        await Console
-                            .Out
-                            .WriteLineAsync($"- QueueName ({queueName}) is publishing letter {letter.LetterId}")
-                            .ConfigureAwait(false);
-                    }
-                }).ConfigureAwait(false);
+                    await Console
+                        .Out
+                        .WriteLineAsync($"- QueueName ({queueName}) is publishing letter {letter.LetterId}")
+                        .ConfigureAwait(false);
+                }
             }
             sw.Stop();
 
@@ -207,9 +219,9 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             var sw = Stopwatch.StartNew();
             try
             {
-                while (messageCount + errorCount < count) // TODO: Possible Infinite loop on lost messages.
+                while (await consumer.GetConsumerBuffer().WaitToReadAsync()) // TODO: Possible Infinite loop on lost messages.
                 {
-                    await foreach (var message in consumer.StreamOutUntilEmptyAsync())
+                    while (consumer.GetConsumerBuffer().TryRead(out var message))
                     {
                         if (message.Ackable)
                         { message.AckMessage(); }
@@ -218,6 +230,9 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
                         messageCount++;
                     }
+
+                    if (messageCount + errorCount >= count)
+                    { break; }
                 }
             }
             catch

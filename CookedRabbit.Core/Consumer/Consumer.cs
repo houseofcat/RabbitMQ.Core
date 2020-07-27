@@ -282,7 +282,7 @@ namespace CookedRabbit.Core
 
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !ConsumerSettings.AutoAck.Value, HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerMessageReceived,
@@ -324,7 +324,7 @@ namespace CookedRabbit.Core
 
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !ConsumerSettings.AutoAck.Value, HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerAsyncMessageReceived,

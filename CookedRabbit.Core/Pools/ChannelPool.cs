@@ -145,7 +145,11 @@ namespace CookedRabbit.Core.Pools
                 _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
                 var success = false;
-                while (!success) { success = chanHost.MakeChannel(); }
+                while (!success)
+                {
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
+                    success = chanHost.MakeChannel();
+                }
             }
 
             return chanHost;
@@ -184,7 +188,11 @@ namespace CookedRabbit.Core.Pools
                 _logger.LogWarning(LogMessages.ChannelPool.DeadChannel, chanHost.ChannelId);
 
                 var success = false;
-                while (!success) { success = chanHost.MakeChannel(); }
+                while (!success)
+                {
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
+                    success = chanHost.MakeChannel();
+                }
             }
 
             return chanHost;
@@ -226,11 +234,9 @@ namespace CookedRabbit.Core.Pools
                     try
                     {
                         chanHost = new ChannelHost(channelId, connHost, ackable);
+                        await _connectionPool.ReturnConnectionAsync(connHost); // Return Connection (or lose them.)
                         _flaggedChannels[chanHost.ChannelId] = false;
                         _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
-
-                        if (connHost != null)
-                        { await _connectionPool.ReturnConnectionAsync(connHost); } // Return Connection (or lose them.)
 
                         return chanHost;
                     }
