@@ -23,7 +23,7 @@ namespace CookedRabbit.Core.WorkEngines
         void AddSteps<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut>[] stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         void AddSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, TLocalOut>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         Task<bool> AwaitCompletionAsync();
-        void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline);
+
         void Finalize(Action<TOut> finalizeStep);
         void Finalize(Func<TOut, Task> finalizeStep);
         Exception GetAnyPipelineStepsFault();
@@ -507,44 +507,7 @@ namespace CookedRabbit.Core.WorkEngines
             }
         }
 
-        /// <summary>
-        /// Allows the chaining of steps from one type matched Pipeline to another.
-        /// <para>The pipeline steps get added to the parent pipeline for logical consistency.</para>
-        /// <para>TLocalIn refers to the output of the last step and input of the first step. They have to match, both in type and asynchrounous pattern.</para>
-        /// <para>Because we don't have the original StepFunction, the blocks have to have matching inputs/outputs therefore async can attach to async, sync to sync.</para>
-        /// </summary>
-        /// <typeparam name="TLocalIn"></typeparam>
-        /// <param name="pipeline"></param>
-        public void ChainPipeline<TLocalIn>(Pipeline<TIn, TOut> pipeline)
-        {
-            if (pipeline.Ready || Ready) throw new InvalidOperationException(ExceptionMessages.ChainingImpossible);
-            if (Steps.Count == 0 || pipeline.Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.NothingToChain);
-
-            var lastStepThisPipeline = Steps.Last();
-            var firstStepNewPipeline = pipeline.Steps.First();
-
-            if (lastStepThisPipeline.IsAsync
-                && firstStepNewPipeline.IsAsync
-                && lastStepThisPipeline.Block is ISourceBlock<Task<TLocalIn>> asyncLastBlock
-                && firstStepNewPipeline.Block is ITargetBlock<Task<TLocalIn>> asyncFirstBlock)
-            {
-                asyncLastBlock.LinkTo(asyncFirstBlock, _linkStepOptions);
-            }
-            else if (lastStepThisPipeline.Block is ISourceBlock<TLocalIn> lastBlock
-                && firstStepNewPipeline.Block is ITargetBlock<TLocalIn> firstBlock)
-            {
-                lastBlock.LinkTo(firstBlock, _linkStepOptions);
-            }
-            else
-            { throw new InvalidOperationException(ExceptionMessages.ChainingNotMatched); }
-
-            foreach (var step in pipeline.Steps)
-            {
-                Steps.Add(step);
-            }
-        }
-
-        public void Finalize(Action<TOut> finalizeStep = null)
+        public void Finalize(Action<TOut> finalizeStep)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
             if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);
@@ -594,7 +557,7 @@ namespace CookedRabbit.Core.WorkEngines
             Ready = true;
         }
 
-        public void Finalize(Func<TOut, Task> finalizeStep = null)
+        public void Finalize(Func<TOut, Task> finalizeStep)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
             if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);

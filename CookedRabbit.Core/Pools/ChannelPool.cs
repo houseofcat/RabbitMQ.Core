@@ -224,7 +224,16 @@ namespace CookedRabbit.Core.Pools
                 if (!sleep)
                 {
                     try
-                    { chanHost = new ChannelHost(channelId, connHost, ackable); }
+                    {
+                        chanHost = new ChannelHost(channelId, connHost, ackable);
+                        _flaggedChannels[chanHost.ChannelId] = false;
+                        _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
+
+                        if (connHost != null)
+                        { await _connectionPool.ReturnConnectionAsync(connHost); } // Return Connection (or lose them.)
+
+                        return chanHost;
+                    }
                     catch
                     {
                         _logger.LogTrace(LogMessages.ChannelPool.CreateChannelFailedConstruction, channelId);
@@ -243,20 +252,8 @@ namespace CookedRabbit.Core.Pools
                     await Task
                         .Delay(Config.PoolSettings.SleepOnErrorInterval)
                         .ConfigureAwait(false);
-
-                    continue; // Continue here forever (till reconnection is established).
                 }
-
-                break;
             }
-
-            _flaggedChannels[chanHost.ChannelId] = false;
-            _logger.LogDebug(LogMessages.ChannelPool.CreateChannelSuccess, channelId);
-
-            if (connHost != null)
-            { await _connectionPool.ReturnConnectionAsync(connHost); } // Return Connection (or lose them.)
-
-            return chanHost;
         }
 
         /// <summary>
