@@ -40,7 +40,7 @@ namespace CookedRabbit.Core
         public IModel Channel { get; set; }
         public ulong DeliveryTag { get; }
         public byte[] Data { get; private set; }
-        public Letter Letter { get; protected set; }
+        public Letter Letter { get; private set; }
         public string ContentType { get; private set; }
 
         private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();

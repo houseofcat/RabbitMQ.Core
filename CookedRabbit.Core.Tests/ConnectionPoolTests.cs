@@ -39,26 +39,6 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task UseConnectionPoolBeforeInitializationAsync()
-        {
-            var config = new Config();
-            config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
-
-            var connPool = new ConnectionPool(config);
-
-            Assert
-                .NotNull(connPool);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await connPool.GetConnectionAsync().ConfigureAwait(false))
-                .ConfigureAwait(false);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await connPool.ShutdownAsync().ConfigureAwait(false))
-                .ConfigureAwait(false);
-        }
-
-        [Fact]
         public async Task OverLoopThroughConnectionPoolAsync()
         {
             var config = new Config();
@@ -72,14 +52,18 @@ namespace CookedRabbit.Core.Tests
 
             for (int i = 0; i < loopCount; i++)
             {
-                var connection = await connPool
+                var connHost = await connPool
                     .GetConnectionAsync()
                     .ConfigureAwait(false);
 
-                if (connection != null)
+                if (connHost != null)
                 {
                     successCount++;
                 }
+
+                await connPool
+                    .ReturnConnectionAsync(connHost)
+                    .ConfigureAwait(false);
             }
 
             sw.Stop();

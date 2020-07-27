@@ -16,22 +16,6 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public void GetMessageConsumer()
-        {
-            var consumer = rabbitService.GetConsumer("TestMessageConsumer");
-
-            Assert.NotNull(consumer);
-        }
-
-        [Fact]
-        public void GetLetterConsumer()
-        {
-            var consumer = rabbitService.GetConsumer("TestMessageConsumer");
-
-            Assert.NotNull(consumer);
-        }
-
-        [Fact]
         public async Task ProductionBug_CantFindConsumer_WhenStartingMessageConsumers()
         {
             var rabbitService = new RabbitService("TestConfig.json", "passwordforencryption", "saltforencryption");

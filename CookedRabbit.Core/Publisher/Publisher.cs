@@ -120,23 +120,26 @@ namespace CookedRabbit.Core
 
             try
             {
-                _letterQueue.Writer.Complete();
-                _receiptBuffer.Writer.Complete();
-
-                if (!immediately)
+                if (AutoPublisherStarted)
                 {
-                    await _letterQueue
-                        .Reader
-                        .Completion
-                        .ConfigureAwait(false);
+                    _letterQueue.Writer.Complete();
+                    _receiptBuffer.Writer.Complete();
 
-                    while (!_publishingTask.IsCompleted)
+                    if (!immediately)
                     {
-                        await Task.Delay(10).ConfigureAwait(false);
-                    }
-                }
+                        await _letterQueue
+                            .Reader
+                            .Completion
+                            .ConfigureAwait(false);
 
-                AutoPublisherStarted = false;
+                        while (!_publishingTask.IsCompleted)
+                        {
+                            await Task.Delay(10).ConfigureAwait(false);
+                        }
+                    }
+
+                    AutoPublisherStarted = false;
+                }
             }
             finally
             { _pubLock.Release(); }

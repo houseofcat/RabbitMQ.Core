@@ -40,34 +40,6 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task UseConnectionPoolBeforeInitializationAsync()
-        {
-            var config = new Config();
-            config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
-
-            var chanPool = new ChannelPool(config);
-
-            Assert
-                .NotNull(chanPool);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await chanPool.GetChannelAsync().ConfigureAwait(false))
-                .ConfigureAwait(false);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await chanPool.GetAckChannelAsync().ConfigureAwait(false))
-                .ConfigureAwait(false);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await chanPool.ReturnChannelAsync(null).ConfigureAwait(false))
-                .ConfigureAwait(false);
-
-            await Assert
-                .ThrowsAsync<InvalidOperationException>(async () => await chanPool.ShutdownAsync().ConfigureAwait(false))
-                .ConfigureAwait(false);
-        }
-
-        [Fact]
         public async Task OverLoopThroughChannelPoolAsync()
         {
             var config = new Config();

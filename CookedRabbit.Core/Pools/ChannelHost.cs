@@ -105,7 +105,7 @@ namespace CookedRabbit.Core.Pools
         {
             var connectionHealthy = await ConnectionHost.HealthyAsync().ConfigureAwait(false);
 
-            return connectionHealthy && !FlowControlled && Channel?.IsOpen && false;
+            return connectionHealthy && !FlowControlled && (Channel?.IsOpen ?? false);
         }
 
         private const int CloseCode = 200;
