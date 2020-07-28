@@ -10,14 +10,13 @@ namespace CookedRabbit.Core.Pools
     public interface IChannelHost
     {
         bool Ackable { get; }
-        IModel Channel { get; }
         ulong ConnectionId { get; }
-
         ulong ChannelId { get; }
         bool Closed { get; }
         bool FlowControlled { get; }
 
-        bool MakeChannel();
+        IModel GetChannel();
+        Task<bool> MakeChannelAsync();
         void Close();
         Task<bool> HealthyAsync();
     }
@@ -25,7 +24,7 @@ namespace CookedRabbit.Core.Pools
     public class ChannelHost : IChannelHost
     {
         private ILogger<ChannelHost> _logger;
-        public IModel Channel { get; private set; }
+        private IModel _channel { get; set; }
         private IConnectionHost ConnectionHost { get; set; }
 
         public ulong ChannelId { get; set; }
@@ -46,38 +45,54 @@ namespace CookedRabbit.Core.Pools
             ConnectionHost = connHost;
             Ackable = ackable;
 
-            MakeChannel();
+            MakeChannelAsync().GetAwaiter().GetResult();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MakeChannel()
+        public IModel GetChannel()
         {
             hostLock.Wait();
 
             try
             {
-                if (Channel != null)
+                return _channel;
+            }
+            finally
+            { hostLock.Release(); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task<bool> MakeChannelAsync()
+        {
+            await hostLock.WaitAsync();
+
+            try
+            {
+                if (_channel != null)
                 {
-                    Channel.FlowControl -= FlowControl;
-                    Channel.ModelShutdown -= ChannelClose;
+                    _channel.FlowControl -= FlowControl;
+                    _channel.ModelShutdown -= ChannelClose;
                     Close();
-                    Channel = null;
+                    _channel = null;
                 }
 
-                Channel = ConnectionHost.Connection.CreateModel();
+                _channel = ConnectionHost.Connection.CreateModel();
 
                 if (Ackable)
                 {
-                    Channel.ConfirmSelect();
+                    _channel.ConfirmSelect();
                 }
 
-                Channel.FlowControl += FlowControl;
-                Channel.ModelShutdown += ChannelClose;
+                _channel.FlowControl += FlowControl;
+                _channel.ModelShutdown += ChannelClose;
 
                 return true;
             }
             catch
-            { return false; }
+            {
+                _channel = null;
+                return false;
+            }
             finally
             { hostLock.Release(); }
         }
@@ -105,7 +120,7 @@ namespace CookedRabbit.Core.Pools
         {
             var connectionHealthy = await ConnectionHost.HealthyAsync().ConfigureAwait(false);
 
-            return connectionHealthy && !FlowControlled && (Channel?.IsOpen ?? false);
+            return connectionHealthy && !FlowControlled && (_channel?.IsOpen ?? false);
         }
 
         private const int CloseCode = 200;
@@ -113,10 +128,10 @@ namespace CookedRabbit.Core.Pools
 
         public void Close()
         {
-            if (!Closed || !Channel.IsOpen)
+            if (!Closed || !_channel.IsOpen)
             {
                 try
-                { Channel.Close(CloseCode, CloseMessage); }
+                { _channel.Close(CloseCode, CloseMessage); }
                 catch { }
             }
         }

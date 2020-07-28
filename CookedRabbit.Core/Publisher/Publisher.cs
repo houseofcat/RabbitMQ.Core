@@ -244,7 +244,7 @@ namespace CookedRabbit.Core
             var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
             if (messageProperties == null)
             {
-                messageProperties = channelHost.Channel.CreateBasicProperties();
+                messageProperties = channelHost.GetChannel().CreateBasicProperties();
                 messageProperties.DeliveryMode = 2;
 
                 if (!messageProperties.IsHeadersPresent())
@@ -258,7 +258,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                channelHost.Channel.BasicPublish(
+                channelHost.GetChannel().BasicPublish(
                     exchange: exchangeName ?? string.Empty,
                     routingKey: routingKey,
                     mandatory: mandatory,
@@ -295,7 +295,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                channelHost.Channel.BasicPublish(
+                channelHost.GetChannel().BasicPublish(
                     exchange: exchangeName ?? string.Empty,
                     routingKey: routingKey,
                     mandatory: mandatory,
@@ -335,7 +335,7 @@ namespace CookedRabbit.Core
             var channelHost = await _channelPool.GetChannelAsync();
             if (messageProperties == null)
             {
-                messageProperties = channelHost.Channel.CreateBasicProperties();
+                messageProperties = channelHost.GetChannel().CreateBasicProperties();
                 messageProperties.DeliveryMode = 2;
 
                 if (!messageProperties.IsHeadersPresent())
@@ -349,7 +349,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                var batch = channelHost.Channel.CreateBasicPublishBatch();
+                var batch = channelHost.GetChannel().CreateBasicPublishBatch();
 
                 for (int i = 0; i < payloads.Count; i++)
                 {
@@ -394,7 +394,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                var batch = channelHost.Channel.CreateBasicPublishBatch();
+                var batch = channelHost.GetChannel().CreateBasicPublishBatch();
 
                 for (int i = 0; i < payloads.Count; i++)
                 {
@@ -437,7 +437,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.BasicPublish(
+                chanHost.GetChannel().BasicPublish(
                     letter.Envelope.Exchange,
                     letter.Envelope.RoutingKey,
                     letter.Envelope.RoutingOptions?.Mandatory ?? false,
@@ -484,17 +484,17 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.WaitForConfirmsOrDie(_waitForConfirmation);
+                chanHost.GetChannel().WaitForConfirmsOrDie(_waitForConfirmation);
 
 
-                chanHost.Channel.BasicPublish(
+                chanHost.GetChannel().BasicPublish(
                     letter.Envelope.Exchange,
                     letter.Envelope.RoutingKey,
                     letter.Envelope.RoutingOptions?.Mandatory ?? false,
                     BuildProperties(letter, chanHost, withHeaders),
                     JsonSerializer.SerializeToUtf8Bytes(letter));
 
-                chanHost.Channel.WaitForConfirmsOrDie(_waitForConfirmation);
+                chanHost.GetChannel().WaitForConfirmsOrDie(_waitForConfirmation);
             }
             catch (Exception ex)
             {
@@ -536,7 +536,7 @@ namespace CookedRabbit.Core
             {
                 try
                 {
-                    chanHost.Channel.BasicPublish(
+                    chanHost.GetChannel().BasicPublish(
                         letters[i].Envelope.Exchange,
                         letters[i].Envelope.RoutingKey,
                         letters[i].Envelope.RoutingOptions.Mandatory,
@@ -581,7 +581,7 @@ namespace CookedRabbit.Core
             {
                 if (letters.Count > 0)
                 {
-                    var publishBatch = chanHost.Channel.CreateBasicPublishBatch();
+                    var publishBatch = chanHost.GetChannel().CreateBasicPublishBatch();
                     for (int i = 0; i < letters.Count; i++)
                     {
                         publishBatch.Add(
@@ -631,7 +631,7 @@ namespace CookedRabbit.Core
 
         private IBasicProperties BuildProperties(Letter letter, IChannelHost channelHost, bool withHeaders)
         {
-            var props = channelHost.Channel.CreateBasicProperties();
+            var props = channelHost.GetChannel().CreateBasicProperties();
 
             props.DeliveryMode = letter.Envelope.RoutingOptions.DeliveryMode;
             props.ContentType = letter.Envelope.RoutingOptions.MessageType;
@@ -661,7 +661,7 @@ namespace CookedRabbit.Core
 
         private IBasicProperties BuildProperties(IDictionary<string, object> headers, IChannelHost channelHost, byte? priority = 0, byte? deliveryMode = 2)
         {
-            var props = channelHost.Channel.CreateBasicProperties();
+            var props = channelHost.GetChannel().CreateBasicProperties();
             props.DeliveryMode = deliveryMode ?? 2; // Default Persisted
             props.Priority = priority ?? 0; // Default Priority
 

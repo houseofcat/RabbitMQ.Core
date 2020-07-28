@@ -29,11 +29,11 @@ namespace CookedRabbit.Core.Service
 
             try
             {
-                channelHost.Channel.QueuePurge(queueName);
+                channelHost.GetChannel().QueuePurge(queueName);
 
                 if (deleteQueueAfter)
                 {
-                    channelHost.Channel.QueueDelete(queueName, false, false);
+                    channelHost.GetChannel().QueueDelete(queueName, false, false);
                 }
             }
             catch { error = true; }
@@ -57,16 +57,16 @@ namespace CookedRabbit.Core.Service
 
             var error = false;
             var channelHost = await channelPool.GetChannelAsync().ConfigureAwait(false);
-            var properties = channelHost.Channel.CreateBasicProperties();
+            var properties = channelHost.GetChannel().CreateBasicProperties();
             properties.DeliveryMode = 2;
 
             try
             {
-                var result = channelHost.Channel.BasicGet(originQueueName, true);
+                var result = channelHost.GetChannel().BasicGet(originQueueName, true);
 
                 if (result?.Body != null)
                 {
-                    channelHost.Channel.BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
+                    channelHost.GetChannel().BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
                 }
             }
             catch { error = true; }
@@ -92,13 +92,13 @@ namespace CookedRabbit.Core.Service
 
             var error = false;
             var channelHost = await originChannelPool.GetChannelAsync().ConfigureAwait(false);
-            var properties = channelHost.Channel.CreateBasicProperties();
+            var properties = channelHost.GetChannel().CreateBasicProperties();
             properties.DeliveryMode = 2;
 
             BasicGetResult result = null;
             try
             {
-                result = channelHost.Channel.BasicGet(originQueueName, true);
+                result = channelHost.GetChannel().BasicGet(originQueueName, true);
             }
             catch { error = true; }
             finally
@@ -113,7 +113,7 @@ namespace CookedRabbit.Core.Service
                 {
 
                     var targetChannelHost = await targetChannelPool.GetChannelAsync().ConfigureAwait(false);
-                    targetChannelHost.Channel.BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
+                    targetChannelHost.GetChannel().BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
                 }
                 catch { error = true; }
                 finally
@@ -137,7 +137,7 @@ namespace CookedRabbit.Core.Service
 
             var error = false;
             var channelHost = await channelPool.GetChannelAsync().ConfigureAwait(false);
-            var properties = channelHost.Channel.CreateBasicProperties();
+            var properties = channelHost.GetChannel().CreateBasicProperties();
             properties.DeliveryMode = 2;
 
             try
@@ -146,12 +146,12 @@ namespace CookedRabbit.Core.Service
 
                 while (true)
                 {
-                    result = channelHost.Channel.BasicGet(originQueueName, true);
+                    result = channelHost.GetChannel().BasicGet(originQueueName, true);
                     if (result == null) { break; }
 
                     if (result?.Body != null)
                     {
-                        channelHost.Channel.BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
+                        channelHost.GetChannel().BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
                     }
                 }
             }
@@ -178,7 +178,7 @@ namespace CookedRabbit.Core.Service
 
             var error = false;
             var channelHost = await originChannelPool.GetChannelAsync().ConfigureAwait(false);
-            var properties = channelHost.Channel.CreateBasicProperties();
+            var properties = channelHost.GetChannel().CreateBasicProperties();
             properties.DeliveryMode = 2;
 
             BasicGetResult result = null;
@@ -187,7 +187,7 @@ namespace CookedRabbit.Core.Service
             {
                 try
                 {
-                    result = channelHost.Channel.BasicGet(originQueueName, true);
+                    result = channelHost.GetChannel().BasicGet(originQueueName, true);
                     if (result == null) { break; }
                 }
                 catch { error = true; }
@@ -202,7 +202,7 @@ namespace CookedRabbit.Core.Service
                     try
                     {
                         var targetChannelHost = await targetChannelPool.GetChannelAsync().ConfigureAwait(false);
-                        targetChannelHost.Channel.BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
+                        targetChannelHost.GetChannel().BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
                     }
                     catch { error = true; }
                     finally

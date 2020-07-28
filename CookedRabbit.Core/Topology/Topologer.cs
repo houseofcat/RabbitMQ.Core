@@ -215,7 +215,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.QueueDeclare(
+                chanHost.GetChannel().QueueDeclare(
                     queue: queueName,
                     durable: durable,
                     exclusive: exclusive,
@@ -248,7 +248,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.QueueDelete(
+                chanHost.GetChannel().QueueDelete(
                     queue: queueName,
                     ifUnused: onlyIfUnused,
                     ifEmpty: onlyIfEmpty);
@@ -282,7 +282,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.QueueBind(
+                chanHost.GetChannel().QueueBind(
                     queue: queueName,
                     exchange: exchangeName,
                     routingKey: routingKey,
@@ -317,7 +317,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.QueueUnbind(
+                chanHost.GetChannel().QueueUnbind(
                     queue: queueName,
                     exchange: exchangeName,
                     routingKey: routingKey,
@@ -353,7 +353,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.ExchangeDeclare(
+                chanHost.GetChannel().ExchangeDeclare(
                     exchange: exchangeName,
                     type: exchangeType,
                     durable: durable,
@@ -382,7 +382,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.ExchangeDelete(
+                chanHost.GetChannel().ExchangeDelete(
                     exchange: exchangeName,
                     ifUnused: onlyIfUnused);
             }
@@ -415,7 +415,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.ExchangeBind(
+                chanHost.GetChannel().ExchangeBind(
                     destination: childExchangeName,
                     source: parentExchangeName,
                     routingKey: routingKey,
@@ -450,7 +450,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                chanHost.Channel.ExchangeUnbind(
+                chanHost.GetChannel().ExchangeUnbind(
                     destination: childExchangeName,
                     source: parentExchangeName,
                     routingKey: routingKey,

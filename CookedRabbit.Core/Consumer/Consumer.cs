@@ -184,7 +184,7 @@ namespace CookedRabbit.Core
                 if (consumer == null) { return false; }
 
                 ConsumingChannelHost
-                    .Channel
+                    .GetChannel()
                     .BasicConsume(
                         ConsumerSettings.QueueName,
                         ConsumerSettings.AutoAck ?? false,
@@ -200,7 +200,7 @@ namespace CookedRabbit.Core
                 if (consumer == null) { return false; }
 
                 ConsumingChannelHost
-                    .Channel
+                    .GetChannel()
                     .BasicConsume(
                         ConsumerSettings.QueueName,
                         ConsumerSettings.AutoAck ?? false,
@@ -269,8 +269,8 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.BatchSize.Value, false);
-                consumer = new EventingBasicConsumer(ConsumingChannelHost.Channel);
+                ConsumingChannelHost.GetChannel().BasicQos(0, ConsumerSettings.BatchSize.Value, false);
+                consumer = new EventingBasicConsumer(ConsumingChannelHost.GetChannel());
 
                 consumer.Received += ReceiveHandler;
                 consumer.Shutdown += ConsumerShutdown;
@@ -282,7 +282,7 @@ namespace CookedRabbit.Core
 
         private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.GetChannel(), bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerMessageReceived,
@@ -311,8 +311,8 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.Channel.BasicQos(0, ConsumerSettings.BatchSize.Value, false);
-                consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.Channel);
+                ConsumingChannelHost.GetChannel().BasicQos(0, ConsumerSettings.BatchSize.Value, false);
+                consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.GetChannel());
 
                 consumer.Received += ReceiveHandlerAsync;
                 consumer.Shutdown += ConsumerShutdownAsync;
@@ -324,7 +324,7 @@ namespace CookedRabbit.Core
 
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.Channel, bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
+            var rabbitMessage = new ReceivedData(ConsumingChannelHost.GetChannel(), bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerAsyncMessageReceived,

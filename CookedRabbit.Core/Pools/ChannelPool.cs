@@ -148,7 +148,7 @@ namespace CookedRabbit.Core.Pools
                 while (!success)
                 {
                     await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
-                    success = chanHost.MakeChannel();
+                    success = await chanHost.MakeChannelAsync();
                 }
             }
 
@@ -191,7 +191,7 @@ namespace CookedRabbit.Core.Pools
                 while (!success)
                 {
                     await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
-                    success = chanHost.MakeChannel();
+                    success = await chanHost.MakeChannelAsync();
                 }
             }
 

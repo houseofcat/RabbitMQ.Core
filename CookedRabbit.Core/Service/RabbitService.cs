@@ -403,7 +403,7 @@ namespace CookedRabbit.Core.Service
             try
             {
                 result = chanHost
-                    .Channel
+                    .GetChannel()
                     .BasicGet(queueName, true);
             }
             catch { error = true; }
@@ -439,7 +439,7 @@ namespace CookedRabbit.Core.Service
             try
             {
                 result = chanHost
-                    .Channel
+                    .GetChannel()
                     .BasicGet(queueName, true);
             }
             catch { error = true; }
