@@ -23,9 +23,9 @@ namespace CookedRabbit.Core.Pools
 
     public class ChannelHost : IChannelHost
     {
-        private ILogger<ChannelHost> _logger;
+        private readonly ILogger<ChannelHost> _logger;
         private IModel _channel { get; set; }
-        private IConnectionHost ConnectionHost { get; set; }
+        private IConnectionHost ConnectionHost { get; }
 
         public ulong ChannelId { get; set; }
         public ulong ConnectionId { get; set; }
@@ -64,7 +64,7 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<bool> MakeChannelAsync()
         {
-            await hostLock.WaitAsync();
+            await hostLock.WaitAsync().ConfigureAwait(false);
 
             try
             {

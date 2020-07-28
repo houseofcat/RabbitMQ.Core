@@ -42,7 +42,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task CreatePublisherWithChannelPool()
+        public void CreatePublisherWithChannelPool()
         {
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");

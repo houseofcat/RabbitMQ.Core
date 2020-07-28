@@ -5,7 +5,7 @@ namespace CookedRabbit.Core
 {
     public static class LogHelper
     {
-        private static object _syncObj = new object();
+        private readonly static object _syncObj = new object();
         private static ILoggerFactory _factory;
 
         public static ILoggerFactory LoggerFactory
@@ -21,7 +21,6 @@ namespace CookedRabbit.Core
                             _factory = new NullLoggerFactory();
                         }
                     }
-
                 }
                 return _factory;
             }

@@ -111,7 +111,6 @@ namespace CookedRabbit.Core.Service
             {
                 try
                 {
-
                     var targetChannelHost = await targetChannelPool.GetChannelAsync().ConfigureAwait(false);
                     targetChannelHost.GetChannel().BasicPublish(string.Empty, targetQueueName, false, properties, result.Body);
                 }

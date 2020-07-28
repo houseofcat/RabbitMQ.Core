@@ -37,7 +37,7 @@ namespace CookedRabbit.Core
 
     public class Consumer : IConsumer<ReceivedData>
     {
-        private ILogger<Consumer> _logger;
+        private readonly ILogger<Consumer> _logger;
         private readonly SemaphoreSlim _conLock = new SemaphoreSlim(1, 1);
 
         public Config Config { get; }
@@ -47,7 +47,7 @@ namespace CookedRabbit.Core
 
         private IChannelHost ConsumingChannelHost { get; set; }
 
-        public ConsumerOptions ConsumerSettings { get; private set; }
+        public ConsumerOptions ConsumerSettings { get; }
 
         public bool Started { get; private set; }
         private bool Shutdown { get; set; }
@@ -260,7 +260,6 @@ namespace CookedRabbit.Core
                     LogMessages.Consumer.ChannelNotEstablished,
                     ConsumerSettings.ConsumerName);
             }
-
         }
 
         private EventingBasicConsumer CreateConsumer()
@@ -302,7 +301,7 @@ namespace CookedRabbit.Core
 
         private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
         {
-            await HandleUnexpectedShutdownAsync();
+            await HandleUnexpectedShutdownAsync().ConfigureAwait(false);
         }
 
         private AsyncEventingBasicConsumer CreateAsyncConsumer()
@@ -344,7 +343,7 @@ namespace CookedRabbit.Core
 
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
-            await HandleUnexpectedShutdownAsync();
+            await HandleUnexpectedShutdownAsync().ConfigureAwait(false);
         }
 
         private async Task HandleUnexpectedShutdownAsync()
@@ -445,7 +444,6 @@ namespace CookedRabbit.Core
 
             try
             {
-
                 var dataflowEngine = new DataflowEngine(workBodyAsync, maxDoP);
 
                 while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))

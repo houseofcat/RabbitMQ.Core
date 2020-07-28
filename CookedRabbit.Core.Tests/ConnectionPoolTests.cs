@@ -28,7 +28,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task InitializeConnectionPoolAsync()
+        public void InitializeConnectionPoolAsync()
         {
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");

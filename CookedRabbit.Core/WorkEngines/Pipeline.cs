@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
@@ -36,14 +35,13 @@ namespace CookedRabbit.Core.WorkEngines
     public class Pipeline<TIn, TOut> : IPipeline<TIn, TOut>
     {
         private readonly ILogger<Pipeline<TIn, TOut>> _logger;
-        private readonly SemaphoreSlim _pipeLock = new SemaphoreSlim(1, 1);
         private readonly ExecutionDataflowBlockOptions _executeStepOptions;
         private readonly DataflowLinkOptions _linkStepOptions;
         private readonly TimeSpan _healthCheckInterval;
         private readonly Task _healthCheckTask;
         private readonly string _pipelineName;
 
-        public List<PipelineStep> Steps { get; private set; } = new List<PipelineStep>();
+        public List<PipelineStep> Steps { get; } = new List<PipelineStep>();
         public bool Ready { get; private set; }
         public int StepCount { get; private set; }
 
@@ -94,7 +92,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (lastStep.IsAsync)
                 {
                     var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                        async (input) => stepFunc(await input),
+                        async (input) => stepFunc(await input.ConfigureAwait(false)),
                         options);
 
                     if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -149,7 +147,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -205,7 +203,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -261,7 +259,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -314,7 +312,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (lastStep.IsAsync)
                 {
                     var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                        async (input) => stepFunc(await input),
+                        async (input) => stepFunc(await input.ConfigureAwait(false)),
                         options);
 
                     if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -368,7 +366,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -424,7 +422,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -480,7 +478,7 @@ namespace CookedRabbit.Core.WorkEngines
                     if (lastStep.IsAsync)
                     {
                         var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input),
+                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
                             options);
 
                         if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
@@ -525,7 +523,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (lastStep.IsAsync)
                 {
                     var step = new ActionBlock<Task<TOut>>(
-                        async input => finalizeStep(await input),
+                        async input => finalizeStep(await input.ConfigureAwait(false)),
                         _executeStepOptions);
 
                     if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
@@ -575,7 +573,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (lastStep.IsAsync)
                 {
                     var step = new ActionBlock<Task<TOut>>(
-                        async t => await finalizeStep(await t),
+                        async t => await finalizeStep(await t.ConfigureAwait(false)).ConfigureAwait(false),
                         _executeStepOptions);
 
                     if (lastStep.Block is ISourceBlock<Task<TOut>> targetBlock)
@@ -628,7 +626,7 @@ namespace CookedRabbit.Core.WorkEngines
                 firstStep.Complete();
 
                 // Await the last step.
-                if (Steps[Steps.Count - 1].Block is ITargetBlock<TIn> lastStep)
+                if (Steps[^1].Block is ITargetBlock<TIn> lastStep)
                 {
                     _logger.LogTrace(LogMessages.Pipeline.AwaitsCompletion, _pipelineName);
                     await lastStep.Completion.ConfigureAwait(false);
@@ -656,13 +654,12 @@ namespace CookedRabbit.Core.WorkEngines
         {
             if (maxDoPOverride.HasValue || ensureOrdered.HasValue || bufferSizeOverride.HasValue)
             {
-                var newOptions = new ExecutionDataflowBlockOptions();
-
-                newOptions.EnsureOrdered = ensureOrdered ?? _executeStepOptions.EnsureOrdered;
-                newOptions.MaxDegreeOfParallelism = maxDoPOverride ?? _executeStepOptions.MaxDegreeOfParallelism;
-                newOptions.BoundedCapacity = bufferSizeOverride ?? _executeStepOptions.BoundedCapacity;
-
-                return newOptions;
+                return new ExecutionDataflowBlockOptions
+                {
+                    EnsureOrdered = ensureOrdered ?? _executeStepOptions.EnsureOrdered,
+                    MaxDegreeOfParallelism = maxDoPOverride ?? _executeStepOptions.MaxDegreeOfParallelism,
+                    BoundedCapacity = bufferSizeOverride ?? _executeStepOptions.BoundedCapacity
+                };
             }
 
             return _executeStepOptions;

@@ -52,9 +52,9 @@ namespace CookedRabbit.Core.Pools
         private readonly ILogger<ChannelPool> _logger;
         private readonly IConnectionPool _connectionPool;
         private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
-        private Channel<IChannelHost> _channels;
-        private Channel<IChannelHost> _ackChannels;
-        private ConcurrentDictionary<ulong, bool> _flaggedChannels { get; set; }
+        private readonly Channel<IChannelHost> _channels;
+        private readonly Channel<IChannelHost> _ackChannels;
+        private ConcurrentDictionary<ulong, bool> _flaggedChannels { get; }
 
         public Config Config { get; }
 
@@ -95,7 +95,7 @@ namespace CookedRabbit.Core.Pools
         {
             for (int i = 0; i < Config.PoolSettings.MaxChannels; i++)
             {
-                var chanHost = await CreateChannelAsync(CurrentChannelId++, false);
+                var chanHost = await CreateChannelAsync(CurrentChannelId++, false).ConfigureAwait(false);
 
                 await _channels
                     .Writer
@@ -104,7 +104,7 @@ namespace CookedRabbit.Core.Pools
 
             for (int i = 0; i < Config.PoolSettings.MaxChannels; i++)
             {
-                var chanHost = await CreateChannelAsync(CurrentChannelId++, true);
+                var chanHost = await CreateChannelAsync(CurrentChannelId++, true).ConfigureAwait(false);
 
                 await _ackChannels
                     .Writer
@@ -147,8 +147,8 @@ namespace CookedRabbit.Core.Pools
                 var success = false;
                 while (!success)
                 {
-                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
-                    success = await chanHost.MakeChannelAsync();
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval).ConfigureAwait(false);
+                    success = await chanHost.MakeChannelAsync().ConfigureAwait(false);
                 }
             }
 
@@ -190,8 +190,8 @@ namespace CookedRabbit.Core.Pools
                 var success = false;
                 while (!success)
                 {
-                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
-                    success = await chanHost.MakeChannelAsync();
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval).ConfigureAwait(false);
+                    success = await chanHost.MakeChannelAsync().ConfigureAwait(false);
                 }
             }
 
@@ -210,7 +210,7 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task<IChannelHost> CreateChannelAsync(ulong channelId, bool ackable)
         {
-            IChannelHost chanHost = null;
+            IChannelHost chanHost;
             IConnectionHost connHost = null;
 
             while (true)

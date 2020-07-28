@@ -478,14 +478,20 @@
             Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="fileNamePath"></param>
+            <param name="passphrase"></param>
+            <param name="salt"></param>
             <param name="loggerFactory"></param>
+            <param name="processReceiptAsync"></param>
         </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.#ctor(CookedRabbit.Core.Config,System.String,System.String,Microsoft.Extensions.Logging.ILoggerFactory,System.Func{CookedRabbit.Core.PublishReceipt,System.Threading.Tasks.ValueTask})">
             <summary>
             Builds out a RabbitService with instantiated dependencies based on config settings.
             </summary>
             <param name="config"></param>
+            <param name="passphrase"></param>
+            <param name="salt"></param>
             <param name="loggerFactory"></param>
+            <param name="processReceiptAsync"></param>
         </member>
         <member name="M:CookedRabbit.Core.Service.RabbitService.GetAsync(System.String)">
             <summary>

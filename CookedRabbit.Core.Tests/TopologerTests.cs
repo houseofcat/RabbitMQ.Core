@@ -20,7 +20,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task CreateTopologerAndInitializeChannelPool()
+        public void CreateTopologerAndInitializeChannelPool()
         {
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
@@ -31,7 +31,7 @@ namespace CookedRabbit.Core.Tests
         }
 
         [Fact]
-        public async Task CreateTopologerWithChannelPool()
+        public void CreateTopologerWithChannelPool()
         {
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");

@@ -1,5 +1,4 @@
 using CookedRabbit.Core.Configs;
-using System.Collections.Generic;
 using System.Threading.Channels;
 
 namespace CookedRabbit.Core

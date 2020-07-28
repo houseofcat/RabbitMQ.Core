@@ -113,14 +113,14 @@ namespace CookedRabbit.Core.Pools
             {
                 var connHost = await _connections
                     .Reader
-                    .ReadAsync();
+                    .ReadAsync().ConfigureAwait(false);
 
                 // Connection Health Check
                 var healthy = await connHost.HealthyAsync().ConfigureAwait(false);
                 if (!healthy)
                 {
-                    await ReturnConnectionAsync(connHost);
-                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval);
+                    await ReturnConnectionAsync(connHost).ConfigureAwait(false);
+                    await Task.Delay(Config.PoolSettings.SleepOnErrorInterval).ConfigureAwait(false);
                     continue;
                 }
 

@@ -17,6 +17,8 @@ namespace CookedRabbit.Core.Benchmark
         [GlobalSetup]
         public async Task GlobalSetupAsync()
         {
+            await Task.Yield();
+
             var config = new Config();
             config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
             config.PoolSettings.MaxConnections = 5;

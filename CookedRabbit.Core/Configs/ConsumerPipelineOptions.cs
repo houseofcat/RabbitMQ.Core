@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CookedRabbit.Core.Configs
+﻿namespace CookedRabbit.Core.Configs
 {
     public class ConsumerPipelineOptions : GlobalConsumerPipelineOptions
     {

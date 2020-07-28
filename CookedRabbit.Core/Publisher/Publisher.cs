@@ -47,9 +47,9 @@ namespace CookedRabbit.Core
         private readonly TimeSpan _waitForConfirmation;
 
         private Channel<Letter> _letterQueue;
-        private Channel<PublishReceipt> _receiptBuffer;
+        private readonly Channel<PublishReceipt> _receiptBuffer;
 
-        private ReadOnlyMemory<byte> _hashKey;
+        private readonly ReadOnlyMemory<byte> _hashKey;
         private Task _publishingTask;
         private Task _processReceiptsAsync;
 
@@ -332,7 +332,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await _channelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
             if (messageProperties == null)
             {
                 messageProperties = channelHost.GetChannel().CreateBasicProperties();
@@ -376,7 +376,6 @@ namespace CookedRabbit.Core
             return error;
         }
 
-
         // A basic implementation of publishing batches but using the ChannelPool. If message properties is null, one is created and all messages are set to persistent.
         public async Task<bool> PublishBatchAsync(
             string exchangeName,
@@ -390,7 +389,7 @@ namespace CookedRabbit.Core
             Guard.AgainstNullOrEmpty(payloads, nameof(payloads));
 
             var error = false;
-            var channelHost = await _channelPool.GetChannelAsync();
+            var channelHost = await _channelPool.GetChannelAsync().ConfigureAwait(false);
 
             try
             {
@@ -485,7 +484,6 @@ namespace CookedRabbit.Core
             try
             {
                 chanHost.GetChannel().WaitForConfirmsOrDie(_waitForConfirmation);
-
 
                 chanHost.GetChannel().BasicPublish(
                     letter.Envelope.Exchange,
@@ -670,7 +668,7 @@ namespace CookedRabbit.Core
                 props.Headers = new Dictionary<string, object>();
             }
 
-            if (headers != null && headers.Count > 0)
+            if (headers?.Count > 0)
             {
                 foreach (var kvp in headers)
                 {

@@ -1,4 +1,3 @@
-using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
@@ -39,7 +38,7 @@ namespace CookedRabbit.Core.Service
 
     public class RabbitService : IRabbitService
     {
-        private byte[] _hashKey { get; set; }
+        private byte[] _hashKey { get; }
         private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
 
         public Config Config { get; }
@@ -54,7 +53,10 @@ namespace CookedRabbit.Core.Service
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="fileNamePath"></param>
+        /// <param name="passphrase"></param>
+        /// <param name="salt"></param>
         /// <param name="loggerFactory"></param>
+        /// <param name="processReceiptAsync"></param>
         public RabbitService(string fileNamePath, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
             : this(
                   ConfigReader
@@ -71,7 +73,10 @@ namespace CookedRabbit.Core.Service
         /// Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="config"></param>
+        /// <param name="passphrase"></param>
+        /// <param name="salt"></param>
         /// <param name="loggerFactory"></param>
+        /// <param name="processReceiptAsync"></param>
         public RabbitService(Config config, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
         {
             LogHelper.LoggerFactory = loggerFactory;
@@ -91,10 +96,10 @@ namespace CookedRabbit.Core.Service
 
             BuildConsumers();
 
-            StartAsync(passphrase, salt).GetAwaiter().GetResult();
+            StartAsync(processReceiptAsync).GetAwaiter().GetResult();
         }
 
-        private async Task StartAsync(string passphrase, string salt, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
+        private async Task StartAsync(Func<PublishReceipt, ValueTask> processReceiptAsync)
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 

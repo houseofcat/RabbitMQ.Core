@@ -14,14 +14,14 @@ namespace CookedRabbit.Core
         {
             return
             // Json
-            (data.StartsWith(Utf8JsonStartsWith) && data.EndsWith(Utf8JsonEndsWith));
+            data.StartsWith(Utf8JsonStartsWith) && data.EndsWith(Utf8JsonEndsWith);
         }
 
         public static bool IsJsonArray(ReadOnlySpan<byte> data)
         {
             return
             // JsonArray
-            (data.StartsWith(Utf8JsonArrayStartsWith) && data.StartsWith(Utf8JsonArrayEndsWith));
+            data.StartsWith(Utf8JsonArrayStartsWith) && data.StartsWith(Utf8JsonArrayEndsWith);
         }
     }
 }

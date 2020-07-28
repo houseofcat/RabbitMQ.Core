@@ -147,7 +147,6 @@ namespace CookedRabbit.Core
             public readonly static string ExecutionFailure = "Dataflow execution engine executing unit of work (DT:{0}) was unsuccesful... nacking.";
             public readonly static string ExecutionError = "Dataflow execution engine executing unit of work (DT:{0}) triggered an error. Error: {1}";
             public readonly static string QueueError = "Dataflow execution engine queueing unit of work (DT:{0}) triggered an error. Error: {1}";
-
         }
 
         public static class LetterDataflowEngine

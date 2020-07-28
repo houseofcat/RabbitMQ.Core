@@ -44,7 +44,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task StartAsync(bool useStream)
         {
-            await cpLock.WaitAsync();
+            await cpLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -91,7 +91,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task StopAsync()
         {
-            await cpLock.WaitAsync();
+            await cpLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -100,11 +100,12 @@ namespace CookedRabbit.Core.WorkEngines
                     _cancellationTokenSource.Cancel();
 
                     await Consumer
-                        .StopConsumerAsync(false);
+                        .StopConsumerAsync(false)
+                        .ConfigureAwait(false);
 
                     if (FeedPipelineWithDataTasks != null)
                     {
-                        await FeedPipelineWithDataTasks;
+                        await FeedPipelineWithDataTasks.ConfigureAwait(false);
                         FeedPipelineWithDataTasks = null;
                     }
                     _started = false;
@@ -117,7 +118,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task AwaitCompletionAsync()
         {
-            await _completionSource.Task;
+            await _completionSource.Task.ConfigureAwait(false);
         }
     }
 }

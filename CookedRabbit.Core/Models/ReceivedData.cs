@@ -1,5 +1,4 @@
 using CookedRabbit.Core.Utils;
-using Org.BouncyCastle.Crypto;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -45,7 +44,7 @@ namespace CookedRabbit.Core
 
         private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
 
-        private ReadOnlyMemory<byte> _hashKey;
+        private readonly ReadOnlyMemory<byte> _hashKey;
         private bool _decrypted;
         private bool _decompressed;
 
@@ -153,7 +152,6 @@ namespace CookedRabbit.Core
             return success;
         }
 
-
         /// <summary>
         /// Use this method to retrieve the internal buffer as byte[]. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
@@ -168,14 +166,14 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync();
+                    await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return Letter.Body;
 
                 case Constants.HeaderValueForMessage:
                 default:
 
-                    await DecomcryptDataAsync(decrypt, decompress);
+                    await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
 
                     return Data;
             }
@@ -195,14 +193,14 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync();
+                    await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
                 case Constants.HeaderValueForMessage:
                 default:
 
-                    await DecomcryptDataAsync(decrypt, decompress);
+                    await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
 
                     return Encoding.UTF8.GetString(Data);
             }
@@ -226,7 +224,7 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync();
+                    await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
@@ -235,12 +233,12 @@ namespace CookedRabbit.Core
 
                     if (Bytes.IsJson(Data))
                     {
-                        await DecomcryptDataAsync(decrypt, decompress);
+                        await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
 
                         return JsonSerializer.Deserialize<TResult>(Data.AsSpan(), jsonSerializerOptions);
                     }
                     else
-                    { return default(TResult); }
+                    { return default; }
             }
         }
 
@@ -262,7 +260,7 @@ namespace CookedRabbit.Core
             {
                 case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync();
+                    await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
@@ -271,13 +269,12 @@ namespace CookedRabbit.Core
 
                     if (Bytes.IsJsonArray(Data))
                     {
-                        await DecomcryptDataAsync(decrypt, decompress);
+                        await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
 
                         return JsonSerializer.Deserialize<List<TResult>>(Data, jsonSerializerOptions);
                     }
                     else
                     { return default(List<TResult>); }
-
             }
         }
 

@@ -40,7 +40,6 @@ namespace CookedRabbit.Core
         /// </summary>
         public bool EnableDispatchConsumersAsync { get; set; }
 
-
         /// <summary>
         /// Class to hold settings for ChannelFactory/SSL (RabbitMQ) settings.
         /// </summary>
