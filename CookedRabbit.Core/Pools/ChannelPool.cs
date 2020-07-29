@@ -271,7 +271,6 @@ namespace CookedRabbit.Core.Pools
         /// </summary>
         /// <param name="chanHost"></param>
         /// <param name="flagChannel"></param>
-        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask ReturnChannelAsync(IChannelHost chanHost, bool flagChannel = false)
         {

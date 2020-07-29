@@ -23,10 +23,10 @@ namespace CookedRabbit.Core.Pools
     public class ConnectionPool : IConnectionPool, IDisposable
     {
         private readonly ILogger<ConnectionPool> _logger;
+        private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
 
         private Channel<IConnectionHost> _connections;
         private ConnectionFactory _connectionFactory;
-        private SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
         private bool _disposedValue;
         private ulong _currentConnectionId;
 

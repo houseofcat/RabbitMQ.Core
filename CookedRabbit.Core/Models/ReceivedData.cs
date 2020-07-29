@@ -22,7 +22,6 @@ namespace CookedRabbit.Core
         bool AckMessage();
         void Complete();
         Task<bool> Completion();
-        void Dispose();
         Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false);
         Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false);
         Task<TResult> GetTypeFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null);
@@ -160,7 +159,6 @@ namespace CookedRabbit.Core
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
         /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
-        /// <returns></returns>
         public async Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
@@ -187,7 +185,6 @@ namespace CookedRabbit.Core
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
         /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
-        /// <returns></returns>
         public async Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
@@ -218,7 +215,6 @@ namespace CookedRabbit.Core
         /// <param name="decrypt"></param>
         /// <param name="decompress"></param>
         /// <param name="jsonSerializerOptions"></param>
-        /// <returns></returns>
         public async Task<TResult> GetTypeFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null)
         {
             switch (ContentType)
@@ -254,7 +250,6 @@ namespace CookedRabbit.Core
         /// <param name="decrypt"></param>
         /// <param name="decompress"></param>
         /// <param name="jsonSerializerOptions"></param>
-        /// <returns></returns>
         public async Task<IEnumerable<TResult>> GetTypesFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null)
         {
             switch (ContentType)
