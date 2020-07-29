@@ -31,7 +31,7 @@ namespace CookedRabbit.Core
         Task StopAutoPublishAsync(bool immediately = false);
     }
 
-    public class Publisher : IPublisher
+    public class Publisher : IPublisher, IDisposable
     {
         public Config Config { get; }
 
@@ -47,11 +47,12 @@ namespace CookedRabbit.Core
         private readonly TimeSpan _waitForConfirmation;
 
         private Channel<Letter> _letterQueue;
-        private readonly Channel<PublishReceipt> _receiptBuffer;
+        private Channel<PublishReceipt> _receiptBuffer;
 
         private readonly ReadOnlyMemory<byte> _hashKey;
         private Task _publishingTask;
         private Task _processReceiptsAsync;
+        private bool _disposedValue;
 
         public Publisher(Config config, ReadOnlyMemory<byte> hashKey) : this(new ChannelPool(config), hashKey)
         {
@@ -683,6 +684,35 @@ namespace CookedRabbit.Core
             props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
 
             return props;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _pubLock.Dispose();
+                }
+
+                _receiptBuffer = null;
+                _letterQueue = null;
+                _disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~Publisher()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

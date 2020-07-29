@@ -14,7 +14,7 @@ namespace CookedRabbit.Core.WorkEngines
         Task StopAsync();
     }
 
-    public class ConsumerPipeline<TOut> : IConsumerPipeline<TOut> where TOut : IWorkState
+    public class ConsumerPipeline<TOut> : IConsumerPipeline<TOut>, IDisposable where TOut : IWorkState
     {
         public string ConsumerPipelineName { get; }
         public ConsumerOptions Options { get; }
@@ -25,8 +25,8 @@ namespace CookedRabbit.Core.WorkEngines
         private TaskCompletionSource<bool> _completionSource;
         private CancellationTokenSource _cancellationTokenSource;
         private bool _started;
-
-        private readonly SemaphoreSlim cpLock = new SemaphoreSlim(1, 1);
+        private bool _disposedValue;
+        private readonly SemaphoreSlim _cpLock = new SemaphoreSlim(1, 1);
 
         public ConsumerPipeline(
             IConsumer<ReceivedData> consumer,
@@ -44,7 +44,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task StartAsync(bool useStream)
         {
-            await cpLock.WaitAsync().ConfigureAwait(false);
+            await _cpLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -86,12 +86,12 @@ namespace CookedRabbit.Core.WorkEngines
             }
             catch { }
             finally
-            { cpLock.Release(); }
+            { _cpLock.Release(); }
         }
 
         public async Task StopAsync()
         {
-            await cpLock.WaitAsync().ConfigureAwait(false);
+            await _cpLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -113,12 +113,33 @@ namespace CookedRabbit.Core.WorkEngines
                 }
             }
             catch { }
-            finally { cpLock.Release(); }
+            finally { _cpLock.Release(); }
         }
 
         public async Task AwaitCompletionAsync()
         {
             await _completionSource.Task.ConfigureAwait(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _cpLock.Dispose();
+                    _cancellationTokenSource.Dispose();
+                }
+
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
