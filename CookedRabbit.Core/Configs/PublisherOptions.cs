@@ -11,6 +11,6 @@ namespace CookedRabbit.Core
         public bool Compress { get; set; }
         public bool Encrypt { get; set; }
         public bool WithHeaders { get; set; } = true;
-        public int WaitForConfirmationTimeoutInMilliseconds = 500;
+        public int WaitForConfirmationTimeoutInMilliseconds { get; set; } = 500;
     }
 }

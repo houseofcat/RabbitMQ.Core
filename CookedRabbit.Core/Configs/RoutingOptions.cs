@@ -15,6 +15,6 @@ namespace CookedRabbit.Core
         [Range(0, 10, ErrorMessage = RangeErrorMessage)]
         public byte PriorityLevel { get; set; } = 0;
 
-        public string MessageType = $"{ContentType.Json.Description()} {Charset.Utf8.Description()}";
+        public string MessageType { get; set; }  = $"{ContentType.Json.Description()} {Charset.Utf8.Description()}";
     }
 }
