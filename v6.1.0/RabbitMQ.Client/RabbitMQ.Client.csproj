@@ -10,12 +10,12 @@
     <PackageTags>RabbitMQ, NetStandard 2.1, NetCore3.1, Unofficial</PackageTags>
     <PackageProjectUrl>https://github.com/houseofcat/RabbitMQ.Core</PackageProjectUrl>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <AssemblyVersion>1.0.610.0</AssemblyVersion>
-    <FileVersion>1.0.610.0</FileVersion>
-    <Version>1.0.610</Version>
+    <AssemblyVersion>1.0.611.0</AssemblyVersion>
+    <FileVersion>1.0.611.0</FileVersion>
+    <Version>1.0.611</Version>
     <PackageReleaseNotes>The Unofficial Port of the Official RabbitMQ DotNet Client to NetStandard 2.1/NetCoreApp3.1/Net5.0</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-
+    <PackageIconUrl>https://raw.githubusercontent.com/houseofcat/CookedRabbit/master/icon.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryType>git</RepositoryType>
