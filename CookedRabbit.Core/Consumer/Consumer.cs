@@ -35,15 +35,18 @@ namespace CookedRabbit.Core
         IAsyncEnumerable<TFromQueue> StreamOutUntilEmptyAsync();
     }
 
-    public class Consumer : IConsumer<ReceivedData>
+    public class Consumer : IConsumer<ReceivedData>, IDisposable
     {
         private readonly ILogger<Consumer> _logger;
         private readonly SemaphoreSlim _conLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _pipeExecLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _dataFlowExecLock = new SemaphoreSlim(1, 1);
+        private bool _disposedValue;
 
         public Config Config { get; }
 
         public IChannelPool ChannelPool { get; }
-        public Channel<ReceivedData> DataBuffer { get; set; }
+        public Channel<ReceivedData> DataBuffer { get; private set; }
 
         private IChannelHost ConsumingChannelHost { get; set; }
 
@@ -435,12 +438,9 @@ namespace CookedRabbit.Core
                 yield return receivedData;
             }
         }
-
-        private readonly SemaphoreSlim dataFlowExecLock = new SemaphoreSlim(1, 1);
-
         public async Task DataflowExecutionEngineAsync(Func<ReceivedData, Task<bool>> workBodyAsync, int maxDoP = 4, CancellationToken token = default)
         {
-            await dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
+            await _dataFlowExecLock.WaitAsync(2000).ConfigureAwait(false);
 
             try
             {
@@ -477,14 +477,12 @@ namespace CookedRabbit.Core
                     ConsumerSettings.ConsumerName,
                     ex.Message);
             }
-            finally { dataFlowExecLock.Release(); }
+            finally { _dataFlowExecLock.Release(); }
         }
-
-        private readonly SemaphoreSlim pipeExecLock = new SemaphoreSlim(1, 1);
 
         public async Task PipelineStreamEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
-            await pipeExecLock
+            await _pipeExecLock
                 .WaitAsync(2000)
                 .ConfigureAwait(false);
 
@@ -537,12 +535,12 @@ namespace CookedRabbit.Core
                     ConsumerSettings.ConsumerName,
                     ex.Message);
             }
-            finally { pipeExecLock.Release(); }
+            finally { _pipeExecLock.Release(); }
         }
 
         public async Task PipelineExecutionEngineAsync<TOut>(IPipeline<ReceivedData, TOut> pipeline, bool waitForCompletion, CancellationToken token = default)
         {
-            await pipeExecLock
+            await _pipeExecLock
                 .WaitAsync(2000)
                 .ConfigureAwait(false);
 
@@ -598,7 +596,30 @@ namespace CookedRabbit.Core
                     ConsumerSettings.ConsumerName,
                     ex.Message);
             }
-            finally { pipeExecLock.Release(); }
+            finally { _pipeExecLock.Release(); }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _dataFlowExecLock.Dispose();
+                    _pipeExecLock.Dispose();
+                    _conLock.Dispose();
+                }
+
+                DataBuffer = null;
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
