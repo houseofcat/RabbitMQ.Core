@@ -55,10 +55,18 @@ namespace RabbitMQ.Client.Exceptions
             Channel = channel;
         }
 
+        public ChannelAllocationException(string message) : base(message)
+        {
+        }
+
+        public ChannelAllocationException(string message, System.Exception inner) : base(message, inner)
+        {
+        }
+
         ///<summary>Retrieves the channel number concerned; will
         ///return -1 in the case where "no more free channels" is
         ///being signaled, or a non-negative integer when "channel is
         ///in use" is being signaled.</summary>
-        public int Channel { get; private set; }
+        public int Channel { get; }
     }
 }

@@ -52,9 +52,6 @@ namespace RabbitMQ.Client.Impl
 
         private readonly Dictionary<string, IBasicConsumer> _consumers = new Dictionary<string, IBasicConsumer>();
 
-        private TimeSpan _handshakeContinuationTimeout = TimeSpan.FromSeconds(10);
-        private TimeSpan _continuationTimeout = TimeSpan.FromSeconds(20);
-
         private readonly RpcContinuationQueue _continuationQueue = new RpcContinuationQueue();
         private readonly ManualResetEventSlim _flowControlBlock = new ManualResetEventSlim(true);
 
@@ -67,7 +64,7 @@ namespace RabbitMQ.Client.Impl
 
         private bool _onlyAcksReceived = true;
 
-        public IConsumerDispatcher ConsumerDispatcher { get; private set; }
+        public IConsumerDispatcher ConsumerDispatcher { get; }
 
         public ModelBase(ISession session) : this(session, session.Connection.ConsumerWorkService)
         { }
@@ -96,17 +93,9 @@ namespace RabbitMQ.Client.Impl
             Session.SessionShutdown += OnSessionShutdown;
         }
 
-        public TimeSpan HandshakeContinuationTimeout
-        {
-            get { return _handshakeContinuationTimeout; }
-            set { _handshakeContinuationTimeout = value; }
-        }
+        public TimeSpan HandshakeContinuationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        public TimeSpan ContinuationTimeout
-        {
-            get { return _continuationTimeout; }
-            set { _continuationTimeout = value; }
-        }
+        public TimeSpan ContinuationTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
         public event EventHandler<BasicAckEventArgs> BasicAcks;
         public event EventHandler<BasicNackEventArgs> BasicNacks;
@@ -193,26 +182,14 @@ namespace RabbitMQ.Client.Impl
                 k.Wait(TimeSpan.FromMilliseconds(10000));
                 await ConsumerDispatcher.Shutdown(this).ConfigureAwait(false);
             }
-            catch (AlreadyClosedException)
+            catch (AlreadyClosedException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (IOException)
+            catch (IOException) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
-            catch (Exception)
+            catch (Exception) when (abort)
             {
-                if (!abort)
-                {
-                    throw;
-                }
             }
         }
 
@@ -314,10 +291,7 @@ namespace RabbitMQ.Client.Impl
             {
                 Session.Close(CloseReason);
             }
-            if (m_connectionStartCell != null)
-            {
-                m_connectionStartCell.ContinueWithValue(null);
-            }
+            m_connectionStartCell?.ContinueWithValue(null);
         }
 
         public void HandleCommand(in IncomingCommand cmd)
@@ -460,7 +434,7 @@ namespace RabbitMQ.Client.Impl
             SetCloseReason(reason);
             OnModelShutdown(reason);
             BroadcastShutdownToConsumers(_consumers, reason);
-            ConsumerDispatcher.Shutdown(this).GetAwaiter().GetResult(); ;
+            ConsumerDispatcher.Shutdown(this).GetAwaiter().GetResult();
         }
 
         protected void BroadcastShutdownToConsumers(Dictionary<string, IBasicConsumer> cs, ShutdownEventArgs reason)
@@ -735,7 +709,7 @@ namespace RabbitMQ.Client.Impl
         public void HandleBasicRecoverOk()
         {
             var k = (SimpleBlockingRpcContinuation)_continuationQueue.Next();
-            OnBasicRecoverOk(new EventArgs());
+            OnBasicRecoverOk(EventArgs.Empty);
             k.HandleCommand(IncomingCommand.Empty);
         }
 
@@ -1237,7 +1211,6 @@ namespace RabbitMQ.Client.Impl
             return new BasicPublishBatch(this);
         }
 
-
         public void ExchangeBind(string destination,
             string source,
             string routingKey,
@@ -1472,7 +1445,6 @@ namespace RabbitMQ.Client.Impl
             }
             return k.m_result;
         }
-
 
         public class BasicConsumerRpcContinuation : SimpleBlockingRpcContinuation
         {

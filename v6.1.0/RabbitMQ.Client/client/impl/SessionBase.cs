@@ -86,7 +86,7 @@ namespace RabbitMQ.Client.Impl
 
         public ShutdownEventArgs CloseReason { get; set; }
         public CommandReceivedAction CommandReceived { get; set; }
-        public Connection Connection { get; private set; }
+        public Connection Connection { get; }
 
         public bool IsOpen
         {

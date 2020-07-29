@@ -40,5 +40,13 @@ namespace RabbitMQ.Client.Exceptions
             : base(msg, inner)
         {
         }
+
+        public ConnectFailureException(string message) : base(message)
+        {
+        }
+
+        public ConnectFailureException() : base()
+        {
+        }
     }
 }

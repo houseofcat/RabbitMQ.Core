@@ -36,7 +36,7 @@ namespace RabbitMQ.Client
     /// </summary>
     /// <remarks>
     /// Use the static members of this class as headers for the
-    /// arguments for Queue and Exchange declaration or Consumer creation. 
+    /// arguments for Queue and Exchange declaration or Consumer creation.
     /// The broker may be extended with additional
     /// headers that do not appear in this class.
     /// </remarks>

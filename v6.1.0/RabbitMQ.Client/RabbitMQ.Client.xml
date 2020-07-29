@@ -1562,7 +1562,7 @@
             Default implementation - overridable in subclasses.</summary>
             <param name="consumerTags">The set of consumer tags that where cancelled</param>
             <remarks>
-            This default implementation simply sets the <see cref="P:RabbitMQ.Client.DefaultBasicConsumer.IsRunning"/> 
+            This default implementation simply sets the <see cref="P:RabbitMQ.Client.DefaultBasicConsumer.IsRunning"/>
             property to false, and takes no further action.
             </remarks>
         </member>
@@ -1623,7 +1623,7 @@
             </summary>
             <remarks>
             Use the static members of this class as headers for the
-            arguments for Queue and Exchange declaration or Consumer creation. 
+            arguments for Queue and Exchange declaration or Consumer creation.
             The broker may be extended with additional
             headers that do not appear in this class.
             </remarks>
@@ -1877,11 +1877,6 @@
             Application Id.
             </summary>
         </member>
-        <member name="P:RabbitMQ.Client.IBasicProperties.ClusterId">
-            <summary>
-            Intra-cluster routing identifier (cluster id is deprecated in AMQP 0-9-1).
-            </summary>
-        </member>
         <member name="P:RabbitMQ.Client.IBasicProperties.ContentEncoding">
             <summary>
             MIME content encoding.
@@ -1959,11 +1954,6 @@
             Clear the <see cref="P:RabbitMQ.Client.IBasicProperties.AppId"/> property.
             </summary>
         </member>
-        <member name="M:RabbitMQ.Client.IBasicProperties.ClearClusterId">
-            <summary>
-            Clear the <see cref="P:RabbitMQ.Client.IBasicProperties.ClusterId"/> property (cluster id is deprecated in AMQP 0-9-1).
-            </summary>
-        </member>
         <member name="M:RabbitMQ.Client.IBasicProperties.ClearContentEncoding">
             <summary>
             Clear the <see cref="P:RabbitMQ.Client.IBasicProperties.ContentEncoding"/> property.
@@ -2027,11 +2017,6 @@
         <member name="M:RabbitMQ.Client.IBasicProperties.IsAppIdPresent">
             <summary>
             Returns true if the <see cref="P:RabbitMQ.Client.IBasicProperties.AppId"/> property is present.
-            </summary>
-        </member>
-        <member name="M:RabbitMQ.Client.IBasicProperties.IsClusterIdPresent">
-            <summary>
-            Returns true if the <see cref="P:RabbitMQ.Client.IBasicProperties.ClusterId"/> property is present (cluster id is deprecated in AMQP 0-9-1).
             </summary>
         </member>
         <member name="M:RabbitMQ.Client.IBasicProperties.IsContentEncodingPresent">
@@ -2388,11 +2373,6 @@
             Heartbeat setting to request.
             </summary>
         </member>
-        <member name="P:RabbitMQ.Client.IConnectionFactory.UseBackgroundThreadsForIO">
-            <summary>
-            When set to true, background threads will be used for I/O and heartbeats.
-            </summary>
-        </member>
         <member name="P:RabbitMQ.Client.IConnectionFactory.UserName">
             <summary>
             Username to use when authenticating to the server.
@@ -2576,7 +2556,8 @@
             </summary>
         </member>
         <member name="P:RabbitMQ.Client.IModel.DefaultConsumer">
-             <summary>Signalled when an unexpected message is delivered
+             <summary>
+             <para>Signalled when an unexpected message is delivered</para>
             
              Under certain circumstances it is possible for a channel to receive a
              message delivery which does not match any consumer which is currently
@@ -2632,7 +2613,7 @@
             <remarks>
             Handlers for this event are invoked by the connection thread.
             It is sometimes useful to allow that thread to know that a recover-ok
-            has been received, rather than the thread that invoked <see cref="M:RabbitMQ.Client.IModel.BasicRecover(System.Boolean)"/>.
+            has been received.
             </remarks>
         </member>
         <member name="E:RabbitMQ.Client.IModel.BasicReturn">
@@ -2642,7 +2623,7 @@
         </member>
         <member name="E:RabbitMQ.Client.IModel.CallbackException">
              <summary>
-             Signalled when an exception occurs in a callback invoked by the model.
+             <para>Signalled when an exception occurs in a callback invoked by the model.</para>
             
              Examples of cases where this event will be signalled
              include exceptions thrown in <see cref="T:RabbitMQ.Client.IBasicConsumer"/> methods, or
@@ -2730,18 +2711,6 @@
             Configures QoS parameters of the Basic content-class.
             </summary>
         </member>
-        <member name="M:RabbitMQ.Client.IModel.BasicRecover(System.Boolean)">
-            <summary>
-            Indicates that a consumer has recovered.
-            Deprecated. Should not be used.
-            </summary>
-        </member>
-        <member name="M:RabbitMQ.Client.IModel.BasicRecoverAsync(System.Boolean)">
-            <summary>
-            Indicates that a consumer has recovered.
-            Deprecated. Should not be used.
-            </summary>
-        </member>
         <member name="M:RabbitMQ.Client.IModel.BasicReject(System.UInt64,System.Boolean)">
             <summary> Reject a delivered message.</summary>
         </member>
@@ -2791,7 +2760,7 @@
               <para>
                 Routing key must be shorter than 255 bytes.
               </para>
-            </remarks>        
+            </remarks>
         </member>
         <member name="M:RabbitMQ.Client.IModel.ExchangeBindNoWait(System.String,System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>
@@ -2801,7 +2770,7 @@
               <para>
                 Routing key must be shorter than 255 bytes.
               </para>
-            </remarks>        
+            </remarks>
         </member>
         <member name="M:RabbitMQ.Client.IModel.ExchangeDeclare(System.String,System.String,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>Declare an exchange.</summary>
@@ -2863,7 +2832,7 @@
               <para>
                 Routing key must be shorter than 255 bytes.
               </para>
-            </remarks>        
+            </remarks>
         </member>
         <member name="M:RabbitMQ.Client.IModel.QueueBindNoWait(System.String,System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>Same as QueueBind but sets nowait parameter to true.</summary>
@@ -2871,7 +2840,7 @@
               <para>
                 Routing key must be shorter than 255 bytes.
               </para>
-            </remarks>        
+            </remarks>
         </member>
         <member name="M:RabbitMQ.Client.IModel.QueueDeclare(System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary> Declare a queue.</summary>
@@ -2937,7 +2906,7 @@
               <para>
                 Routing key must be shorter than 255 bytes.
               </para>
-            </remarks>        
+            </remarks>
         </member>
         <member name="M:RabbitMQ.Client.IModel.TxCommit">
             <summary>
@@ -3068,7 +3037,7 @@
         </member>
         <member name="M:RabbitMQ.Client.IModelExensions.ExchangeBindNoWait(RabbitMQ.Client.IModel,System.String,System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>
-            (Extension method) Like exchange bind but sets nowait to true. 
+            (Extension method) Like exchange bind but sets nowait to true.
             </summary>
         </member>
         <member name="M:RabbitMQ.Client.IModelExensions.ExchangeDeclare(RabbitMQ.Client.IModel,System.String,System.String,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
@@ -3078,7 +3047,7 @@
         </member>
         <member name="M:RabbitMQ.Client.IModelExensions.ExchangeDeclareNoWait(RabbitMQ.Client.IModel,System.String,System.String,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>
-            (Extension method) Like ExchangeDeclare but sets nowait to true. 
+            (Extension method) Like ExchangeDeclare but sets nowait to true.
             </summary>
         </member>
         <member name="M:RabbitMQ.Client.IModelExensions.ExchangeUnbind(RabbitMQ.Client.IModel,System.String,System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
@@ -4095,11 +4064,6 @@
             Application Id.
             </summary>
         </member>
-        <member name="P:RabbitMQ.Client.Impl.BasicProperties.ClusterId">
-            <summary>
-            Intra-cluster routing identifier (cluster id is deprecated in AMQP 0-9-1).
-            </summary>
-        </member>
         <member name="P:RabbitMQ.Client.Impl.BasicProperties.ContentEncoding">
             <summary>
             MIME content encoding.
@@ -4177,11 +4141,6 @@
             Clear the <see cref="P:RabbitMQ.Client.Impl.BasicProperties.AppId"/> property.
             </summary>
         </member>
-        <member name="M:RabbitMQ.Client.Impl.BasicProperties.ClearClusterId">
-            <summary>
-            Clear the <see cref="P:RabbitMQ.Client.Impl.BasicProperties.ClusterId"/> property (cluster id is deprecated in AMQP 0-9-1).
-            </summary>
-        </member>
         <member name="M:RabbitMQ.Client.Impl.BasicProperties.ClearContentEncoding">
             <summary>
             Clear the <see cref="P:RabbitMQ.Client.Impl.BasicProperties.ContentEncoding"/> property.
@@ -4245,11 +4204,6 @@
         <member name="M:RabbitMQ.Client.Impl.BasicProperties.IsAppIdPresent">
             <summary>
             Returns true if the <see cref="P:RabbitMQ.Client.Impl.BasicProperties.AppId"/> property is present.
-            </summary>
-        </member>
-        <member name="M:RabbitMQ.Client.Impl.BasicProperties.IsClusterIdPresent">
-            <summary>
-            Returns true if the <see cref="P:RabbitMQ.Client.Impl.BasicProperties.ClusterId"/> property is present (cluster id is deprecated in AMQP 0-9-1).
             </summary>
         </member>
         <member name="M:RabbitMQ.Client.Impl.BasicProperties.IsContentEncodingPresent">
@@ -4621,7 +4575,7 @@
         </member>
         <member name="F:RabbitMQ.Client.Impl.ModelBase.m_connectionStartCell">
             <summary>Only used to kick-start a connection open
-            sequence. See <see cref="M:RabbitMQ.Client.Framing.Impl.Connection.Open(System.Boolean)"/> </summary>
+            sequence. See <see cref="M:RabbitMQ.Client.Framing.Impl.Connection.Open"/> </summary>
         </member>
         <member name="M:RabbitMQ.Client.Impl.ModelBase.OnModelShutdown(RabbitMQ.Client.ShutdownEventArgs)">
             <summary>Broadcasts notification of the final shutdown of the model.</summary>

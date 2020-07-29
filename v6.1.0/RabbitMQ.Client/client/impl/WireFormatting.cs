@@ -38,7 +38,7 @@ using System.Text;
 
 namespace RabbitMQ.Client.Impl
 {
-    internal class WireFormatting
+    internal static class WireFormatting
     {
         public static decimal AmqpToDecimal(byte scale, uint unsignedMantissa)
         {
@@ -134,10 +134,10 @@ namespace RabbitMQ.Client.Impl
                     bytesRead += arrayBytesRead;
                     return arrayResult;
                 case 'B':
-                    bytesRead += 1;
+                    bytesRead++;
                     return span[1];
                 case 'b':
-                    bytesRead += 1;
+                    bytesRead++;
                     return (sbyte)span[1];
                 case 'd':
                     bytesRead += 8;
@@ -152,7 +152,7 @@ namespace RabbitMQ.Client.Impl
                     bytesRead += 2;
                     return NetworkOrderDeserializer.ReadInt16(span.Slice(1));
                 case 't':
-                    bytesRead += 1;
+                    bytesRead++;
                     return span[1] != 0;
                 case 'x':
                     byte[] binaryTableResult = ReadLongstr(span.Slice(1));
@@ -423,17 +423,19 @@ namespace RabbitMQ.Client.Impl
                 maxLength = byte.MaxValue;
             }
             fixed (char* chars = val)
-            fixed (byte* bytes = &span.Slice(1).GetPinnableReference())
             {
-                try
+                fixed (byte* bytes = &span.Slice(1).GetPinnableReference())
                 {
-                    int bytesWritten = Encoding.UTF8.GetBytes(chars, val.Length, bytes, maxLength);
-                    span[0] = (byte)bytesWritten;
-                    return bytesWritten + 1;
-                }
-                catch (ArgumentException)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(val), val, $"Value exceeds the maximum allowed length of {maxLength} bytes.");
+                    try
+                    {
+                        int bytesWritten = Encoding.UTF8.GetBytes(chars, val.Length, bytes, maxLength);
+                        span[0] = (byte)bytesWritten;
+                        return bytesWritten + 1;
+                    }
+                    catch (ArgumentException)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(val), val, $"Value exceeds the maximum allowed length of {maxLength} bytes.");
+                    }
                 }
             }
         }

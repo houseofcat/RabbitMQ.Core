@@ -200,7 +200,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public event EventHandler<ConsumerTagChangedAfterRecoveryEventArgs> ConsumerTagChangeAfterRecovery;
         public event EventHandler<QueueNameChangedAfterRecoveryEventArgs> QueueNameChangeAfterRecovery;
 
-        public string ClientProvidedName { get; private set; }
+        public string ClientProvidedName { get; }
 
         public ushort ChannelMax
         {
@@ -544,7 +544,7 @@ namespace RabbitMQ.Client.Framing.Impl
                     // last binding where this exchange is the source is gone,
                     // remove recorded exchange
                     // if it is auto-deleted. See bug 26364.
-                    if ((rx != null) && rx.IsAutoDelete)
+                    if (rx?.IsAutoDelete == true)
                     {
                         _recordedExchanges.Remove(exchange);
                     }
@@ -561,7 +561,7 @@ namespace RabbitMQ.Client.Framing.Impl
                     _recordedQueues.TryGetValue(queue, out RecordedQueue rq);
                     // last consumer on this connection is gone, remove recorded queue
                     // if it is auto-deleted. See bug 26364.
-                    if ((rq != null) && rq.IsAutoDelete)
+                    if (rq?.IsAutoDelete == true)
                     {
                         _recordedQueues.Remove(queue);
                     }
@@ -644,18 +644,17 @@ namespace RabbitMQ.Client.Framing.Impl
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            _delegate = new Connection(_factory, false,
-                fh, ClientProvidedName);
+            _delegate = new Connection(_factory, fh, ClientProvidedName);
 
             _recoveryTask = Task.Run(MainRecoveryLoop);
 
-            EventHandler<ShutdownEventArgs> recoveryListener = (_, args) =>
+            void recoveryListener(object _, ShutdownEventArgs args)
             {
                 if (ShouldTriggerConnectionRecovery(args))
                 {
                     _recoveryLoopCommandQueue.Writer.TryWrite(RecoveryCommand.BeginAutomaticRecovery);
                 }
-            };
+            }
             lock (_eventLock)
             {
                 ConnectionShutdown += recoveryListener;
@@ -867,7 +866,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 {
                     Abort();
                 }
-                catch (Exception)
+                catch
                 {
                     // TODO: log
                 }
@@ -973,7 +972,7 @@ namespace RabbitMQ.Client.Framing.Impl
             try
             {
                 IFrameHandler fh = _endpoints.SelectOne(_factory.CreateFrameHandler);
-                _delegate = new Connection(_factory, false, fh, ClientProvidedName);
+                _delegate = new Connection(_factory, fh, ClientProvidedName);
                 return true;
             }
             catch (Exception e)
@@ -1219,7 +1218,6 @@ namespace RabbitMQ.Client.Framing.Impl
             PerformAutomaticRecovery
         }
 
-
         private enum RecoveryConnectionState
         {
             /// <summary>
@@ -1344,7 +1342,7 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             _ = Task
                 .Delay(_factory.NetworkRecoveryInterval)
-                .ContinueWith(t => _recoveryLoopCommandQueue.Writer.TryWrite(RecoveryCommand.PerformAutomaticRecovery));
+                .ContinueWith(_ => _recoveryLoopCommandQueue.Writer.TryWrite(RecoveryCommand.PerformAutomaticRecovery));
         }
     }
 }

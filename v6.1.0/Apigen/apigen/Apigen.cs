@@ -288,10 +288,8 @@ namespace RabbitMQ.Client.Apigen
             Console.WriteLine($"* Loading spec from '{m_inputXmlFilename}'");
             m_spec = new XmlDocument();
 
-            using (var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read))
-            {
-                m_spec.Load(stream);
-            }
+            using var stream = new FileStream(m_inputXmlFilename, FileMode.Open, FileAccess.Read);
+            m_spec.Load(stream);
         }
 
         public void ParseSpec()
@@ -1122,24 +1120,16 @@ $@"namespace {ApiNamespaceBase}
                 return "ReadOnlyMemory<byte>";
             }
 
-            switch (t.FullName)
+            return t.FullName switch
             {
-                case "System.Boolean":
-                    return "bool";
-                case "System.Byte[]":
-                    return "byte[]";
-                case "System.String":
-                    return "string";
-                case "System.UInt16":
-                    return "ushort";
-                case "System.UInt32":
-                    return "uint";
-                case "System.UInt64":
-                    return "ulong";
-                case "System.Void":
-                    return "void";
-                default:
-                    return t.FullName;
+                "System.Boolean" => "bool",
+                "System.Byte[]" => "byte[]",
+                "System.String" => "string",
+                "System.UInt16" => "ushort",
+                "System.UInt32" => "uint",
+                "System.UInt64" => "ulong",
+                "System.Void" => "void",
+                _ => t.FullName,
             };
         }
 

@@ -38,7 +38,6 @@ namespace RabbitMQ.Util
         Right
     }
 
-
     ///<summary>Models the disjoint union of two alternatives, a
     ///"left" alternative and a "right" alternative.</summary>
     ///<remarks>Borrowed from ML, Haskell etc.</remarks>
@@ -53,7 +52,7 @@ namespace RabbitMQ.Util
         }
 
         ///<summary>Retrieve the alternative represented by this instance.</summary>
-        public EitherAlternative Alternative { get; private set; }
+        public EitherAlternative Alternative { get; }
 
         ///<summary>Retrieve the value carried by this instance.</summary>
         public L LeftValue { get; private set; }

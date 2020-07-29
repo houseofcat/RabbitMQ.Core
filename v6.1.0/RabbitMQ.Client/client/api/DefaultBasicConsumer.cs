@@ -172,7 +172,7 @@ namespace RabbitMQ.Client
         /// Default implementation - overridable in subclasses.</summary>
         /// <param name="consumerTags">The set of consumer tags that where cancelled</param>
         /// <remarks>
-        /// This default implementation simply sets the <see cref="IsRunning"/> 
+        /// This default implementation simply sets the <see cref="IsRunning"/>
         /// property to false, and takes no further action.
         /// </remarks>
         public virtual void OnCancel(params string[] consumerTags)

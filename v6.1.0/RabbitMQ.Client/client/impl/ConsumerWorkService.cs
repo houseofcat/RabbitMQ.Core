@@ -103,7 +103,7 @@ namespace RabbitMQ.Client.Impl
                         {
                             work();
                         }
-                        catch (Exception)
+                        catch
                         {
                             // ignored
                         }
@@ -143,9 +143,9 @@ namespace RabbitMQ.Client.Impl
                     await Task.Factory.StartNew(state =>
                     {
                         ((Action)state)();
-                    }, action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                    }, action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
                 }
-                catch (Exception)
+                catch
                 {
                     // ignored
                 }

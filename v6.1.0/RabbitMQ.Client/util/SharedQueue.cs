@@ -42,7 +42,6 @@ namespace RabbitMQ.Util
     {
     }
 
-
     ///<summary>A thread-safe shared queue implementation.</summary>
     class SharedQueue<T> : IEnumerable<T>
     {
@@ -236,7 +235,6 @@ namespace RabbitMQ.Util
             }
         }
     }
-
 
     ///<summary>Implementation of the IEnumerator interface, for
     ///permitting SharedQueue to be used in foreach loops.</summary>

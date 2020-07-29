@@ -767,16 +767,6 @@ namespace RabbitMQ.Client.Framing
             }
         }
 
-        public override string ClusterId
-        {
-            get => _clusterId;
-            set
-            {
-                _clusterId_present = value != null;
-                _clusterId = value;
-            }
-        }
-
         public override void ClearContentType() => _contentType_present = false;
 
         public override void ClearContentEncoding() => _contentEncoding_present = false;
@@ -803,8 +793,6 @@ namespace RabbitMQ.Client.Framing
 
         public override void ClearAppId() => _appId_present = false;
 
-        public override void ClearClusterId() => _clusterId_present = false;
-
         public override bool IsContentTypePresent() => _contentType_present;
 
         public override bool IsContentEncodingPresent() => _contentEncoding_present;
@@ -830,8 +818,6 @@ namespace RabbitMQ.Client.Framing
         public override bool IsUserIdPresent() => _userId_present;
 
         public override bool IsAppIdPresent() => _appId_present;
-
-        public override bool IsClusterIdPresent() => _clusterId_present;
 
         public BasicProperties() { }
         public override ushort ProtocolClassId => 60;

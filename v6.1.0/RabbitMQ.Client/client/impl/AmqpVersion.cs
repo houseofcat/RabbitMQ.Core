@@ -70,12 +70,12 @@ namespace RabbitMQ.Client.Framing.Impl
         /// <summary>
         /// The AMQP specification major version number.
         /// </summary>
-        public int Major { get; private set; }
+        public int Major { get; }
 
         /// <summary>
         /// The AMQP specification minor version number.
         /// </summary>
-        public int Minor { get; private set; }
+        public int Minor { get; }
 
         /// <summary>
         /// Implement value-equality comparison.
@@ -90,7 +90,7 @@ namespace RabbitMQ.Client.Framing.Impl
         /// </summary>
         public override int GetHashCode()
         {
-            return 31 * Major.GetHashCode() + Minor.GetHashCode();
+            return (31 * Major.GetHashCode()) + Minor.GetHashCode();
         }
 
         /// <summary>

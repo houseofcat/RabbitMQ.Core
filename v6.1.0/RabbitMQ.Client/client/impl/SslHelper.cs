@@ -89,7 +89,7 @@ namespace RabbitMQ.Client.Impl
             X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
             if (acceptableIssuers != null && acceptableIssuers.Length > 0 &&
-                localCertificates != null && localCertificates.Count > 0)
+                localCertificates?.Count > 0)
             {
                 foreach (X509Certificate certificate in localCertificates)
                 {
@@ -99,7 +99,7 @@ namespace RabbitMQ.Client.Impl
                     }
                 }
             }
-            if (localCertificates != null && localCertificates.Count > 0)
+            if (localCertificates?.Count > 0)
             {
                 return localCertificates[0];
             }

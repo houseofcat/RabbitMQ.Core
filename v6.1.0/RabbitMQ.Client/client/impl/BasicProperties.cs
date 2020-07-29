@@ -41,11 +41,6 @@ namespace RabbitMQ.Client.Impl
         public abstract string AppId { get; set; }
 
         /// <summary>
-        /// Intra-cluster routing identifier (cluster id is deprecated in AMQP 0-9-1).
-        /// </summary>
-        public abstract string ClusterId { get; set; }
-
-        /// <summary>
         /// MIME content encoding.
         /// </summary>
         public abstract string ContentEncoding { get; set; }
@@ -135,11 +130,6 @@ namespace RabbitMQ.Client.Impl
         public abstract void ClearAppId();
 
         /// <summary>
-        /// Clear the <see cref="ClusterId"/> property (cluster id is deprecated in AMQP 0-9-1).
-        /// </summary>
-        public abstract void ClearClusterId();
-
-        /// <summary>
         /// Clear the <see cref="ContentEncoding"/> property.
         /// </summary>
         public abstract void ClearContentEncoding();
@@ -203,11 +193,6 @@ namespace RabbitMQ.Client.Impl
         /// Returns true if the <see cref="AppId"/> property is present.
         /// </summary>
         public abstract bool IsAppIdPresent();
-
-        /// <summary>
-        /// Returns true if the <see cref="ClusterId"/> property is present (cluster id is deprecated in AMQP 0-9-1).
-        /// </summary>
-        public abstract bool IsClusterIdPresent();
 
         /// <summary>
         /// Returns true if the <see cref="ContentEncoding"/> property is present.

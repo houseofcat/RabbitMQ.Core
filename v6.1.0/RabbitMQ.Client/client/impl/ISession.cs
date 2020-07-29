@@ -75,6 +75,5 @@ namespace RabbitMQ.Client.Impl
         void Notify();
         void Transmit(in OutgoingCommand cmd);
         void Transmit(IList<OutgoingCommand> cmds);
-
     }
 }

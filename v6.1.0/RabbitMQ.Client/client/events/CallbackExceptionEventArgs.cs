@@ -34,7 +34,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Events
 {
-    public abstract class BaseExceptionEventArgs : EventArgs
+    public class BaseExceptionEventArgs : EventArgs
     {
         ///<summary>Wrap an exception thrown by a callback.</summary>
         public BaseExceptionEventArgs(Exception exception)
@@ -45,10 +45,10 @@ namespace RabbitMQ.Client.Events
 
         ///<summary>Access helpful information about the context in
         ///which the wrapped exception was thrown.</summary>
-        public IDictionary<string, object> Detail { get; private set; }
+        public IDictionary<string, object> Detail { get; }
 
         ///<summary>Access the wrapped exception.</summary>
-        public Exception Exception { get; private set; }
+        public Exception Exception { get; }
 
         public IDictionary<string, object> UpdateDetails(IDictionary<string, object> other)
         {
@@ -59,7 +59,6 @@ namespace RabbitMQ.Client.Events
             return Detail;
         }
     }
-
 
     ///<summary>Describes an exception that was thrown during the
     ///library's invocation of an application-supplied callback

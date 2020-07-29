@@ -112,7 +112,6 @@ namespace RabbitMQ.Client.Impl
         }
     }
 
-
     internal sealed class RecordedQueueBinding : RecordedBinding
     {
         public RecordedQueueBinding(AutorecoveringModel model) : base(model)
@@ -124,7 +123,6 @@ namespace RabbitMQ.Client.Impl
             ModelDelegate.QueueBind(Destination, Source, RoutingKey, Arguments);
         }
     }
-
 
     internal sealed class RecordedExchangeBinding : RecordedBinding
     {

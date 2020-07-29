@@ -43,5 +43,9 @@ namespace RabbitMQ.Client.Exceptions
         public PossibleAuthenticationFailureException(string msg) : base(msg)
         {
         }
+
+        protected PossibleAuthenticationFailureException() : base()
+        {
+        }
     }
 }

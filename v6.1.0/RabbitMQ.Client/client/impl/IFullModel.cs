@@ -375,7 +375,6 @@ namespace RabbitMQ.Client.Impl
             [AmqpNowaitArgument(null, "0xFFFFFFFF")] bool nowait);
     }
 
-
     ///<summary>Essential information from an incoming Connection.Tune
     ///method.</summary>
     struct ConnectionTuneDetails
@@ -389,7 +388,6 @@ namespace RabbitMQ.Client.Impl
         ///<summary>The peer's suggested heartbeat parameter.</summary>
         public ushort m_heartbeatInSeconds;
     }
-
 
     class ConnectionSecureOrTune
     {
@@ -415,7 +413,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         }
     }
 
-
     ///<summary>Causes the API generator to ignore the attributed method.</summary>
     ///
     ///<remarks>Mostly used to declare convenience overloads of
@@ -435,7 +432,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         }
     }
 
-
     ///<summary>Causes the API generator to generate asynchronous
     ///receive code for the attributed method.</summary>
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
@@ -446,7 +442,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         {
         }
     }
-
 
     ///<summary>Causes the API generator to generate
     ///exception-throwing code for, instead of simply ignoring, the
@@ -461,7 +456,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         {
         }
     }
-
 
     ///<summary>Informs the API generator which AMQP method field to
     ///use for either a parameter in a request, or for a simple result
@@ -478,7 +472,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
             m_fieldName = fieldName;
         }
     }
-
 
     ///<summary>Informs the API generator which AMQP method to use for
     ///either a request (if applied to an IModel method) or a reply
@@ -498,7 +491,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
             m_methodName = methodName;
         }
     }
-
 
     ///<summary>This attribute, if placed on a parameter in an IModel
     ///method, causes it to be interpreted as a "nowait" parameter for
@@ -522,7 +514,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         }
     }
 
-
     ///<summary>This attribute, if placed on a method in IModel,
     ///causes the method to be interpreted as a factory method
     ///producing a protocol-specific implementation of a common
@@ -537,7 +528,6 @@ namespace RabbitMQ.Client.Apigen.Attributes
         }
     }
 
-
     ///<summary>This attribute, if placed on a parameter in a
     ///content-carrying IModel method, causes it to be sent as part of
     ///the content header frame.</summary>
@@ -545,14 +535,12 @@ namespace RabbitMQ.Client.Apigen.Attributes
     {
     }
 
-
     ///<summary>This attribute, if placed on a parameter in a
     ///content-carrying IModel method, causes it to be sent as part of
     ///the content body frame.</summary>
     class AmqpContentBodyMappingAttribute : Attribute
     {
     }
-
 
     ///<summary>This attribute, placed on an IModel method, causes
     ///what would normally be an RPC, sent with ModelRpc, to be sent

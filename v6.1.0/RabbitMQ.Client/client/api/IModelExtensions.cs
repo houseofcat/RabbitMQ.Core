@@ -122,7 +122,7 @@ namespace RabbitMQ.Client
         }
 
         /// <summary>
-        /// (Extension method) Like exchange bind but sets nowait to true. 
+        /// (Extension method) Like exchange bind but sets nowait to true.
         /// </summary>
         public static void ExchangeBindNoWait(this IModel model, string destination, string source, string routingKey, IDictionary<string, object> arguments = null)
         {
@@ -139,7 +139,7 @@ namespace RabbitMQ.Client
         }
 
         /// <summary>
-        /// (Extension method) Like ExchangeDeclare but sets nowait to true. 
+        /// (Extension method) Like ExchangeDeclare but sets nowait to true.
         /// </summary>
         public static void ExchangeDeclareNoWait(this IModel model, string exchange, string type, bool durable = false, bool autoDelete = false,
             IDictionary<string, object> arguments = null)

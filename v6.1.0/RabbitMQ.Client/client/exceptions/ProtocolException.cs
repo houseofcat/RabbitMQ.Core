@@ -41,6 +41,14 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected ProtocolException() : base()
+        {
+        }
+
+        protected ProtocolException(string message, System.Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>Retrieve the reply code to use in a
         ///connection/channel close method.</summary>
         public abstract ushort ReplyCode { get; }

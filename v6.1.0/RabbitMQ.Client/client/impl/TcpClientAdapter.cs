@@ -32,10 +32,7 @@ namespace RabbitMQ.Client.Impl
 
         public virtual void Close()
         {
-            if (_sock != null)
-            {
-                _sock.Dispose();
-            }
+            _sock?.Dispose();
             _sock = null;
         }
 

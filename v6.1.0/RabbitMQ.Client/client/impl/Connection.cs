@@ -52,7 +52,6 @@ namespace RabbitMQ.Client.Framing.Impl
         private readonly object _eventLock = new object();
 
         ///<summary>Heartbeat frame for transmission. Reusable across connections.</summary>
-
         private readonly ManualResetEventSlim _appContinuation = new ManualResetEventSlim(false);
 
         private volatile ShutdownEventArgs _closeReason = null;
@@ -89,9 +88,9 @@ namespace RabbitMQ.Client.Framing.Impl
         // true if we haven't finished connection negotiation.
         // In this state socket exceptions are treated as fatal connection
         // errors, otherwise as read timeouts
-        public ConsumerWorkService ConsumerWorkService { get; private set; }
+        public ConsumerWorkService ConsumerWorkService { get; }
 
-        public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, string clientProvidedName = null)
+        public Connection(IConnectionFactory factory, IFrameHandler frameHandler, string clientProvidedName = null)
         {
             ClientProvidedName = clientProvidedName;
             KnownHosts = null;
@@ -113,8 +112,8 @@ namespace RabbitMQ.Client.Framing.Impl
             _session0 = new MainSession(this) { Handler = NotifyReceivedCloseOk };
             _model0 = (ModelBase)Protocol.CreateModel(_session0);
 
-            StartMainLoop(factory.UseBackgroundThreadsForIO);
-            Open(insist);
+            StartMainLoop();
+            Open();
         }
 
         public Guid Id { get { return _id; } }
@@ -162,8 +161,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public event EventHandler<EventArgs> ConnectionUnblocked;
 
-
-        public string ClientProvidedName { get; private set; }
+        public string ClientProvidedName { get; }
 
         public ushort ChannelMax
         {
@@ -299,12 +297,9 @@ namespace RabbitMQ.Client.Framing.Impl
                     // Wait for CloseOk in the MainLoop
                     _session0.Transmit(ConnectionCloseWrapper(reason.ReplyCode, reason.ReplyText));
                 }
-                catch (AlreadyClosedException)
+                catch (AlreadyClosedException) when (abort)
                 {
-                    if (!abort)
-                    {
-                        throw;
-                    }
+                    // swallow
                 }
 #pragma warning disable 0168
                 catch (NotSupportedException nse)
@@ -552,53 +547,51 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public void MainLoopIteration()
         {
-            using (InboundFrame frame = _frameHandler.ReadFrame())
+            using InboundFrame frame = _frameHandler.ReadFrame();
+            NotifyHeartbeatListener();
+            // We have received an actual frame.
+            if (frame.Type == FrameType.FrameHeartbeat)
             {
-                NotifyHeartbeatListener();
-                // We have received an actual frame.
-                if (frame.Type == FrameType.FrameHeartbeat)
-                {
-                    // Ignore it: we've already just reset the heartbeat
-                    // latch.
-                    return;
-                }
+                // Ignore it: we've already just reset the heartbeat
+                // latch.
+                return;
+            }
 
-                if (frame.Channel == 0)
+            if (frame.Channel == 0)
+            {
+                // In theory, we could get non-connection.close-ok
+                // frames here while we're quiescing (m_closeReason !=
+                // null). In practice, there's a limited number of
+                // things the server can ask of us on channel 0 -
+                // essentially, just connection.close. That, combined
+                // with the restrictions on pipelining, mean that
+                // we're OK here to handle channel 0 traffic in a
+                // quiescing situation, even though technically we
+                // should be ignoring everything except
+                // connection.close-ok.
+                _session0.HandleFrame(in frame);
+            }
+            else
+            {
+                // If we're still m_running, but have a m_closeReason,
+                // then we must be quiescing, which means any inbound
+                // frames for non-zero channels (and any inbound
+                // commands on channel zero that aren't
+                // Connection.CloseOk) must be discarded.
+                if (_closeReason == null)
                 {
-                    // In theory, we could get non-connection.close-ok
-                    // frames here while we're quiescing (m_closeReason !=
-                    // null). In practice, there's a limited number of
-                    // things the server can ask of us on channel 0 -
-                    // essentially, just connection.close. That, combined
-                    // with the restrictions on pipelining, mean that
-                    // we're OK here to handle channel 0 traffic in a
-                    // quiescing situation, even though technically we
-                    // should be ignoring everything except
-                    // connection.close-ok.
-                    _session0.HandleFrame(in frame);
-                }
-                else
-                {
-                    // If we're still m_running, but have a m_closeReason,
-                    // then we must be quiescing, which means any inbound
-                    // frames for non-zero channels (and any inbound
-                    // commands on channel zero that aren't
-                    // Connection.CloseOk) must be discarded.
-                    if (_closeReason == null)
+                    // No close reason, not quiescing the
+                    // connection. Handle the frame. (Of course, the
+                    // Session itself may be quiescing this particular
+                    // channel, but that's none of our concern.)
+                    ISession session = _sessionManager.Lookup(frame.Channel);
+                    if (session == null)
                     {
-                        // No close reason, not quiescing the
-                        // connection. Handle the frame. (Of course, the
-                        // Session itself may be quiescing this particular
-                        // channel, but that's none of our concern.)
-                        ISession session = _sessionManager.Lookup(frame.Channel);
-                        if (session == null)
-                        {
-                            throw new ChannelErrorException(frame.Channel);
-                        }
-                        else
-                        {
-                            session.HandleFrame(in frame);
-                        }
+                        throw new ChannelErrorException(frame.Channel);
+                    }
+                    else
+                    {
+                        session.HandleFrame(in frame);
                     }
                 }
             }
@@ -699,7 +692,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        public void Open(bool insist)
+        public void Open()
         {
             StartAndTune();
             _model0.ConnectionOpen(_factory.VirtualHost, string.Empty, false);
@@ -815,7 +808,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        public void StartMainLoop(bool useBackgroundThread)
+        public void StartMainLoop()
         {
             _mainLoopTask = Task.Run(MainLoop);
         }
@@ -1127,7 +1120,7 @@ namespace RabbitMQ.Client.Framing.Impl
             }
             catch (OperationInterruptedException e)
             {
-                if (e.ShutdownReason != null && e.ShutdownReason.ReplyCode == Constants.AccessRefused)
+                if (e.ShutdownReason?.ReplyCode == Constants.AccessRefused)
                 {
                     throw new AuthenticationFailureException(e.ShutdownReason.ReplyText);
                 }

@@ -42,6 +42,10 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
+        protected UnexpectedFrameException(string message) : base(message)
+        {
+        }
+
         public override ushort ReplyCode
         {
             get { return Constants.CommandInvalid; }

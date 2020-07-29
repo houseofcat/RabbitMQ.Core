@@ -209,17 +209,10 @@ namespace RabbitMQ.Client.Impl
             {
                 type = reader.ReadByte();
             }
-            catch (IOException ioe)
+            catch (IOException ioe) when (ioe.InnerException != null &&
+(ioe.InnerException is SocketException) &&
+                    ((SocketException)ioe.InnerException).SocketErrorCode == SocketError.TimedOut)
             {
-                // If it's a WSAETIMEDOUT SocketException, unwrap it.
-                // This might happen when the limit of half-open connections is
-                // reached.
-                if (ioe.InnerException == null ||
-                    !(ioe.InnerException is SocketException) ||
-                    ((SocketException)ioe.InnerException).SocketErrorCode != SocketError.TimedOut)
-                {
-                    throw;
-                }
 
                 ExceptionDispatchInfo.Capture(ioe.InnerException).Throw();
             }

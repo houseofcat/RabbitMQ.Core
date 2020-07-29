@@ -57,7 +57,8 @@ namespace RabbitMQ.Client
         /// </summary>
         ShutdownEventArgs CloseReason { get; }
 
-        /// <summary>Signalled when an unexpected message is delivered
+        /// <summary>
+        /// <para>Signalled when an unexpected message is delivered</para>
         ///
         /// Under certain circumstances it is possible for a channel to receive a
         /// message delivery which does not match any consumer which is currently
@@ -113,7 +114,7 @@ namespace RabbitMQ.Client
         /// <remarks>
         /// Handlers for this event are invoked by the connection thread.
         /// It is sometimes useful to allow that thread to know that a recover-ok
-        /// has been received, rather than the thread that invoked <see cref="BasicRecover"/>.
+        /// has been received.
         /// </remarks>
         event EventHandler<EventArgs> BasicRecoverOk;
 
@@ -123,7 +124,7 @@ namespace RabbitMQ.Client
         event EventHandler<BasicReturnEventArgs> BasicReturn;
 
         /// <summary>
-        /// Signalled when an exception occurs in a callback invoked by the model.
+        /// <para>Signalled when an exception occurs in a callback invoked by the model.</para>
         ///
         /// Examples of cases where this event will be signalled
         /// include exceptions thrown in <see cref="IBasicConsumer"/> methods, or
@@ -228,19 +229,6 @@ namespace RabbitMQ.Client
         /// </summary>
         void BasicQos(uint prefetchSize, ushort prefetchCount, bool global);
 
-        /// <summary>
-        /// Indicates that a consumer has recovered.
-        /// Deprecated. Should not be used.
-        /// </summary>
-        [AmqpMethodDoNotImplement(null)]
-        void BasicRecover(bool requeue);
-
-        /// <summary>
-        /// Indicates that a consumer has recovered.
-        /// Deprecated. Should not be used.
-        /// </summary>
-        void BasicRecoverAsync(bool requeue);
-
         /// <summary> Reject a delivered message.</summary>
         void BasicReject(ulong deliveryTag, bool requeue);
 
@@ -294,7 +282,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void ExchangeBind(string destination, string source, string routingKey, IDictionary<string, object> arguments);
 
@@ -305,7 +293,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void ExchangeBindNoWait(string destination, string source, string routingKey,
             IDictionary<string, object> arguments);
 
@@ -379,7 +367,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void QueueBind(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
@@ -388,7 +376,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void QueueBindNoWait(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
         /// <summary> Declare a queue.</summary>
@@ -463,7 +451,7 @@ namespace RabbitMQ.Client
         ///   <para>
         ///     Routing key must be shorter than 255 bytes.
         ///   </para>
-        /// </remarks>        
+        /// </remarks>
         void QueueUnbind(string queue, string exchange, string routingKey, IDictionary<string, object> arguments);
 
         /// <summary>

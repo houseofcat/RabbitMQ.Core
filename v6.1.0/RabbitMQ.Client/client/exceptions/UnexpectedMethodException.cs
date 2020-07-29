@@ -41,7 +41,19 @@ namespace RabbitMQ.Client.Exceptions
             Method = method;
         }
 
+        public UnexpectedMethodException(string message) : base(message)
+        {
+        }
+
+        public UnexpectedMethodException(string message, System.Exception inner) : base(message, inner)
+        {
+        }
+
+        public UnexpectedMethodException() : base()
+        {
+        }
+
         ///<summary>The unexpected reply method.</summary>
-        public IMethod Method { get; private set; }
+        public IMethod Method { get; }
     }
 }

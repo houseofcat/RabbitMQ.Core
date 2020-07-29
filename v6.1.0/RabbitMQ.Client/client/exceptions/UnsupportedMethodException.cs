@@ -43,7 +43,15 @@ namespace RabbitMQ.Client.Exceptions
             MethodName = methodName;
         }
 
+        public UnsupportedMethodException() : base()
+        {
+        }
+
+        public UnsupportedMethodException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
         ///<summary>The name of the RPC request that could not be sent.</summary>
-        public string MethodName { get; private set; }
+        public string MethodName { get; }
     }
 }

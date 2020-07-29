@@ -45,7 +45,7 @@ namespace RabbitMQ.Client
                 try
                 {
                     t = selector(ep);
-                    if (t.Equals(default(T)) == false)
+                    if (!t.Equals(default(T)))
                     {
                         return t;
                     }

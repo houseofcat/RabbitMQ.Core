@@ -37,7 +37,7 @@ namespace RabbitMQ.Client.Logging
     [EventSource(Name = "rabbitmq-dotnet-client")]
     public sealed class RabbitMqClientEventSource : EventSource
     {
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords Log = (EventKeywords)1;
         }
