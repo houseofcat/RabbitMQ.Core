@@ -1,0 +1,7 @@
+---
+exclude_paths:
+  - 'Examples/**'
+  - 'CookedRabbit.Core.Tests/**'
+  - 'v5.1.2/**'
+  - 'v6.0.0/**'
+  - 'v6.1.0/**'
