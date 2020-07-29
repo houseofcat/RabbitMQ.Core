@@ -103,33 +103,33 @@ namespace RabbitMQ.Util
             {
                 writer.WriteLine("(null)");
             }
-            else if (value is string)
+            else if (value is string x)
             {
-                writer.WriteLine($"\"{((string)value).Replace("\"", "\\\"")}\"");
+                writer.WriteLine($"\"{(x).Replace("\"", "\\\"")}\"");
             }
-            else if (value is byte[])
+            else if (value is byte[] x2)
             {
                 writer.WriteLine("byte[]");
-                Dump((byte[])value, writer);
+                Dump(x2, writer);
             }
             else if (value is ValueType)
             {
                 writer.WriteLine(value);
             }
-            else if (value is IDictionary)
+            else if (value is IDictionary dictionary)
             {
                 Type t = value.GetType();
                 writer.WriteLine(t.FullName);
-                foreach (DictionaryEntry entry in (IDictionary)value)
+                foreach (DictionaryEntry entry in dictionary)
                 {
                     DumpKeyValue(entry.Key.ToString(), entry.Value, writer, indent);
                 }
             }
-            else if (value is IEnumerable)
+            else if (value is IEnumerable enumerable)
             {
                 writer.WriteLine("IEnumerable");
                 int index = 0;
-                foreach (object v in (IEnumerable)value)
+                foreach (object v in enumerable)
                 {
                     DumpKeyValue(index.ToString(), v, writer, indent);
                     index++;

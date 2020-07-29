@@ -64,11 +64,11 @@ namespace RabbitMQ.Client.Impl
 
             var sslStream = new SslStream(tcpStream, false, remoteCertValidator, localCertSelector);
 
-            Action<SslOption> TryAuthenticating = (SslOption opts) =>
+            void TryAuthenticating(SslOption opts)
             {
                 sslStream.AuthenticateAsClientAsync(opts.ServerName, opts.Certs, opts.Version,
                                                     opts.CheckCertificateRevocation).GetAwaiter().GetResult();
-            };
+            }
             try
             {
                 TryAuthenticating(options);
