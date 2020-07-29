@@ -9,7 +9,7 @@ namespace CookedRabbit.Core.Utils
 {
     public static class AesEncrypt
     {
-        public static Random Random = new Random();
+        private readonly static Random Random = new Random();
         public const int MacBitSize = 128;
         public const int NonceSize = 12;
         public const int KeySize = 32;

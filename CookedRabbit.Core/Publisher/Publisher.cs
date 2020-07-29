@@ -627,7 +627,7 @@ namespace CookedRabbit.Core
                 .ConfigureAwait(false);
         }
 
-        private IBasicProperties BuildProperties(Letter letter, IChannelHost channelHost, bool withHeaders)
+        private static IBasicProperties BuildProperties(Letter letter, IChannelHost channelHost, bool withHeaders)
         {
             var props = channelHost.GetChannel().CreateBasicProperties();
 
@@ -657,7 +657,7 @@ namespace CookedRabbit.Core
             return props;
         }
 
-        private IBasicProperties BuildProperties(IDictionary<string, object> headers, IChannelHost channelHost, byte? priority = 0, byte? deliveryMode = 2)
+        private static IBasicProperties BuildProperties(IDictionary<string, object> headers, IChannelHost channelHost, byte? priority = 0, byte? deliveryMode = 2)
         {
             var props = channelHost.GetChannel().CreateBasicProperties();
             props.DeliveryMode = deliveryMode ?? 2; // Default Persisted

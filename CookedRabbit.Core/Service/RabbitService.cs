@@ -36,18 +36,19 @@ namespace CookedRabbit.Core.Service
         ValueTask ShutdownAsync(bool immediately);
     }
 
-    public class RabbitService : IRabbitService
+    public class RabbitService : IRabbitService, IDisposable
     {
         private byte[] _hashKey { get; }
         private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
+        private bool _disposedValue;
 
         public Config Config { get; }
         public IChannelPool ChannelPool { get; }
         public IPublisher Publisher { get; }
         public ITopologer Topologer { get; }
 
-        public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
-        private ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineNameToConsumerSetting { get; } = new ConcurrentDictionary<string, ConsumerOptions>();
+        public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; private set; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
+        private ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineNameToConsumerSetting { get; set; } = new ConcurrentDictionary<string, ConsumerOptions>();
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
@@ -456,6 +457,28 @@ namespace CookedRabbit.Core.Service
             }
 
             return result != null ? JsonSerializer.Deserialize<T>(result.Body.Span) : default;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _serviceLock.Dispose();
+                }
+
+                Consumers = null;
+                ConsumerPipelineNameToConsumerSetting = null;
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
