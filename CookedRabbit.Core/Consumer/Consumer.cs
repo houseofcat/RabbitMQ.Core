@@ -282,7 +282,7 @@ namespace CookedRabbit.Core
             return consumer;
         }
 
-        private async void ReceiveHandler(object o, BasicDeliverEventArgs bdea)
+        private async void ReceiveHandler(object _, BasicDeliverEventArgs bdea)
         {
             var rabbitMessage = new ReceivedData(ConsumingChannelHost.GetChannel(), bdea, !(ConsumerSettings.AutoAck ?? false), HashKey);
 
@@ -304,7 +304,7 @@ namespace CookedRabbit.Core
 
         private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
         {
-            await HandleUnexpectedShutdownAsync().ConfigureAwait(false);
+            await HandleUnexpectedShutdownAsync(e).ConfigureAwait(false);
         }
 
         private AsyncEventingBasicConsumer CreateAsyncConsumer()
@@ -346,10 +346,10 @@ namespace CookedRabbit.Core
 
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
-            await HandleUnexpectedShutdownAsync().ConfigureAwait(false);
+            await HandleUnexpectedShutdownAsync(e).ConfigureAwait(false);
         }
 
-        private async Task HandleUnexpectedShutdownAsync()
+        private async Task HandleUnexpectedShutdownAsync(ShutdownEventArgs e)
         {
             if (!Shutdown)
             {
@@ -358,7 +358,8 @@ namespace CookedRabbit.Core
                 {
                     _logger.LogWarning(
                         LogMessages.Consumer.ConsumerShutdownEvent,
-                        ConsumerSettings.ConsumerName);
+                        ConsumerSettings.ConsumerName,
+                        e.ReplyText);
 
                     success = await StartConsumingAsync().ConfigureAwait(false);
                 }

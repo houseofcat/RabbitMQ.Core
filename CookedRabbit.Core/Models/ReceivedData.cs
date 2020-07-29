@@ -32,7 +32,7 @@ namespace CookedRabbit.Core
         bool RejectMessage(bool requeue);
     }
 
-    public class ReceivedData : IDisposable, IReceivedData
+    public class ReceivedData : IReceivedData, IDisposable
     {
         public IBasicProperties Properties { get; }
         public bool Ackable { get; }
@@ -47,6 +47,7 @@ namespace CookedRabbit.Core
         private readonly ReadOnlyMemory<byte> _hashKey;
         private bool _decrypted;
         private bool _decompressed;
+        private bool disposedValue;
 
         public ReceivedData(
             IModel channel,
@@ -328,12 +329,27 @@ namespace CookedRabbit.Core
         /// </summary>
         public Task<bool> Completion() => CompletionSource.Task;
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    CompletionSource.Task.Dispose();
+                }
+
+                if (Channel != null) { Channel = null; }
+                if (Letter != null) { Letter = null; }
+
+                disposedValue = true;
+            }
+        }
+
         public void Dispose()
         {
-            if (Channel != null) { Channel = null; }
-            if (Letter != null) { Letter = null; }
-
-            CompletionSource.Task.Dispose();
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
