@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,6 @@ namespace CookedRabbit.Core.Pools
     public interface IChannelHost
     {
         bool Ackable { get; }
-        ulong ConnectionId { get; }
         ulong ChannelId { get; }
         bool Closed { get; }
         bool FlowControlled { get; }
@@ -21,28 +21,28 @@ namespace CookedRabbit.Core.Pools
         Task<bool> HealthyAsync();
     }
 
-    public class ChannelHost : IChannelHost
+    public class ChannelHost : IChannelHost, IDisposable
     {
         private readonly ILogger<ChannelHost> _logger;
         private IModel _channel { get; set; }
-        private IConnectionHost ConnectionHost { get; }
+        private IConnectionHost _connHost { get; set; }
 
         public ulong ChannelId { get; set; }
-        public ulong ConnectionId { get; set; }
 
         public bool Ackable { get; }
 
         public bool Closed { get; private set; }
         public bool FlowControlled { get; private set; }
 
-        private readonly SemaphoreSlim hostLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _hostLock = new SemaphoreSlim(1, 1);
+        private bool _disposedValue;
 
         public ChannelHost(ulong channelId, IConnectionHost connHost, bool ackable)
         {
             _logger = LogHelper.GetLogger<ChannelHost>();
 
             ChannelId = channelId;
-            ConnectionHost = connHost;
+            _connHost = connHost;
             Ackable = ackable;
 
             MakeChannelAsync().GetAwaiter().GetResult();
@@ -51,20 +51,20 @@ namespace CookedRabbit.Core.Pools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IModel GetChannel()
         {
-            hostLock.Wait();
+            _hostLock.Wait();
 
             try
             {
                 return _channel;
             }
             finally
-            { hostLock.Release(); }
+            { _hostLock.Release(); }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<bool> MakeChannelAsync()
         {
-            await hostLock.WaitAsync().ConfigureAwait(false);
+            await _hostLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -76,7 +76,7 @@ namespace CookedRabbit.Core.Pools
                     _channel = null;
                 }
 
-                _channel = ConnectionHost.Connection.CreateModel();
+                _channel = _connHost.Connection.CreateModel();
 
                 if (Ackable)
                 {
@@ -94,31 +94,31 @@ namespace CookedRabbit.Core.Pools
                 return false;
             }
             finally
-            { hostLock.Release(); }
+            { _hostLock.Release(); }
         }
 
         private void ChannelClose(object sender, ShutdownEventArgs e)
         {
-            hostLock.Wait();
+            _hostLock.Wait();
             _logger.LogDebug(e.ReplyText);
             Closed = true;
-            hostLock.Release();
+            _hostLock.Release();
         }
 
         private void FlowControl(object sender, FlowControlEventArgs e)
         {
-            hostLock.Wait();
+            _hostLock.Wait();
             if (e.Active)
             { _logger.LogWarning(LogMessages.ChannelHost.FlowControlled); }
             else
             { _logger.LogInformation(LogMessages.ChannelHost.FlowControlFinished); }
             FlowControlled = e.Active;
-            hostLock.Release();
+            _hostLock.Release();
         }
 
         public async Task<bool> HealthyAsync()
         {
-            var connectionHealthy = await ConnectionHost.HealthyAsync().ConfigureAwait(false);
+            var connectionHealthy = await _connHost.HealthyAsync().ConfigureAwait(false);
 
             return connectionHealthy && !FlowControlled && (_channel?.IsOpen ?? false);
         }
@@ -134,6 +134,27 @@ namespace CookedRabbit.Core.Pools
                 { _channel.Close(CloseCode, CloseMessage); }
                 catch { }
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _hostLock.Dispose();
+                }
+
+                _channel = null;
+                _connHost = null;
+                _disposedValue = true;
+            }
+        }
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

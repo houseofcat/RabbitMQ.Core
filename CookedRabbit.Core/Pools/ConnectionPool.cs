@@ -20,13 +20,15 @@ namespace CookedRabbit.Core.Pools
         Task ShutdownAsync();
     }
 
-    public class ConnectionPool : IConnectionPool
+    public class ConnectionPool : IConnectionPool, IDisposable
     {
         private readonly ILogger<ConnectionPool> _logger;
-        private readonly Channel<IConnectionHost> _connections;
-        private readonly ConnectionFactory _connectionFactory;
-        private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
-        private ulong _currentConnectionId { get; set; }
+
+        private Channel<IConnectionHost> _connections;
+        private ConnectionFactory _connectionFactory;
+        private SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
+        private bool _disposedValue;
+        private ulong _currentConnectionId;
 
         public Config Config { get; }
 
@@ -165,6 +167,28 @@ namespace CookedRabbit.Core.Pools
             _poolLock.Release();
 
             _logger.LogTrace(LogMessages.ConnectionPool.ShutdownComplete);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _poolLock.Dispose();
+                }
+
+                _connectionFactory = null;
+                _connections = null;
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
