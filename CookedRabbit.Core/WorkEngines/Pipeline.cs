@@ -14,12 +14,8 @@ namespace CookedRabbit.Core.WorkEngines
         List<PipelineStep> Steps { get; }
 
         void AddAsyncStep<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>> stepFunc, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
-        void AddAsyncSteps<TLocalIn, TLocalOut>(int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null, params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions);
-        void AddAsyncSteps<TLocalIn, TLocalOut>(Func<TLocalIn, Task<TLocalOut>>[] stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         void AddAsyncSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, Task<TLocalOut>>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         void AddStep<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut> stepFunc, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
-        void AddSteps<TLocalIn, TLocalOut>(int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null, params Func<TLocalIn, TLocalOut>[] stepFunctions);
-        void AddSteps<TLocalIn, TLocalOut>(Func<TLocalIn, TLocalOut>[] stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         void AddSteps<TLocalIn, TLocalOut>(List<Func<TLocalIn, TLocalOut>> stepFunctions, int? localMaxDoP = null, bool? ensureOrdered = null, int? bufferSizeOverride = null);
         Task<bool> AwaitCompletionAsync();
 
@@ -63,7 +59,7 @@ namespace CookedRabbit.Core.WorkEngines
         {
             _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
             _healthCheckInterval = healthCheckInterval;
-            _healthCheckTask = Task.Run(() => SimplePipelineHealthTaskAsync());
+            _healthCheckTask = Task.Run(SimplePipelineHealthTaskAsync);
         }
 
         public void AddAsyncStep<TLocalIn, TLocalOut>(
@@ -119,62 +115,6 @@ namespace CookedRabbit.Core.WorkEngines
         }
 
         public void AddAsyncSteps<TLocalIn, TLocalOut>(
-            Func<TLocalIn, Task<TLocalOut>>[] stepFunctions,
-            int? localMaxDoP = null,
-            bool? ensureOrdered = null,
-            int? bufferSizeOverride = null)
-        {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
-
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
-
-            for (int i = 0; i < stepFunctions.Length; i++)
-            {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = true,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
-            }
-        }
-
-        public void AddAsyncSteps<TLocalIn, TLocalOut>(
             List<Func<TLocalIn, Task<TLocalOut>>> stepFunctions,
             int? localMaxDoP = null,
             bool? ensureOrdered = null,
@@ -186,103 +126,7 @@ namespace CookedRabbit.Core.WorkEngines
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = true,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
-            }
-        }
-
-        public void AddAsyncSteps<TLocalIn, TLocalOut>(
-            int? localMaxDoP = null,
-            bool? ensureOrdered = null,
-            int? bufferSizeOverride = null,
-            params Func<TLocalIn, Task<TLocalOut>>[] stepFunctions)
-        {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
-
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
-
-            for (int i = 0; i < stepFunctions.Length; i++)
-            {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = true,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, Task<TLocalOut>>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, Task<TLocalOut>>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
+                AddAsyncStep(stepFunctions[i], localMaxDoP, ensureOrdered, bufferSizeOverride);
             }
         }
 
@@ -338,62 +182,6 @@ namespace CookedRabbit.Core.WorkEngines
         }
 
         public void AddSteps<TLocalIn, TLocalOut>(
-            Func<TLocalIn, TLocalOut>[] stepFunctions,
-            int? localMaxDoP = null,
-            bool? ensureOrdered = null,
-            int? bufferSizeOverride = null)
-        {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
-
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
-
-            for (int i = 0; i < stepFunctions.Length; i++)
-            {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = false,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
-            }
-        }
-
-        public void AddSteps<TLocalIn, TLocalOut>(
             List<Func<TLocalIn, TLocalOut>> stepFunctions,
             int? localMaxDoP = null,
             bool? ensureOrdered = null,
@@ -405,103 +193,7 @@ namespace CookedRabbit.Core.WorkEngines
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = false,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
-            }
-        }
-
-        public void AddSteps<TLocalIn, TLocalOut>(
-            int? localMaxDoP = null,
-            bool? ensureOrdered = null,
-            int? bufferSizeOverride = null,
-            params Func<TLocalIn, TLocalOut>[] stepFunctions)
-        {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
-
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
-
-            for (int i = 0; i < stepFunctions.Length; i++)
-            {
-                var pipelineStep = new PipelineStep
-                {
-                    IsAsync = false,
-                    StepIndex = StepCount++,
-                };
-
-                if (Steps.Count == 0)
-                {
-                    pipelineStep.Block = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-                    Steps.Add(pipelineStep);
-                }
-                else
-                {
-                    var lastStep = Steps.Last();
-                    if (lastStep.IsAsync)
-                    {
-                        var step = new TransformBlock<Task<TLocalIn>, TLocalOut>(
-                            async (input) => stepFunctions[i](await input.ConfigureAwait(false)),
-                            options);
-
-                        if (lastStep.Block is ISourceBlock<Task<TLocalIn>> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                    else
-                    {
-                        var step = new TransformBlock<TLocalIn, TLocalOut>(stepFunctions[i], options);
-
-                        if (lastStep.Block is ISourceBlock<TLocalIn> targetBlock)
-                        {
-                            targetBlock.LinkTo(step, _linkStepOptions);
-                            pipelineStep.Block = step;
-                            Steps.Add(pipelineStep);
-                        }
-                        else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
-                    }
-                }
+                AddStep(stepFunctions[i], localMaxDoP, ensureOrdered, bufferSizeOverride);
             }
         }
 
