@@ -122,8 +122,6 @@ namespace CookedRabbit.Core.WorkEngines
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
 
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
-
             for (int i = 0; i < stepFunctions.Count; i++)
             {
                 AddAsyncStep(stepFunctions[i], localMaxDoP, ensureOrdered, bufferSizeOverride);
@@ -188,8 +186,6 @@ namespace CookedRabbit.Core.WorkEngines
             int? bufferSizeOverride = null)
         {
             if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
-
-            var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
