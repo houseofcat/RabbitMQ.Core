@@ -15,9 +15,9 @@ v1.0.610 - Current development based on v6.1.0 official client (NetStandard 2.1 
  
 ### CookedRabbit.Core NetCore
 ![.NET Core](https://github.com/houseofcat/RabbitMQ.Core/workflows/CookedRabbitBuild/badge.svg?branch=master)  
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/becca6e3d3c0474891007fc83d33a2e3)](https://app.codacy.com/manual/cat_3/RabbitMQ.Core?utm_source=github.com&utm_medium=referral&utm_content=houseofcat/RabbitMQ.Core&utm_campaign=Badge_Grade_Dashboard)  
 [![NuGet](https://img.shields.io/nuget/dt/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)   
 [![NuGet](https://img.shields.io/nuget/v/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)  
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/becca6e3d3c0474891007fc83d33a2e3)](https://app.codacy.com/manual/cat_3/RabbitMQ.Core?utm_source=github.com&utm_medium=referral&utm_content=houseofcat/RabbitMQ.Core&utm_campaign=Badge_Grade_Dashboard)
 
 #### Versions Explained
 
