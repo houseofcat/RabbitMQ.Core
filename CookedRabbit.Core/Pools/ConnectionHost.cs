@@ -36,7 +36,7 @@ namespace CookedRabbit.Core.Pools
 
         public ConnectionHost(ulong connectionId, IConnection connection)
         {
-            _logger = LogHelper.GetLogger<ConnectionHost>();
+            _logger = Utils.LogHelper.GetLogger<ConnectionHost>();
             ConnectionId = connectionId;
 
             AssignConnection(connection);

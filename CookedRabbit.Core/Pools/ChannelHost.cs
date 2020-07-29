@@ -39,7 +39,7 @@ namespace CookedRabbit.Core.Pools
 
         public ChannelHost(ulong channelId, IConnectionHost connHost, bool ackable)
         {
-            _logger = LogHelper.GetLogger<ChannelHost>();
+            _logger = Utils.LogHelper.GetLogger<ChannelHost>();
 
             ChannelId = channelId;
             _connHost = connHost;
@@ -109,9 +109,9 @@ namespace CookedRabbit.Core.Pools
         {
             _hostLock.Wait();
             if (e.Active)
-            { _logger.LogWarning(LogMessages.ChannelHost.FlowControlled); }
+            { _logger.LogWarning(Utils.LogMessages.ChannelHost.FlowControlled); }
             else
-            { _logger.LogInformation(LogMessages.ChannelHost.FlowControlFinished); }
+            { _logger.LogInformation(Utils.LogMessages.ChannelHost.FlowControlFinished); }
             FlowControlled = e.Active;
             _hostLock.Release();
         }

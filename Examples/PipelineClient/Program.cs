@@ -24,23 +24,23 @@ namespace CookedRabbit.Core.PipelineClient
         public static async Task Main()
         {
             var consumerPipelineExample = new ConsumerPipelineExample();
-            await Console.Out.WriteLineAsync("About to run Client... press a key to continue!");
-            await Console.In.ReadLineAsync(); // memory snapshot baseline
+            await Console.Out.WriteLineAsync("About to run Client... press a key to continue!").ConfigureAwait(false);
+            await Console.In.ReadLineAsync().ConfigureAwait(false); // memory snapshot baseline
 
             await consumerPipelineExample
                 .RunExampleAsync()
                 .ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync("Statistics!");
-            await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}, Ensure Ordered: {EnsureOrdered}");
-            await Console.Out.WriteLineAsync($"AwaitShutdown: {AwaitShutdown}, LogOutcome: {LogOutcome}");
-            await Console.Out.WriteLineAsync($"UseStreamPipeline: {UseStreamPipeline}");
-            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {Stopwatch.ElapsedMilliseconds} milliseconds.");
-            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0} msg/s.");
-            await Console.Out.WriteLineAsync("Client Finished! Press key to start shutdown!");
-            await Console.In.ReadLineAsync(); // checking for memory leak (snapshots)
-            await consumerPipelineExample.ShutdownAsync();
-            await Console.Out.WriteLineAsync("All finished cleanup!");
+            await Console.Out.WriteLineAsync("Statistics!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}, Ensure Ordered: {EnsureOrdered}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"AwaitShutdown: {AwaitShutdown}, LogOutcome: {LogOutcome}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"UseStreamPipeline: {UseStreamPipeline}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {Stopwatch.ElapsedMilliseconds} milliseconds.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0} msg/s.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Client Finished! Press key to start shutdown!").ConfigureAwait(false);
+            await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
+            await consumerPipelineExample.ShutdownAsync().ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("All finished cleanup!").ConfigureAwait(false);
             await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
         }
     }
@@ -69,7 +69,7 @@ namespace CookedRabbit.Core.PipelineClient
             if (Program.AwaitShutdown)
             {
                 await Console.Out.WriteLineAsync("Awaiting full ConsumerPipeline finish...").ConfigureAwait(false);
-                await _consumerPipeline.AwaitCompletionAsync();
+                await _consumerPipeline.AwaitCompletionAsync().ConfigureAwait(false);
             }
             Program.Stopwatch.Stop();
             await Console.Out.WriteLineAsync("Example finished...").ConfigureAwait(false);
@@ -142,7 +142,7 @@ namespace CookedRabbit.Core.PipelineClient
                         if (_currentMessageCount == _targetCount - 1)
                         {
 
-                            await _consumerPipeline.StopAsync();
+                            await _consumerPipeline.StopAsync().ConfigureAwait(false);
                         }
                     }
                 });
@@ -177,7 +177,7 @@ namespace CookedRabbit.Core.PipelineClient
             {
                 state.Message = state.ReceivedData.ContentType switch
                 {
-                    Constants.HeaderValueForLetter => await receivedData
+                    Utils.Constants.HeaderValueForLetter => await receivedData
                         .GetTypeFromJsonAsync<Message>()
                         .ConfigureAwait(false),
 
@@ -208,7 +208,7 @@ namespace CookedRabbit.Core.PipelineClient
                 state.ProcessStepSuccess = true;
 
                 // Simulate processing.
-                await Task.Delay(Program.Rand.Next(1, 100));
+                await Task.Delay(Program.Rand.Next(1, 100)).ConfigureAwait(false);
             }
             else
             {

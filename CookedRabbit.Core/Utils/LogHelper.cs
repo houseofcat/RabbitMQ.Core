@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace CookedRabbit.Core
+namespace CookedRabbit.Core.Utils
 {
     public static class LogHelper
     {

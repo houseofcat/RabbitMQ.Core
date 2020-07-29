@@ -1,6 +1,6 @@
 using System;
 
-namespace CookedRabbit.Core
+namespace CookedRabbit.Core.Utils
 {
     public static class Bytes
     {

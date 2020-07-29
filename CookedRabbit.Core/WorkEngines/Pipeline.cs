@@ -43,7 +43,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public Pipeline(int maxDegreeOfParallelism, bool? ensureOrdered = null, int? bufferSize = null)
         {
-            _logger = LogHelper.GetLogger<Pipeline<TIn, TOut>>();
+            _logger = Utils.LogHelper.GetLogger<Pipeline<TIn, TOut>>();
 
             _linkStepOptions = new DataflowLinkOptions { PropagateCompletion = true };
             _executeStepOptions = new ExecutionDataflowBlockOptions
@@ -57,7 +57,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public Pipeline(int maxDegreeOfParallelism, TimeSpan healthCheckInterval, string pipelineName, bool? ensureOrdered = null, int? bufferSize = null) : this(maxDegreeOfParallelism, ensureOrdered, bufferSize)
         {
-            _pipelineName = pipelineName ?? Constants.DefaultPipelineName;
+            _pipelineName = pipelineName ?? Utils.Constants.DefaultPipelineName;
             _healthCheckInterval = healthCheckInterval;
             _healthCheckTask = Task.Run(SimplePipelineHealthTaskAsync);
         }
@@ -68,7 +68,7 @@ namespace CookedRabbit.Core.WorkEngines
             bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
             var pipelineStep = new PipelineStep
@@ -97,7 +97,7 @@ namespace CookedRabbit.Core.WorkEngines
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
@@ -109,7 +109,7 @@ namespace CookedRabbit.Core.WorkEngines
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace CookedRabbit.Core.WorkEngines
             bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.InvalidAddError);
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
@@ -134,7 +134,7 @@ namespace CookedRabbit.Core.WorkEngines
             bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.InvalidAddError);
 
             var options = GetExecuteStepOptions(localMaxDoP, ensureOrdered, bufferSizeOverride);
             var pipelineStep = new PipelineStep
@@ -163,7 +163,7 @@ namespace CookedRabbit.Core.WorkEngines
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
@@ -174,7 +174,7 @@ namespace CookedRabbit.Core.WorkEngines
                         pipelineStep.Block = step;
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace CookedRabbit.Core.WorkEngines
             bool? ensureOrdered = null,
             int? bufferSizeOverride = null)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.InvalidAddError);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.InvalidAddError);
 
             for (int i = 0; i < stepFunctions.Count; i++)
             {
@@ -195,8 +195,8 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void Finalize(Action<TOut> finalizeStep)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
-            if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(Utils.ExceptionMessages.CantFinalize);
 
             if (finalizeStep != null)
             {
@@ -220,7 +220,7 @@ namespace CookedRabbit.Core.WorkEngines
                         targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
                 else
                 {
@@ -234,7 +234,7 @@ namespace CookedRabbit.Core.WorkEngines
                         targetBlock.LinkTo(step, _linkStepOptions);
                         Steps.Add(pipelineStep);
                     }
-                    else { throw new InvalidOperationException(ExceptionMessages.InvalidStepFound); }
+                    else { throw new InvalidOperationException(Utils.ExceptionMessages.InvalidStepFound); }
                 }
             }
             else
@@ -245,8 +245,8 @@ namespace CookedRabbit.Core.WorkEngines
 
         public void Finalize(Func<TOut, Task> finalizeStep)
         {
-            if (Ready) throw new InvalidOperationException(ExceptionMessages.AlreadyFinalized);
-            if (Steps.Count == 0) throw new InvalidOperationException(ExceptionMessages.CantFinalize);
+            if (Ready) throw new InvalidOperationException(Utils.ExceptionMessages.AlreadyFinalized);
+            if (Steps.Count == 0) throw new InvalidOperationException(Utils.ExceptionMessages.CantFinalize);
 
             if (finalizeStep != null)
             {
@@ -293,11 +293,11 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task<bool> QueueForExecutionAsync(TIn input)
         {
-            if (!Ready) throw new InvalidOperationException(ExceptionMessages.NotFinalized);
+            if (!Ready) throw new InvalidOperationException(Utils.ExceptionMessages.NotFinalized);
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
-                _logger.LogTrace(LogMessages.Pipeline.Queued, _pipelineName);
+                _logger.LogTrace(Utils.LogMessages.Pipeline.Queued, _pipelineName);
                 return await firstStep.SendAsync(input).ConfigureAwait(false);
             }
 
@@ -306,7 +306,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public async Task<bool> AwaitCompletionAsync()
         {
-            if (!Ready) throw new InvalidOperationException(ExceptionMessages.NotFinalized);
+            if (!Ready) throw new InvalidOperationException(Utils.ExceptionMessages.NotFinalized);
 
             if (Steps[0].Block is ITargetBlock<TIn> firstStep)
             {
@@ -316,7 +316,7 @@ namespace CookedRabbit.Core.WorkEngines
                 // Await the last step.
                 if (Steps[^1].Block is ITargetBlock<TIn> lastStep)
                 {
-                    _logger.LogTrace(LogMessages.Pipeline.AwaitsCompletion, _pipelineName);
+                    _logger.LogTrace(Utils.LogMessages.Pipeline.AwaitsCompletion, _pipelineName);
                     await lastStep.Completion.ConfigureAwait(false);
                     return true;
                 }
@@ -363,9 +363,9 @@ namespace CookedRabbit.Core.WorkEngines
 
                 var ex = GetAnyPipelineStepsFault();
                 if (ex != null)
-                { _logger.LogCritical(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
+                { _logger.LogCritical(ex, Utils.LogMessages.Pipeline.Faulted, _pipelineName); }
                 else  // No Steps are Faulted... Hooray!
-                { _logger.LogDebug(LogMessages.Pipeline.Healthy, _pipelineName); }
+                { _logger.LogDebug(Utils.LogMessages.Pipeline.Healthy, _pipelineName); }
             }
         }
     }

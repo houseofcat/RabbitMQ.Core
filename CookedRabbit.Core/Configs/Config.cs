@@ -33,7 +33,7 @@ namespace CookedRabbit.Core
 
         public ConsumerOptions GetConsumerSettings(string consumerName)
         {
-            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
+            if (!ConsumerSettings.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Utils.ExceptionMessages.NoConsumerSettingsMessage, consumerName));
             return ConsumerSettings[consumerName];
         }
     }

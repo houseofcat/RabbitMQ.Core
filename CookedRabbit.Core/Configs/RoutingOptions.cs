@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using static CookedRabbit.Core.Constants;
+using static CookedRabbit.Core.Utils.Constants;
 using static CookedRabbit.Core.Enums;
 
 namespace CookedRabbit.Core

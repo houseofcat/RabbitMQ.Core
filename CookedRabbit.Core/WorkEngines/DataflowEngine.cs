@@ -13,7 +13,7 @@ namespace CookedRabbit.Core.WorkEngines
 
         public DataflowEngine(Func<ReceivedData, Task<bool>> workBodyAsync, int maxDegreeOfParallelism)
         {
-            _logger = LogHelper.GetLogger<DataflowEngine>();
+            _logger = Utils.LogHelper.GetLogger<DataflowEngine>();
 
             _workBodyAsync = workBodyAsync ?? throw new ArgumentNullException(nameof(workBodyAsync));
             _block = new ActionBlock<ReceivedData>(
@@ -29,13 +29,13 @@ namespace CookedRabbit.Core.WorkEngines
             try
             {
                 _logger.LogDebug(
-                    LogMessages.DataflowEngine.Execution,
+                    Utils.LogMessages.DataflowEngine.Execution,
                     receivedData.DeliveryTag);
 
                 if (await _workBodyAsync(receivedData).ConfigureAwait(false))
                 {
                     _logger.LogDebug(
-                        LogMessages.DataflowEngine.ExecutionSuccess,
+                        Utils.LogMessages.DataflowEngine.ExecutionSuccess,
                         receivedData.DeliveryTag);
 
                     receivedData.AckMessage();
@@ -43,7 +43,7 @@ namespace CookedRabbit.Core.WorkEngines
                 else
                 {
                     _logger.LogWarning(
-                        LogMessages.DataflowEngine.ExecutionFailure,
+                        Utils.LogMessages.DataflowEngine.ExecutionFailure,
                         receivedData.DeliveryTag);
 
                     receivedData.NackMessage(true);
@@ -52,7 +52,7 @@ namespace CookedRabbit.Core.WorkEngines
             catch (Exception ex)
             {
                 _logger.LogWarning(
-                    LogMessages.DataflowEngine.ExecutionError,
+                    Utils.LogMessages.DataflowEngine.ExecutionError,
                     receivedData.DeliveryTag,
                     ex.Message);
 

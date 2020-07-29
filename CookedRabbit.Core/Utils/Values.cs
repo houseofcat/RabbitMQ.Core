@@ -1,4 +1,4 @@
-namespace CookedRabbit.Core
+namespace CookedRabbit.Core.Utils
 {
     public static class Constants
     {

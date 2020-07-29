@@ -88,7 +88,7 @@ namespace CookedRabbit.Core.Service
             if (!string.IsNullOrWhiteSpace(passphrase))
             {
                 _hashKey = ArgonHash
-                    .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
+                    .GetHashKeyAsync(passphrase, salt, Utils.Constants.EncryptionKeySize)
                     .GetAwaiter().GetResult();
             }
 

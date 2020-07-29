@@ -66,10 +66,10 @@ namespace CookedRabbit.Core
             Config = channelPool.Config;
             _logger = LogHelper.GetLogger<Publisher>();
 
-            if (Config.PublisherSettings.Encrypt && hashKey.Length != Constants.EncryptionKeySize)
+            if (Config.PublisherSettings.Encrypt && hashKey.Length != Utils.Constants.EncryptionKeySize)
             {
                 _encrypt = false;
-                _logger.LogWarning("Encryption disabled, invalid hash key length ({0}) provided. Expected key length of {1}.", hashKey.Length, Constants.EncryptionKeySize);
+                _logger.LogWarning("Encryption disabled, invalid hash key length ({0}) provided. Expected key length of {1}.", hashKey.Length, Utils.Constants.EncryptionKeySize);
             }
             else if (Config.PublisherSettings.Encrypt)
             {
@@ -255,7 +255,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
+            messageProperties.Headers[Utils.Constants.HeaderForObjectType] = Utils.Constants.HeaderValueForMessage;
 
             try
             {
@@ -346,7 +346,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            messageProperties.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
+            messageProperties.Headers[Utils.Constants.HeaderForObjectType] = Utils.Constants.HeaderValueForMessage;
 
             try
             {
@@ -645,7 +645,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in letter.LetterMetadata?.CustomFields)
                 {
-                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Utils.Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -653,7 +653,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForLetter;
+            props.Headers[Utils.Constants.HeaderForObjectType] = Utils.Constants.HeaderValueForLetter;
 
             return props;
         }
@@ -673,7 +673,7 @@ namespace CookedRabbit.Core
             {
                 foreach (var kvp in headers)
                 {
-                    if (kvp.Key.StartsWith(Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
+                    if (kvp.Key.StartsWith(Utils.Constants.HeaderPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         props.Headers[kvp.Key] = kvp.Value;
                     }
@@ -681,7 +681,7 @@ namespace CookedRabbit.Core
             }
 
             // Non-optional Header.
-            props.Headers[Constants.HeaderForObjectType] = Constants.HeaderValueForMessage;
+            props.Headers[Utils.Constants.HeaderForObjectType] = Utils.Constants.HeaderValueForMessage;
 
             return props;
         }

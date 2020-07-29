@@ -82,13 +82,13 @@ namespace CookedRabbit.Core
 
         public void ReadHeaders()
         {
-            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Constants.HeaderForObjectType))
+            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Utils.Constants.HeaderForObjectType))
             {
-                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Constants.HeaderForObjectType]);
+                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Utils.Constants.HeaderForObjectType]);
             }
             else
             {
-                ContentType = Constants.HeaderValueForUnknown;
+                ContentType = Utils.Constants.HeaderValueForUnknown;
             }
         }
 
@@ -163,13 +163,13 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Constants.HeaderValueForLetter:
+                case Utils.Constants.HeaderValueForLetter:
 
                     await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return Letter.Body;
 
-                case Constants.HeaderValueForMessage:
+                case Utils.Constants.HeaderValueForMessage:
                 default:
 
                     await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
@@ -189,13 +189,13 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Constants.HeaderValueForLetter:
+                case Utils.Constants.HeaderValueForLetter:
 
                     await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
-                case Constants.HeaderValueForMessage:
+                case Utils.Constants.HeaderValueForMessage:
                 default:
 
                     await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
@@ -219,13 +219,13 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Constants.HeaderValueForLetter:
+                case Utils.Constants.HeaderValueForLetter:
 
                     await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Constants.HeaderValueForMessage:
+                case Utils.Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJson(Data))
@@ -254,13 +254,13 @@ namespace CookedRabbit.Core
         {
             switch (ContentType)
             {
-                case Constants.HeaderValueForLetter:
+                case Utils.Constants.HeaderValueForLetter:
 
                     await CreateLetterFromDataAsync().ConfigureAwait(false);
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Constants.HeaderValueForMessage:
+                case Utils.Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJsonArray(Data))
