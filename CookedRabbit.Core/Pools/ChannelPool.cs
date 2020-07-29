@@ -47,14 +47,15 @@ namespace CookedRabbit.Core.Pools
         Task ShutdownAsync();
     }
 
-    public class ChannelPool : IChannelPool
+    public class ChannelPool : IChannelPool, IDisposable
     {
         private readonly ILogger<ChannelPool> _logger;
         private readonly IConnectionPool _connectionPool;
         private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
-        private readonly Channel<IChannelHost> _channels;
-        private readonly Channel<IChannelHost> _ackChannels;
-        private ConcurrentDictionary<ulong, bool> _flaggedChannels { get; }
+        private Channel<IChannelHost> _channels;
+        private Channel<IChannelHost> _ackChannels;
+        private ConcurrentDictionary<ulong, bool> _flaggedChannels;
+        private bool _disposedValue;
 
         public Config Config { get; }
 
@@ -341,6 +342,28 @@ namespace CookedRabbit.Core.Pools
                 { chanHost.Close(); }
                 catch { }
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _channels = null;
+                    _ackChannels = null;
+                    _flaggedChannels = null;
+                    _poolLock.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
