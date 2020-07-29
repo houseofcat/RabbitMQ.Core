@@ -141,7 +141,6 @@ namespace CookedRabbit.Core.PipelineClient
                         Interlocked.Increment(ref _currentMessageCount);
                         if (_currentMessageCount == _targetCount - 1)
                         {
-
                             await _consumerPipeline.StopAsync().ConfigureAwait(false);
                         }
                     }

@@ -221,19 +221,19 @@ namespace CookedRabbit.Core.Service
             foreach (var consumer in Consumers)
             {
                 consumer.Value.HashKey = _hashKey;
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.QueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.QueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.Options.QueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.ErrorQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.Options.ErrorQueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.TargetQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.TargetQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.Options.TargetQueueName).ConfigureAwait(false);
                 }
             }
         }
@@ -276,85 +276,65 @@ namespace CookedRabbit.Core.Service
 
         public async Task DecomcryptAsync(Letter letter)
         {
-            var decryptFailed = false;
-            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
-            {
-                try
-                {
-                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
-                    letter.LetterMetadata.Encrypted = false;
-                }
-                catch { decryptFailed = true; }
-            }
+            var decrypted = Decrypt(letter);
 
-            if (!decryptFailed && letter.LetterMetadata.Compressed)
+            if (decrypted)
             {
-                try
-                {
-                    letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
-                    letter.LetterMetadata.Compressed = false;
-                }
-                catch { }
+                await DecompressAsync(letter).ConfigureAwait(false);
             }
         }
 
         public async Task ComcryptAsync(Letter letter)
         {
-            if (letter.LetterMetadata.Compressed)
-            {
-                try
-                {
-                    letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
-                    letter.LetterMetadata.Compressed = true;
-                }
-                catch { }
-            }
+            await CompressAsync(letter).ConfigureAwait(false);
 
-            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
-            {
-                try
-                {
-                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
-                    letter.LetterMetadata.Encrypted = true;
-                }
-                catch { }
-            }
+            Encrypt(letter);
         }
 
         public bool Encrypt(Letter letter)
         {
-            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
-            {
-                try
-                {
-                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
-                    letter.LetterMetadata.Encrypted = true;
-                }
-                catch { }
-            }
+            if (letter.LetterMetadata.Encrypted || (_hashKey == null && _hashKey.Length == 0))
+            { return false; } // Don't double encrypt.
 
-            return letter.LetterMetadata.Encrypted;
+            try
+            {
+                letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
+                letter.LetterMetadata.Encrypted = true;
+                letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncrypt] = Utils.Constants.HeaderValueForArgonAesEncrypt;
+                letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncryptDate] = Time.GetDateTimeUtcNow();
+            }
+            catch { return false; }
+
+            return true;
         }
 
+        // Returns Success
         public bool Decrypt(Letter letter)
         {
-            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
-            {
-                try
-                {
-                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
-                    letter.LetterMetadata.Encrypted = false;
-                }
-                catch { }
-            }
+            if (!letter.LetterMetadata.Encrypted || (_hashKey == null && _hashKey.Length == 0))
+            { return false; } // Don't decrypt without it being encrypted.
 
-            return !letter.LetterMetadata.Encrypted;
+            try
+            {
+                letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
+                letter.LetterMetadata.Encrypted = false;
+
+                if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForEncrypt))
+                { letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForEncrypt); }
+
+                if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForEncryptDate))
+                { letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForEncryptDate); }
+            }
+            catch { return false; }
+
+            return true;
         }
 
+        // Returns Success
         public async Task<bool> CompressAsync(Letter letter)
         {
             if (letter.LetterMetadata.Encrypted)
-            { return false; }
+            { return false; } // Don't compress after encryption.
 
             if (!letter.LetterMetadata.Compressed)
             {
@@ -362,17 +342,19 @@ namespace CookedRabbit.Core.Service
                 {
                     letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
                     letter.LetterMetadata.Compressed = true;
+                    letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForCompress] = Utils.Constants.HeaderValueForGzipCompress;
                 }
-                catch { }
+                catch { return false; }
             }
 
-            return letter.LetterMetadata.Compressed;
+            return true;
         }
 
+        // Returns Success
         public async Task<bool> DecompressAsync(Letter letter)
         {
             if (letter.LetterMetadata.Encrypted)
-            { return false; }
+            { return false; } // Don't decompress before decryption.
 
             if (letter.LetterMetadata.Compressed)
             {
@@ -380,11 +362,15 @@ namespace CookedRabbit.Core.Service
                 {
                     letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
                     letter.LetterMetadata.Compressed = false;
+                    if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForCompress))
+                    {
+                        letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForCompress);
+                    }
                 }
-                catch { }
+                catch { return false; }
             }
 
-            return !letter.LetterMetadata.Compressed;
+            return true;
         }
 
         /// <summary>

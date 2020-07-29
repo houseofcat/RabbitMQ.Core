@@ -20,7 +20,7 @@
     <RepositoryUrl>https://github.com/houseofcat/RabbitMQ.Core</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>C# RabbitMQ Cooked Rabbit CookedRabbit NetCore HouseofCat</PackageTags>
-    <PackageReleaseNotes>Simplified Consumer config, added global behaviors for simplicity. Pipeline design tweaked to remove a SemaphoreSlim on parallelism.</PackageReleaseNotes>
+    <PackageReleaseNotes>Lots of cleanup, lots of code solidification.</PackageReleaseNotes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

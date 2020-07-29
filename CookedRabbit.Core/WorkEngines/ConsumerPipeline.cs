@@ -34,11 +34,11 @@ namespace CookedRabbit.Core.WorkEngines
         {
             Pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             Consumer = consumer ?? throw new ArgumentNullException(nameof(consumer));
-            Options = consumer.ConsumerSettings ?? throw new ArgumentNullException(nameof(consumer.ConsumerSettings));
-            if (consumer.ConsumerSettings.ConsumerPipelineSettings == null) throw new ArgumentNullException(nameof(consumer.ConsumerSettings.ConsumerPipelineSettings));
+            Options = consumer.Options ?? throw new ArgumentNullException(nameof(consumer.Options));
+            if (consumer.Options.ConsumerPipelineSettings == null) throw new ArgumentNullException(nameof(consumer.Options.ConsumerPipelineSettings));
 
-            ConsumerPipelineName = !string.IsNullOrWhiteSpace(consumer.ConsumerSettings.ConsumerPipelineSettings.ConsumerPipelineName)
-                ? consumer.ConsumerSettings.ConsumerPipelineSettings.ConsumerPipelineName
+            ConsumerPipelineName = !string.IsNullOrWhiteSpace(consumer.Options.ConsumerPipelineSettings.ConsumerPipelineName)
+                ? consumer.Options.ConsumerPipelineSettings.ConsumerPipelineName
                 : "Unknown";
         }
 

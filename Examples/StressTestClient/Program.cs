@@ -133,7 +133,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
 
         private static async Task StartPubSubTestAsync(Publisher autoPublisher, Consumer consumer)
         {
-            var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.ConsumerSettings.QueueName, MessageCount);
+            var publishLettersTask = PublishLettersAsync(autoPublisher, consumer.Options.QueueName, MessageCount);
             var processReceiptsTask = ProcessReceiptsAsync(autoPublisher, MessageCount);
             var consumeMessagesTask = ConsumeMessagesAsync(consumer, MessageCount);
 
@@ -149,7 +149,7 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             { await Task.Delay(1).ConfigureAwait(false); }
 
             await consumer.StopConsumerAsync();
-            await Console.Out.WriteLineAsync($"- Consumer ({consumer.ConsumerSettings.ConsumerName}) stopped.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"- Consumer ({consumer.Options.ConsumerName}) stopped.").ConfigureAwait(false);
         }
 
         private static async Task PublishLettersAsync(Publisher apub, string queueName, ulong count)

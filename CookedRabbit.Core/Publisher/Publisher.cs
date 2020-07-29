@@ -189,12 +189,14 @@ namespace CookedRabbit.Core
                     {
                         letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
                         letter.LetterMetadata.Compressed = _compress;
+                        letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncrypt] = Utils.Constants.HeaderValueForGzipCompress;
                     }
 
                     if (_encrypt)
                     {
                         letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
                         letter.LetterMetadata.Encrypted = _encrypt;
+                        letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncrypt] = Utils.Constants.HeaderValueForArgonAesEncrypt;
                     }
 
                     _logger.LogDebug(LogMessages.AutoPublisher.LetterPublished, letter.LetterId, letter.LetterMetadata?.Id);

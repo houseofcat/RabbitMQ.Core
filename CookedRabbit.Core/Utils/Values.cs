@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+
 namespace CookedRabbit.Core.Utils
 {
     public static class Constants
@@ -13,6 +16,11 @@ namespace CookedRabbit.Core.Utils
         public const string HeaderValueForMessage = "MESSAGE";
         public const string HeaderValueForLetter = "LETTER";
         public const string HeaderValueForUnknown = "UNKNOWN";
+        public const string HeaderForEncrypt = "X-CR-ENCRYPTED";
+        public const string HeaderValueForArgonAesEncrypt = "ARGON2ID-AES256";
+        public const string HeaderForEncryptDate = "X-CR-ENCRYPTDATE";
+        public const string HeaderForCompress = "X-CR-COMPRESSED";
+        public const string HeaderValueForGzipCompress = "GZIP";
 
         public const string RangeErrorMessage = "Value for {0} must be between {1} and {2}.";
 
@@ -165,5 +173,10 @@ namespace CookedRabbit.Core.Utils
             public readonly static string AwaitsCompletion = "Pipeline ({0}) awaits completion.";
             public readonly static string Queued = "Pipeline ({0}) queued item for execution.";
         }
+    }
+
+    public static class Time
+    {
+        public static string GetDateTimeUtcNow() => DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", DateTimeFormatInfo.InvariantInfo);
     }
 }
