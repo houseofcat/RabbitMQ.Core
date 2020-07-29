@@ -346,7 +346,7 @@ namespace CookedRabbit.Core.Pools
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
@@ -356,7 +356,7 @@ namespace CookedRabbit.Core.Pools
                     _poolLock.Dispose();
                 }
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 
