@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StressTestClient", "Example
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleClient", "Examples\SimpleClient\SimpleClient.csproj", "{B6A719DC-9780-48BD-92B2-7F585A6D8A8A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PipelineClient", "Examples\PipelineClient\PipelineClient.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsumerPipelineMicroservice", "Examples\ConsumerPipelineMicroservice\ConsumerPipelineMicroservice.csproj", "{510C643D-FB5F-40EA-B8DF-E1C0EA2F81A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5EDF225B-B61D-4B7E-8A82-11D326DF15BF}"
 	ProjectSection(SolutionItems) = preProject

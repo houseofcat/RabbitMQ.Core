@@ -7,58 +7,68 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CookedRabbit.Core.PipelineClient
+namespace CookedRabbit.Core.ConsumerPipelineMicroservice
 {
     public static class Program
     {
         public static Stopwatch Stopwatch;
         public static LogLevel LogLevel = LogLevel.Information;
-        public static long GlobalCount = 1000;
-        public static bool EnsureOrdered = true;
+        public static long GlobalCount = 10000;
+        public static bool EnsureOrdered = true; // use with simulate IO delay to determine if ensuring order is causing delays
+        public static bool SimulateIODelay = false;
+        public static int MinIODelay = 50;
+        public static int MaxIODelay = 100;
         public static bool AwaitShutdown = true;
         public static bool LogOutcome = false;
-        public static bool UseStreamPipeline = false;
+        public static bool UseStreamPipeline = true;
         public static int MaxDoP = 64;
         public static Random Rand = new Random();
 
         public static async Task Main()
         {
-            var consumerPipelineExample = new ConsumerPipelineExample();
+            var microservice = new ConsumerPipelineMicroservice();
             await Console.Out.WriteLineAsync("About to run Client... press a key to continue!").ConfigureAwait(false);
             await Console.In.ReadLineAsync().ConfigureAwait(false); // memory snapshot baseline
 
-            await consumerPipelineExample
-                .RunExampleAsync()
+            await microservice
+                .StartAsync()
                 .ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync("Statistics!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("\r\nStatistics!").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}, Ensure Ordered: {EnsureOrdered}").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"AwaitShutdown: {AwaitShutdown}, LogOutcome: {LogOutcome}").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"UseStreamPipeline: {UseStreamPipeline}").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages in {Stopwatch.ElapsedMilliseconds} milliseconds.").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Rate {GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0} msg/s.").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("Client Finished! Press key to start shutdown!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages (Steps: {GlobalCount * 3}) in {Stopwatch.ElapsedMilliseconds} milliseconds.").ConfigureAwait(false);
+
+            var rate = GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0;
+            await Console.Out.WriteLineAsync($"Rate: {rate} msg/s.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Rate: {rate * 3} functions/s.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("\r\nClient Finished! Press key to start shutdown!").ConfigureAwait(false);
             await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
-            await consumerPipelineExample.ShutdownAsync().ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("All finished cleanup!").ConfigureAwait(false);
+
+            await microservice
+                .ShutdownAsync()
+                .ConfigureAwait(false);
+
+            await Console.Out.WriteLineAsync("\r\nAll finished cleanup! Press any key to exti...").ConfigureAwait(false);
             await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
         }
     }
 
-    public class ConsumerPipelineExample
+    public class ConsumerPipelineMicroservice
     {
         private IRabbitService _rabbitService;
-        private ILogger<ConsumerPipelineExample> _logger;
+        private ILogger<ConsumerPipelineMicroservice> _logger;
         private IConsumerPipeline<WorkState> _consumerPipeline;
 
         private string _errorQueue;
         private long _targetCount;
         private long _currentMessageCount;
 
-        public async Task RunExampleAsync()
+        public async Task StartAsync()
         {
             _targetCount = Program.GlobalCount;
-            await Console.Out.WriteLineAsync("Running example...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("\r\nRunning example...\r\n").ConfigureAwait(false);
 
             _rabbitService = await SetupAsync().ConfigureAwait(false);
             _errorQueue = _rabbitService.Config.GetConsumerSettings("ConsumerFromConfig").ErrorQueueName;
@@ -68,11 +78,11 @@ namespace CookedRabbit.Core.PipelineClient
             await _consumerPipeline.StartAsync(Program.UseStreamPipeline).ConfigureAwait(false);
             if (Program.AwaitShutdown)
             {
-                await Console.Out.WriteLineAsync("Awaiting full ConsumerPipeline finish...").ConfigureAwait(false);
+                await Console.Out.WriteLineAsync("\r\nAwaiting full ConsumerPipeline finish...\r\n").ConfigureAwait(false);
                 await _consumerPipeline.AwaitCompletionAsync().ConfigureAwait(false);
             }
             Program.Stopwatch.Stop();
-            await Console.Out.WriteLineAsync("Example finished...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("\r\nExample finished...").ConfigureAwait(false);
         }
 
         public async Task ShutdownAsync()
@@ -84,7 +94,7 @@ namespace CookedRabbit.Core.PipelineClient
         {
             var letterTemplate = new Letter("", "TestRabbitServiceQueue", null, new LetterMetadata());
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(Program.LogLevel));
-            _logger = loggerFactory.CreateLogger<ConsumerPipelineExample>();
+            _logger = loggerFactory.CreateLogger<ConsumerPipelineMicroservice>();
             var rabbitService = new RabbitService(
                 "Config.json",
                 "passwordforencryption",
@@ -207,7 +217,10 @@ namespace CookedRabbit.Core.PipelineClient
                 state.ProcessStepSuccess = true;
 
                 // Simulate processing.
-                await Task.Delay(Program.Rand.Next(1, 100)).ConfigureAwait(false);
+                if (Program.SimulateIODelay)
+                {
+                    await Task.Delay(Program.Rand.Next(Program.MinIODelay, Program.MaxIODelay)).ConfigureAwait(false);
+                }
             }
             else
             {

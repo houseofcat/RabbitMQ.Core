@@ -312,7 +312,6 @@
             <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
             <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
             </summary>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.ReceivedData.GetBodyAsUtf8StringAsync(System.Boolean,System.Boolean)">
             <summary>
@@ -322,7 +321,6 @@
             <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
             <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
             </summary>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.ReceivedData.GetTypeFromJsonAsync``1(System.Boolean,System.Boolean,System.Text.Json.JsonSerializerOptions)">
             <summary>
@@ -336,7 +334,6 @@
             <param name="decrypt"></param>
             <param name="decompress"></param>
             <param name="jsonSerializerOptions"></param>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.ReceivedData.GetTypesFromJsonAsync``1(System.Boolean,System.Boolean,System.Text.Json.JsonSerializerOptions)">
             <summary>
@@ -350,7 +347,6 @@
             <param name="decrypt"></param>
             <param name="decompress"></param>
             <param name="jsonSerializerOptions"></param>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.ReceivedData.Complete">
             <summary>
@@ -427,7 +423,6 @@
             </summary>
             <param name="chanHost"></param>
             <param name="flagChannel"></param>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.Pools.ConnectionHost.HealthyAsync">
             <summary>
@@ -606,7 +601,6 @@
             <param name="passphrase"></param>
             <param name="salt"></param>
             <param name="size"></param>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.Utils.ArgonHash.GetHashKeyAsync(System.String,System.Byte[],System.Int32)">
             <summary>
@@ -615,7 +609,6 @@
             <param name="passphrase"></param>
             <param name="salt"></param>
             <param name="size"></param>
-            <returns></returns>
         </member>
         <member name="M:CookedRabbit.Core.Utils.ArgonHash.GetHashKeyAsync(System.Byte[],System.Byte[],System.Int32)">
             <summary>
@@ -624,7 +617,6 @@
             <param name="passphrase"></param>
             <param name="salt"></param>
             <param name="size"></param>
-            <returns></returns>
         </member>
         <member name="T:CookedRabbit.Core.Utils.Guard">
             <summary>

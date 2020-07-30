@@ -15,7 +15,6 @@ namespace CookedRabbit.Core
     public interface IConsumer<TFromQueue>
     {
         IChannelPool ChannelPool { get; }
-        Channel<TFromQueue> DataBuffer { get; }
         Config Config { get; }
         ConsumerOptions Options { get; }
         bool Started { get; }
@@ -41,19 +40,16 @@ namespace CookedRabbit.Core
         private readonly SemaphoreSlim _conLock = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _pipeExecLock = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _dataFlowExecLock = new SemaphoreSlim(1, 1);
+        private IChannelHost _chanHost;
         private bool _disposedValue;
+        private Channel<ReceivedData> _dataBuffer;
+        private bool _shutdown { get; set; }
 
         public Config Config { get; }
-
-        public IChannelPool ChannelPool { get; }
-        public Channel<ReceivedData> DataBuffer { get; private set; }
-
-        private IChannelHost ConsumingChannelHost { get; set; }
-
         public ConsumerOptions Options { get; }
 
+        public IChannelPool ChannelPool { get; }
         public bool Started { get; private set; }
-        private bool Shutdown { get; set; }
 
         public ReadOnlyMemory<byte> HashKey { get; set; }
 
@@ -105,23 +101,26 @@ namespace CookedRabbit.Core
             {
                 if (!Started && Options.Enabled)
                 {
-                    Shutdown = false;
-                    DataBuffer = Channel.CreateBounded<ReceivedData>(
+                    _shutdown = false;
+                    _dataBuffer = Channel.CreateBounded<ReceivedData>(
                     new BoundedChannelOptions(Options.BatchSize.Value)
                     {
                         FullMode = Options.BehaviorWhenFull.Value
                     });
 
-                    await DataBuffer
+                    await _dataBuffer
                         .Writer
                         .WaitToWriteAsync()
+                        .ConfigureAwait(false);
+
+                    await SetChannelHostAsync()
                         .ConfigureAwait(false);
 
                     bool success;
                     do
                     {
                         _logger.LogTrace(LogMessages.Consumer.StartingConsumerLoop, Options.ConsumerName);
-                        success = await StartConsumingAsync().ConfigureAwait(false);
+                        success = StartConsuming();
                     }
                     while (!success);
 
@@ -145,15 +144,15 @@ namespace CookedRabbit.Core
             {
                 if (Started)
                 {
-                    Shutdown = true;
-                    DataBuffer.Writer.Complete();
+                    _shutdown = true;
+                    _dataBuffer.Writer.Complete();
 
                     if (immediate)
                     {
-                        ConsumingChannelHost.Close();
+                        _chanHost.Close();
                     }
 
-                    await DataBuffer
+                    await _dataBuffer
                         .Reader
                         .Completion
                         .ConfigureAwait(false);
@@ -167,26 +166,27 @@ namespace CookedRabbit.Core
             finally { _conLock.Release(); }
         }
 
-        private async Task<bool> StartConsumingAsync()
+        private bool StartConsuming()
         {
-            if (Shutdown)
+            if (_shutdown)
             { return false; }
 
             _logger.LogInformation(
                 LogMessages.Consumer.StartingConsumer,
                 Options.ConsumerName);
 
-            await SetChannelHostAsync()
-                .ConfigureAwait(false);
-
-            if (ConsumingChannelHost == null) { return false; }
-
             if (Config.FactorySettings.EnableDispatchConsumersAsync)
             {
-                var consumer = CreateAsyncConsumer();
-                if (consumer == null) { return false; }
+                if (_asyncConsumer != null)
+                {
+                    _asyncConsumer.Received -= ReceiveHandlerAsync;
+                    _asyncConsumer.Shutdown -= ConsumerShutdownAsync;
+                }
 
-                ConsumingChannelHost
+                _asyncConsumer = CreateAsyncConsumer();
+                if (_asyncConsumer == null) { return false; }
+
+                _chanHost
                     .GetChannel()
                     .BasicConsume(
                         Options.QueueName,
@@ -195,14 +195,20 @@ namespace CookedRabbit.Core
                         Options.NoLocal ?? false,
                         Options.Exclusive ?? false,
                         null,
-                        consumer);
+                        _asyncConsumer);
             }
             else
             {
-                var consumer = CreateConsumer();
-                if (consumer == null) { return false; }
+                if (_asyncConsumer != null)
+                {
+                    _consumer.Received -= ReceiveHandler;
+                    _consumer.Shutdown -= ConsumerShutdown;
+                }
 
-                ConsumingChannelHost
+                _consumer = CreateConsumer();
+                if (_consumer == null) { return false; }
+
+                _chanHost
                     .GetChannel()
                     .BasicConsume(
                         Options.QueueName,
@@ -211,58 +217,47 @@ namespace CookedRabbit.Core
                         Options.NoLocal ?? false,
                         Options.Exclusive ?? false,
                         null,
-                        consumer);
+                        _consumer);
             }
 
             _logger.LogInformation(
                 LogMessages.Consumer.StartedConsumer,
                 Options.ConsumerName);
-
             return true;
         }
 
+        private AsyncEventingBasicConsumer _asyncConsumer;
+        private EventingBasicConsumer _consumer;
+
         private async Task SetChannelHostAsync()
         {
-            try
+            if (Options.UseTransientChannels ?? true)
             {
-                if (Options.UseTransientChannels ?? true)
-                {
-                    var autoAck = Options.AutoAck ?? false;
-                    _logger.LogTrace(LogMessages.Consumer.GettingTransientChannelHost, Options.ConsumerName);
-                    ConsumingChannelHost = await ChannelPool
-                        .GetTransientChannelAsync(!autoAck)
-                        .ConfigureAwait(false);
-                }
-                else if (Options.AutoAck ?? false)
-                {
-                    _logger.LogTrace(LogMessages.Consumer.GettingChannelHost, Options.ConsumerName);
-                    ConsumingChannelHost = await ChannelPool
-                        .GetChannelAsync()
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    _logger.LogTrace(LogMessages.Consumer.GettingAckChannelHost, Options.ConsumerName);
-                    ConsumingChannelHost = await ChannelPool
-                        .GetAckChannelAsync()
-                        .ConfigureAwait(false);
-                }
+                var autoAck = Options.AutoAck ?? false;
+                _logger.LogTrace(LogMessages.Consumer.GettingTransientChannelHost, Options.ConsumerName);
+                _chanHost = await ChannelPool
+                    .GetTransientChannelAsync(!autoAck)
+                    .ConfigureAwait(false);
             }
-            catch { ConsumingChannelHost = null; }
-
-            if (ConsumingChannelHost != null)
+            else if (Options.AutoAck ?? false)
             {
-                _logger.LogDebug(
-                    LogMessages.Consumer.ChannelEstablished,
-                    Options.ConsumerName,
-                    ConsumingChannelHost?.ChannelId ?? 0ul);
+                _logger.LogTrace(LogMessages.Consumer.GettingChannelHost, Options.ConsumerName);
+                _chanHost = await ChannelPool
+                    .GetChannelAsync()
+                    .ConfigureAwait(false);
             }
             else
             {
-                _logger.LogError(
-                    LogMessages.Consumer.ChannelNotEstablished,
-                    Options.ConsumerName);
+                _logger.LogTrace(LogMessages.Consumer.GettingAckChannelHost, Options.ConsumerName);
+                _chanHost = await ChannelPool
+                    .GetAckChannelAsync()
+                    .ConfigureAwait(false);
             }
+
+            _logger.LogDebug(
+                LogMessages.Consumer.ChannelEstablished,
+                Options.ConsumerName,
+                _chanHost?.ChannelId ?? 0ul);
         }
 
         private EventingBasicConsumer CreateConsumer()
@@ -271,8 +266,8 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.GetChannel().BasicQos(0, Options.BatchSize.Value, false);
-                consumer = new EventingBasicConsumer(ConsumingChannelHost.GetChannel());
+                _chanHost.GetChannel().BasicQos(0, Options.BatchSize.Value, false);
+                consumer = new EventingBasicConsumer(_chanHost.GetChannel());
 
                 consumer.Received += ReceiveHandler;
                 consumer.Shutdown += ConsumerShutdown;
@@ -284,19 +279,19 @@ namespace CookedRabbit.Core
 
         private async void ReceiveHandler(object _, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.GetChannel(), bdea, !(Options.AutoAck ?? false), HashKey);
+            var rabbitMessage = new ReceivedData(_chanHost.GetChannel(), bdea, !(Options.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerMessageReceived,
                 Options.ConsumerName,
                 bdea.DeliveryTag);
 
-            if (await DataBuffer
+            if (await _dataBuffer
                     .Writer
                     .WaitToWriteAsync()
                     .ConfigureAwait(false))
             {
-                await DataBuffer
+                await _dataBuffer
                     .Writer
                     .WriteAsync(rabbitMessage);
             }
@@ -313,8 +308,8 @@ namespace CookedRabbit.Core
 
             try
             {
-                ConsumingChannelHost.GetChannel().BasicQos(0, Options.BatchSize.Value, false);
-                consumer = new AsyncEventingBasicConsumer(ConsumingChannelHost.GetChannel());
+                _chanHost.GetChannel().BasicQos(0, Options.BatchSize.Value, false);
+                consumer = new AsyncEventingBasicConsumer(_chanHost.GetChannel());
 
                 consumer.Received += ReceiveHandlerAsync;
                 consumer.Shutdown += ConsumerShutdownAsync;
@@ -326,19 +321,19 @@ namespace CookedRabbit.Core
 
         private async Task ReceiveHandlerAsync(object o, BasicDeliverEventArgs bdea)
         {
-            var rabbitMessage = new ReceivedData(ConsumingChannelHost.GetChannel(), bdea, !(Options.AutoAck ?? false), HashKey);
+            var rabbitMessage = new ReceivedData(_chanHost.GetChannel(), bdea, !(Options.AutoAck ?? false), HashKey);
 
             _logger.LogDebug(
                 LogMessages.Consumer.ConsumerAsyncMessageReceived,
                 Options.ConsumerName,
                 bdea.DeliveryTag);
 
-            if (await DataBuffer
+            if (await _dataBuffer
                 .Writer
                 .WaitToWriteAsync()
                 .ConfigureAwait(false))
             {
-                await DataBuffer
+                await _dataBuffer
                     .Writer
                     .WriteAsync(rabbitMessage);
             }
@@ -346,32 +341,36 @@ namespace CookedRabbit.Core
 
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
-            await HandleUnexpectedShutdownAsync(e).ConfigureAwait(false);
+            await HandleUnexpectedShutdownAsync(e)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleUnexpectedShutdownAsync(ShutdownEventArgs e)
         {
-            if (!Shutdown)
+            if (!_shutdown)
             {
+                await Task.Yield();
                 bool success;
                 do
                 {
+                    await _chanHost.MakeChannelAsync();
+
                     _logger.LogWarning(
                         LogMessages.Consumer.ConsumerShutdownEvent,
                         Options.ConsumerName,
                         e.ReplyText);
 
-                    success = await StartConsumingAsync().ConfigureAwait(false);
+                    success = StartConsuming();
                 }
-                while (!Shutdown && !success);
+                while (!_shutdown && !success);
             }
         }
 
-        public ChannelReader<ReceivedData> GetConsumerBuffer() => DataBuffer.Reader;
+        public ChannelReader<ReceivedData> GetConsumerBuffer() => _dataBuffer.Reader;
 
         public async ValueTask<ReceivedData> ReadAsync()
         {
-            if (!await DataBuffer
+            if (!await _dataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -379,7 +378,7 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
-            return await DataBuffer
+            return await _dataBuffer
                 .Reader
                 .ReadAsync()
                 .ConfigureAwait(false);
@@ -387,7 +386,7 @@ namespace CookedRabbit.Core
 
         public async Task<IEnumerable<ReceivedData>> ReadUntilEmptyAsync()
         {
-            if (!await DataBuffer
+            if (!await _dataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -396,8 +395,8 @@ namespace CookedRabbit.Core
             }
 
             var list = new List<ReceivedData>();
-            await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (DataBuffer.Reader.TryRead(out var message))
+            await _dataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (_dataBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 list.Add(message);
@@ -408,7 +407,7 @@ namespace CookedRabbit.Core
 
         public async IAsyncEnumerable<ReceivedData> StreamOutUntilEmptyAsync()
         {
-            if (!await DataBuffer
+            if (!await _dataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -416,8 +415,8 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
-            await DataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
-            while (DataBuffer.Reader.TryRead(out var message))
+            await _dataBuffer.Reader.WaitToReadAsync().ConfigureAwait(false);
+            while (_dataBuffer.Reader.TryRead(out var message))
             {
                 if (message == null) { break; }
                 yield return message;
@@ -426,7 +425,7 @@ namespace CookedRabbit.Core
 
         public async IAsyncEnumerable<ReceivedData> StreamOutUntilClosedAsync()
         {
-            if (!await DataBuffer
+            if (!await _dataBuffer
                 .Reader
                 .WaitToReadAsync()
                 .ConfigureAwait(false))
@@ -434,7 +433,7 @@ namespace CookedRabbit.Core
                 throw new InvalidOperationException(ExceptionMessages.ChannelReadErrorMessage);
             }
 
-            await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync())
+            await foreach (var receivedData in _dataBuffer.Reader.ReadAllAsync())
             {
                 yield return receivedData;
             }
@@ -447,9 +446,9 @@ namespace CookedRabbit.Core
             {
                 var dataflowEngine = new DataflowEngine(workBodyAsync, maxDoP);
 
-                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (await _dataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    while (DataBuffer.Reader.TryRead(out var receivedData))
+                    while (_dataBuffer.Reader.TryRead(out var receivedData))
                     {
                         if (receivedData != null)
                         {
@@ -489,7 +488,7 @@ namespace CookedRabbit.Core
 
             try
             {
-                await foreach (var receivedData in DataBuffer.Reader.ReadAllAsync(token))
+                await foreach (var receivedData in _dataBuffer.Reader.ReadAllAsync(token))
                 {
                     if (receivedData == null) { continue; }
 
@@ -547,9 +546,9 @@ namespace CookedRabbit.Core
 
             try
             {
-                while (await DataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (await _dataBuffer.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    while (DataBuffer.Reader.TryRead(out var receivedData))
+                    while (_dataBuffer.Reader.TryRead(out var receivedData))
                     {
                         if (receivedData == null) { continue; }
 
@@ -611,7 +610,8 @@ namespace CookedRabbit.Core
                     _conLock.Dispose();
                 }
 
-                DataBuffer = null;
+                _dataBuffer = null;
+                _chanHost = null;
                 _disposedValue = true;
             }
         }
