@@ -27,8 +27,8 @@ namespace CookedRabbit.Core.ConsumerPipelineMicroservice
         public static async Task Main()
         {
             var microservice = new ConsumerPipelineMicroservice();
-            await Console.Out.WriteLineAsync("About to run a ConsumerPipelineMicroservice demo... press a key to continue!").ConfigureAwait(false);
-            await Console.In.ReadLineAsync().ConfigureAwait(false); // memory snapshot baseline
+            await Console.Out.WriteLineAsync("Run a ConsumerPipelineMicroservice demo... press any key to continue!").ConfigureAwait(false);
+            Console.ReadKey(); // memory snapshot baseline
 
             await microservice
                 .StartAsync()
@@ -44,15 +44,15 @@ namespace CookedRabbit.Core.ConsumerPipelineMicroservice
             var rate = GlobalCount / (Stopwatch.ElapsedMilliseconds / 1.0) * 1000.0;
             await Console.Out.WriteLineAsync($"Rate: {rate} msg/s.").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Rate: {rate * 3} functions/s.").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("\r\nClient Finished! Press key to start shutdown!").ConfigureAwait(false);
-            await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
+            await Console.Out.WriteLineAsync("\r\nClient Finished! Press any key to start the shutdown!").ConfigureAwait(false);
+            Console.ReadKey(); // checking for memory leak (snapshots)
 
             await microservice
                 .ShutdownAsync()
                 .ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync("\r\nAll finished cleanup! Press any key to exti...").ConfigureAwait(false);
-            await Console.In.ReadLineAsync().ConfigureAwait(false); // checking for memory leak (snapshots)
+            await Console.Out.WriteLineAsync("\r\nAll finished cleanup! Press any key to exit...").ConfigureAwait(false);
+            Console.ReadKey(); // checking for memory leak (snapshots)
         }
     }
 
