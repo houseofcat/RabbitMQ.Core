@@ -14,7 +14,7 @@ namespace CookedRabbit.Core.ConsumerPipelineMicroservice
         public static Stopwatch Stopwatch;
         public static LogLevel LogLevel = LogLevel.Information;
         public static long GlobalCount = 10000;
-        public static bool EnsureOrdered = true; // use with simulate IO delay to determine if ensuring order is causing delays
+        public static bool EnsureOrdered = false; // use with simulate IO delay to determine if ensuring order is causing delays
         public static bool SimulateIODelay = false;
         public static int MinIODelay = 50;
         public static int MaxIODelay = 100;
@@ -27,7 +27,7 @@ namespace CookedRabbit.Core.ConsumerPipelineMicroservice
         public static async Task Main()
         {
             var microservice = new ConsumerPipelineMicroservice();
-            await Console.Out.WriteLineAsync("About to run Client... press a key to continue!").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("About to run a ConsumerPipelineMicroservice demo... press a key to continue!").ConfigureAwait(false);
             await Console.In.ReadLineAsync().ConfigureAwait(false); // memory snapshot baseline
 
             await microservice
@@ -36,6 +36,7 @@ namespace CookedRabbit.Core.ConsumerPipelineMicroservice
 
             await Console.Out.WriteLineAsync("\r\nStatistics!").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"MaxDoP: {MaxDoP}, Ensure Ordered: {EnsureOrdered}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"SimulateIODelay: {SimulateIODelay}, MinIODelay: {MinIODelay}ms, MaxIODelay: {MaxIODelay}ms").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"AwaitShutdown: {AwaitShutdown}, LogOutcome: {LogOutcome}").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"UseStreamPipeline: {UseStreamPipeline}").ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Finished processing {GlobalCount} messages (Steps: {GlobalCount * 3}) in {Stopwatch.ElapsedMilliseconds} milliseconds.").ConfigureAwait(false);
