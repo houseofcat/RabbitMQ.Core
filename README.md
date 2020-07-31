@@ -5,8 +5,25 @@
 Moving all my re-usable work to a set of NuGets/Libraries to better manage library development and releases. Sorry for the inconvenience but I just need a little consolidation to managed things. Proper organization/domain isolation will allow for more effective library writing, testing, re-usability.  
 https://github.com/houseofcat/Library
  
-# DEPRECATED - Replaced with HouseofCat.RabbitMQ.Client
-### RabbitMQ.Core.Client NetCore 
+# RABBITMQ.CORE DEPRECATED  
+Replaced by:
+* HouseofCat.RabbitMQ.Client  
+
+# COOKEDRABBIT.CORE DEPRECATED
+Replaced by several nuget packages below! Enjoy!
+ * HouseofCat.RabbitMQ
+ * HouseofCat.RabbitMQ.Services
+ * HouseofCat.RabbitMQ.Pipelines
+ * HouseofCat.Workflows
+ * HouseofCat.Workflows.Pipelines
+ * HouseofCat.Compression
+ * HouseofCat.Encryption
+ * HouseofCat.Extensions
+ * HouseofCat.Utilities
+
+Namespace migration will be from `CookedRabbit.Core` to `HouseofCat.XXXX`. Also note, 4.0.0 is now cancelled in favor of HouseofCat.RabbitMQ v1.0.0 as soon as I finish cleaning it up.
+
+### Old RabbitMQ.Core.Client NetCore 
 [![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)  
 [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/) 
 
@@ -18,18 +35,7 @@ v1.0.610 - Current development based on v6.1.0 official client (NetStandard 2.1 
  
  * RabbitMQ.Core.Client [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/v6.0.0)  
 
-# DEPRECATED - Broken into several nuget packages.
- * HouseofCat.RabbitMQ
- * HouseofCat.RabbitMQ.Services
- * HouseofCat.RabbitMQ.Pipelines
- * HouseofCat.Workflows
- * HouseofCat.Workflows.Pipelines
- * HouseofCat.Compression
- * HouseofCat.Encryption
- * HouseofCat.Extensions
- * HouseofCat.Utilities
-
-### CookedRabbit.Core NetCore
+### Old CookedRabbit.Core NetCore
 ![.NET Core](https://github.com/houseofcat/RabbitMQ.Core/workflows/CookedRabbitBuild/badge.svg?branch=master)  
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/becca6e3d3c0474891007fc83d33a2e3)](https://app.codacy.com/manual/cat_3/RabbitMQ.Core?utm_source=github.com&utm_medium=referral&utm_content=houseofcat/RabbitMQ.Core&utm_campaign=Badge_Grade_Dashboard)  
 [![NuGet](https://img.shields.io/nuget/dt/CookedRabbit.Core.svg)](https://www.nuget.org/packages/CookedRabbit.Core/)   
