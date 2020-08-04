@@ -17,7 +17,7 @@ namespace CookedRabbit.Core
         string ContentType { get; }
         byte[] Data { get; }
         ulong DeliveryTag { get; }
-        Letter Letter { get; }
+        Letter Letter { get; set; }
         IBasicProperties Properties { get; }
 
         bool AckMessage();
@@ -40,7 +40,7 @@ namespace CookedRabbit.Core
         public IModel Channel { get; set; }
         public ulong DeliveryTag { get; }
         public byte[] Data { get; private set; }
-        public Letter Letter { get; protected set; }
+        public Letter Letter { get; set; }
         public string ContentType { get; private set; }
 
         private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
