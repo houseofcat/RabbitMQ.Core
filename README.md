@@ -23,6 +23,8 @@ Replaced by several nuget packages below! Enjoy!
 
 Namespace migration will be from `CookedRabbit.Core` to `HouseofCat.XXXX`. Also note, 4.0.0 is now cancelled in favor of HouseofCat.RabbitMQ v1.0.0 as soon as I finish cleaning it up.
 
+## I will be maintaining and hotfixing CookedRabbit.Core 3.3.x though so don't fear!!!
+
 ### Old RabbitMQ.Core.Client NetCore 
 [![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)  
 [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/) 
