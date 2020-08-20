@@ -43,7 +43,7 @@ namespace CookedRabbit.Core.Benchmark
             for (int i = 0; i < x; i++)
             {
                 var connection = ConnectionPool
-                    .CreateConnection();
+                    .CreateConnection("Test");
 
                 connection.Close();
             }

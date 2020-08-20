@@ -19,20 +19,19 @@ namespace CookedRabbit.Core.Tests
         public AutoPublisherConsumerTests(ITestOutputHelper output)
         {
             this.output = output;
-            config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
+            config = ConfigReader.ConfigFileReadAsync("Config.json").GetAwaiter().GetResult();
 
             var channelPool = new ChannelPool(config);
             topologer = new Topologer(channelPool);
             topologer.InitializeAsync().GetAwaiter().GetResult();
 
             autoPublisher = new AutoPublisher(channelPool);
-            consumer = new Consumer(channelPool, "TestAutoPublisherConsumerName");
+            consumer = new Consumer(channelPool, "ConsumerFromConfig");
         }
 
         [Fact]
         public async Task AutoPublishAndConsume()
         {
-            await topologer.CreateQueueAsync("TestAutoPublisherConsumerQueue").ConfigureAwait(false);
             await autoPublisher.StartAsync().ConfigureAwait(false);
 
             const ulong count = 10000;

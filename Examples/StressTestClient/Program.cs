@@ -208,17 +208,18 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
             var sw = Stopwatch.StartNew();
             try
             {
-                while (messageCount + errorCount < count) // TODO: Possible Infinite loop on lost messages.
+                while (await consumer.GetConsumerBuffer().WaitToReadAsync()) // TODO: Possible Infinite loop on lost messages.
                 {
-                    await foreach (var message in consumer.StreamOutUntilEmptyAsync())
+                    while (consumer.GetConsumerBuffer().TryRead(out var message))
                     {
                         if (message.Ackable)
                         { message.AckMessage(); }
 
-                        //await Task.Delay(1).ConfigureAwait(false);
-
                         messageCount++;
                     }
+
+                    if (messageCount + errorCount >= count)
+                    { break; }
                 }
             }
             catch

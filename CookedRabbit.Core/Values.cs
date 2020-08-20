@@ -99,6 +99,7 @@ namespace CookedRabbit.Core
         public static class Consumer
         {
             public readonly static string StartingConsumer = "Consumer ({0}) starting...";
+            public readonly static string StartingConsumerFailed = "Consumer ({0}) failed.";
             public readonly static string StartedConsumer = "Consumer ({0}) started.";
             public readonly static string StartingConsumerLoop = "Consumer ({0}) startup loop executing...";
             public readonly static string Started = "Consumer ({0}) started.";

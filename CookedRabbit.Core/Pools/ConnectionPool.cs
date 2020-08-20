@@ -16,7 +16,7 @@ namespace CookedRabbit.Core.Pools
         bool Shutdown { get; }
 
 
-        IConnection CreateConnection();
+        IConnection CreateConnection(string connectionName);
         ValueTask<IConnectionHost> GetConnectionAsync();
         Task InitializeAsync();
         Task ShutdownAsync();
@@ -75,7 +75,7 @@ namespace CookedRabbit.Core.Pools
             return cf;
         }
 
-        public IConnection CreateConnection() => _connectionFactory.CreateConnection();
+        public IConnection CreateConnection(string connectionName) => _connectionFactory.CreateConnection(connectionName);
 
         public async Task InitializeAsync()
         {
@@ -109,7 +109,7 @@ namespace CookedRabbit.Core.Pools
                 var connectionName = $"{Config.PoolSettings.ConnectionPoolName}:{i}";
                 try
                 {
-                    var connection = _connectionFactory.CreateConnection();
+                    var connection = CreateConnection(connectionName);
                     await _connections
                         .Writer
                         .WriteAsync(new ConnectionHost(_currentConnectionId++, connection));

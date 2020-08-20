@@ -143,13 +143,13 @@ namespace CookedRabbit.Core
 
             try
             {
-                DataBuffer.Writer.Complete();
+                DataBuffer?.Writer.Complete();
 
                 if (immediate)
                 {
                     ConsumingChannelHost.Close();
                 }
-                else
+                else if (DataBuffer != null)
                 {
                     await DataBuffer
                         .Reader
@@ -158,6 +158,7 @@ namespace CookedRabbit.Core
                 }
 
                 Shutdown = true;
+
             }
             finally { _conLock.Release(); }
 
@@ -168,60 +169,74 @@ namespace CookedRabbit.Core
 
         private async Task<bool> StartConsumingAsync()
         {
-            if (Shutdown)
-            { return false; }
+            if (Shutdown) { return false; }
 
             _logger.LogInformation(
                 LogMessages.Consumer.StartingConsumer,
                 ConsumerSettings.ConsumerName);
 
-            await SetChannelHostAsync()
-                .ConfigureAwait(false);
-
-            if (ConsumingChannelHost == null) { return false; }
-
-            if (Config.FactorySettings.EnableDispatchConsumersAsync)
+            try
             {
-                var consumer = CreateAsyncConsumer();
-                if (consumer == null) { return false; }
+                await SetChannelHostAsync()
+                    .ConfigureAwait(false);
 
-                ConsumingChannelHost
-                    .Channel
-                    .BasicConsume(
-                        ConsumerSettings.QueueName,
-                        ConsumerSettings.AutoAck ?? false,
-                        ConsumerSettings.ConsumerName,
-                        ConsumerSettings.NoLocal ?? false,
-                        ConsumerSettings.Exclusive ?? false,
-                        null,
-                        consumer);
+                if (ConsumingChannelHost == null) { return false; }
+
+                if (Config.FactorySettings.EnableDispatchConsumersAsync)
+                {
+                    var consumer = CreateAsyncConsumer();
+                    if (consumer == null) { return false; }
+
+                    ConsumingChannelHost
+                        .Channel
+                        .BasicConsume(
+                            ConsumerSettings.QueueName,
+                            ConsumerSettings.AutoAck ?? false,
+                            ConsumerSettings.ConsumerName,
+                            ConsumerSettings.NoLocal ?? false,
+                            ConsumerSettings.Exclusive ?? false,
+                            null,
+                            consumer);
+                }
+                else
+                {
+                    var consumer = CreateConsumer();
+                    if (consumer == null) { return false; }
+
+                    ConsumingChannelHost
+                        .Channel
+                        .BasicConsume(
+                            ConsumerSettings.QueueName,
+                            ConsumerSettings.AutoAck ?? false,
+                            ConsumerSettings.ConsumerName,
+                            ConsumerSettings.NoLocal ?? false,
+                            ConsumerSettings.Exclusive ?? false,
+                            null,
+                            consumer);
+                }
+
+                _logger.LogInformation(
+                    LogMessages.Consumer.StartedConsumer,
+                    ConsumerSettings.ConsumerName);
             }
-            else
+            catch(Exception ex)
             {
-                var consumer = CreateConsumer();
-                if (consumer == null) { return false; }
-
-                ConsumingChannelHost
-                    .Channel
-                    .BasicConsume(
-                        ConsumerSettings.QueueName,
-                        ConsumerSettings.AutoAck ?? false,
-                        ConsumerSettings.ConsumerName,
-                        ConsumerSettings.NoLocal ?? false,
-                        ConsumerSettings.Exclusive ?? false,
-                        null,
-                        consumer);
+                _logger.LogError(ex, LogMessages.Consumer.StartingConsumerFailed, ConsumerSettings.ConsumerName);
+                return false;
             }
-
-            _logger.LogInformation(
-                LogMessages.Consumer.StartedConsumer,
-                ConsumerSettings.ConsumerName);
 
             return true;
         }
 
         private async Task SetChannelHostAsync()
         {
+            if (ConsumingChannelHost != null && !(ConsumerSettings.UseTransientChannels ?? true)) // Return Non-Transient Channels
+            {
+                await ChannelPool
+                    .ReturnChannelAsync(ConsumingChannelHost, !Shutdown)
+                    .ConfigureAwait(false);
+            }
+
             try
             {
                 if (ConsumerSettings.UseTransientChannels ?? true)
@@ -251,7 +266,7 @@ namespace CookedRabbit.Core
 
             if (ConsumingChannelHost != null)
             {
-                _logger.LogDebug(
+                _logger.LogInformation(
                     LogMessages.Consumer.ChannelEstablished,
                     ConsumerSettings.ConsumerName,
                     ConsumingChannelHost?.ChannelId ?? 0ul);
@@ -302,16 +317,6 @@ namespace CookedRabbit.Core
             }
         }
 
-        private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
-        {
-            if (!Shutdown)
-            {
-                bool success;
-                do { success = await StartConsumingAsync().ConfigureAwait(false); }
-                while (!success);
-            }
-        }
-
         private AsyncEventingBasicConsumer CreateAsyncConsumer()
         {
             AsyncEventingBasicConsumer consumer = null;
@@ -349,6 +354,24 @@ namespace CookedRabbit.Core
             }
         }
 
+        private async void ConsumerShutdown(object sender, ShutdownEventArgs e)
+        {
+            if (!Shutdown)
+            {
+                bool success;
+                do
+                {
+                    _logger.LogWarning(
+                        LogMessages.Consumer.ConsumerShutdownEvent,
+                        ConsumerSettings.ConsumerName);
+
+                    success = await StartConsumingAsync().ConfigureAwait(false);
+                    if (Shutdown) { return; } // race condition prevention
+                }
+                while (!success);
+            }
+        }
+
         private async Task ConsumerShutdownAsync(object sender, ShutdownEventArgs e)
         {
             if (!Shutdown)
@@ -361,6 +384,7 @@ namespace CookedRabbit.Core
                         ConsumerSettings.ConsumerName);
 
                     success = await StartConsumingAsync().ConfigureAwait(false);
+                    if (Shutdown) { return; } // race condition prevention
                 }
                 while (!success);
             }
