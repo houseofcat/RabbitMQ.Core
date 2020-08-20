@@ -747,7 +747,7 @@ namespace CookedRabbit.Core.WorkEngines
                 if (ex != null) // No Steps are Faulted... Hooray!
                 { _logger.LogCritical(ex, LogMessages.Pipeline.Faulted, _pipelineName); }
                 else
-                { _logger.LogDebug(LogMessages.Pipeline.Healthy, _pipelineName); }
+                { _logger.LogInformation(LogMessages.Pipeline.Healthy, _pipelineName); }
             }
         }
     }
