@@ -3,7 +3,7 @@
  
 # NOTICE
 Moving all my re-usable work to a set of NuGets/Libraries to better manage library development and releases. Sorry for the inconvenience but I just need a little consolidation to help me manage things easier. Proper organization/domain isolation will allow for more effective library writing, testing, re-usability.  
-https://github.com/houseofcat/Library
+https://github.com/houseofcat/Tesseract
  
 # RABBITMQ.CORE DEPRECATED  
 Replaced by:
