@@ -15,6 +15,7 @@ namespace CookedRabbit.Core
         public Dictionary<string, string> TargetQueues { get; set; } = new Dictionary<string, string>();
 
         public string ErrorQueueName => $"{QueueName}.{ErrorSuffix ?? "Error"}";
+        public string AltQueueName => $"{QueueName}.{AltSuffix ?? "Alt"}";
 
         public ConsumerPipelineOptions ConsumerPipelineSettings { get; set; }
     }
