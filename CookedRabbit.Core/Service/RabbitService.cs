@@ -231,10 +231,6 @@ namespace CookedRabbit.Core.Service
                         globalOverrides.ErrorSuffix
                         ?? consumerSetting.Value.ErrorSuffix;
 
-                    consumerSetting.Value.AltSuffix =
-                        globalOverrides.AltSuffix
-                        ?? consumerSetting.Value.AltSuffix;
-
                     consumerSetting.Value.BehaviorWhenFull =
                         globalOverrides.BehaviorWhenFull
                         ?? consumerSetting.Value.BehaviorWhenFull;
@@ -285,14 +281,14 @@ namespace CookedRabbit.Core.Service
                     await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
                 }
 
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName).ConfigureAwait(false);
+                }
+
                 if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
                 {
                     await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName).ConfigureAwait(false);
                 }
             }
         }
