@@ -9,6 +9,7 @@ namespace CookedRabbit.Core
     /// </summary>
     public class GlobalConsumerOptions
     {
+        public int ConsumerCount { get; set; } = 1;
         public bool? NoLocal { get; set; }
         public bool? Exclusive { get; set; }
         public ushort? BatchSize { get; set; } = 5;
@@ -16,7 +17,6 @@ namespace CookedRabbit.Core
         public bool? UseTransientChannels { get; set; } = true;
 
         public string ErrorSuffix { get; set; }
-        public string AltSuffix { get; set; }
 
         public BoundedChannelFullMode? BehaviorWhenFull { get; set; } = BoundedChannelFullMode.Wait;
         public int? SleepOnIdleInterval { get; set; } = 1000;
