@@ -3,7 +3,6 @@ using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
@@ -281,17 +280,17 @@ namespace CookedRabbit.Core.Service
                     await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
-                {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
-                }
-
                 if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.TargetQueueName))
                 {
                     await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
                 {
                     await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName).ConfigureAwait(false);
                 }
