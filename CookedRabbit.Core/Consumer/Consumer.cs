@@ -93,8 +93,6 @@ namespace CookedRabbit.Core
 
         public async Task StartConsumerAsync(bool autoAck = false, bool useTransientChannel = true)
         {
-            ConsumerSettings = Config.GetConsumerSettings(ConsumerSettings.ConsumerName);
-
             await _conLock
                 .WaitAsync()
                 .ConfigureAwait(false);
