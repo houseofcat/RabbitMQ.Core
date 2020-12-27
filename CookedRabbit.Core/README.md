@@ -11,7 +11,7 @@ https://github.com/houseofcat/CookedRabbit/tree/develop/NetCore/CookedRabbit.Cor
 
  * RabbitMQ Server v3.8.5
  * Erlang 23.0
- * NetCore 3.1 (Primarily) / NET 5.0 (preview 6)
+ * NetCore 3.1 (Primarily) / NET 5.0
  * C# 8.0-9.0 w/ Visual Studio 2019 Enterprise
  
 New Global behaviors are now addable via config. See PipelineClient in examples folder for full details. This will help reduce config clutter with consumers all sharing the same behavior/settings.  

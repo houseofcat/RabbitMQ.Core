@@ -1,5 +1,5 @@
 # RabbitMQ.Core  
- The Unofficial Port of the Official RabbitMQ DotNet Client to pure NetCore 3.x  
+No longer in use.
  
 ### RabbitMQ.Core.Client NetCore 
 [![NuGet](https://img.shields.io/nuget/dt/RabbitMQ.Core.Client.svg)](https://www.nuget.org/packages/RabbitMQ.Core.Client/)  
@@ -23,8 +23,8 @@ v1.x.x - Legacy development with only official RabbitMQ.Client - hotfix only.
 v2.0.x - Modern development based on RabbitMQ.Core.Client v5.1.2 - all new work (NetCore 2.2-3.1).   
 v2.6.x - Modern development based on RabbitMQ.Core.Client v6.0.0 - all new work (NetCore 3.1).   
 v3.0.0-v3.2.1 - Major library overhaul to pipelines and Consumer consolidation and a lot of cleanup.  
-v3.3.0+ - Removing legacy/older consumers. NET5.0 support begins.  
-v4.x.x - Rewrite connectivity to mirror improvements made in TurboCookedRabbitv2.  
+v3.3.0+ - Removing legacy/older consumers. NET5.0 support begins.
+v3.4.0+ - Official Net5.0 + back on the official Pivot RabbitMQ.Client.
 
  * CookedRabbit.Core [Readme](https://github.com/houseofcat/RabbitMQ.Core/tree/master/CookedRabbit.Core)  
 
