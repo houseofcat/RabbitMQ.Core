@@ -8,6 +8,7 @@ namespace CookedRabbit.Core
     /// </summary>
     public class GlobalConsumerOptions
     {
+        public int ConsumerCount { get; set; } = 1;
         public bool? NoLocal { get; set; }
         public bool? Exclusive { get; set; }
         public ushort? BatchSize { get; set; } = 5;

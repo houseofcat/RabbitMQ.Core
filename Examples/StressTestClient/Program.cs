@@ -226,8 +226,6 @@ namespace CookedRabbit.Core.StressAndStabilityConsole
                         if (message.Ackable)
                         { message.AckMessage(); }
 
-                        //await Task.Delay(1).ConfigureAwait(false);
-
                         messageCount++;
                     }
 

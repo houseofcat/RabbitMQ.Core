@@ -1,4 +1,5 @@
 using CookedRabbit.Core.Utils;
+using Org.BouncyCastle.Crypto;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -16,12 +17,13 @@ namespace CookedRabbit.Core
         string ContentType { get; }
         byte[] Data { get; }
         ulong DeliveryTag { get; }
-        Letter Letter { get; }
+        Letter Letter { get; set; }
         IBasicProperties Properties { get; }
 
         bool AckMessage();
         void Complete();
         Task<bool> Completion();
+        void Dispose();
         Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false);
         Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false);
         Task<TResult> GetTypeFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null);
@@ -31,22 +33,21 @@ namespace CookedRabbit.Core
         bool RejectMessage(bool requeue);
     }
 
-    public class ReceivedData : IReceivedData, IDisposable
+    public class ReceivedData : IDisposable, IReceivedData
     {
         public IBasicProperties Properties { get; }
         public bool Ackable { get; }
         public IModel Channel { get; set; }
         public ulong DeliveryTag { get; }
         public byte[] Data { get; private set; }
-        public Letter Letter { get; private set; }
+        public Letter Letter { get; set; }
         public string ContentType { get; private set; }
 
         private TaskCompletionSource<bool> CompletionSource { get; } = new TaskCompletionSource<bool>();
 
-        private readonly ReadOnlyMemory<byte> _hashKey;
+        private ReadOnlyMemory<byte> _hashKey;
         private bool _decrypted;
         private bool _decompressed;
-        private bool disposedValue;
 
         public ReceivedData(
             IModel channel,
@@ -82,13 +83,13 @@ namespace CookedRabbit.Core
 
         public void ReadHeaders()
         {
-            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Utils.Constants.HeaderForObjectType))
+            if (Properties?.Headers != null && Properties.Headers.ContainsKey(Constants.HeaderForObjectType))
             {
-                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Utils.Constants.HeaderForObjectType]);
+                ContentType = Encoding.UTF8.GetString((byte[])Properties.Headers[Constants.HeaderForObjectType]);
             }
             else
             {
-                ContentType = Utils.Constants.HeaderValueForUnknown;
+                ContentType = Constants.HeaderValueForUnknown;
             }
         }
 
@@ -152,6 +153,7 @@ namespace CookedRabbit.Core
             return success;
         }
 
+
         /// <summary>
         /// Use this method to retrieve the internal buffer as byte[]. Decomcrypts only apply to non-Letter data.
         /// <para>Combine this with AMQP header X-CR-OBJECTTYPE to get message wrapper payloads.</para>
@@ -159,20 +161,21 @@ namespace CookedRabbit.Core
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
         /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
+        /// <returns></returns>
         public async Task<ReadOnlyMemory<byte>> GetBodyAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
             {
-                case Utils.Constants.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync().ConfigureAwait(false);
+                    await CreateLetterFromDataAsync();
 
                     return Letter.Body;
 
-                case Utils.Constants.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
-                    await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
+                    await DecomcryptDataAsync(decrypt, decompress);
 
                     return Data;
             }
@@ -185,20 +188,21 @@ namespace CookedRabbit.Core
         /// <para>Header Example: ("X-CR-OBJECTTYPE", "MESSAGE")</para>
         /// <em>Note: Always decomrypts Letter bodies to get type regardless of parameters.</em>
         /// </summary>
+        /// <returns></returns>
         public async Task<string> GetBodyAsUtf8StringAsync(bool decrypt = false, bool decompress = false)
         {
             switch (ContentType)
             {
-                case Utils.Constants.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync().ConfigureAwait(false);
+                    await CreateLetterFromDataAsync();
 
                     return Encoding.UTF8.GetString(Letter.Body);
 
-                case Utils.Constants.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
-                    await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
+                    await DecomcryptDataAsync(decrypt, decompress);
 
                     return Encoding.UTF8.GetString(Data);
             }
@@ -215,27 +219,28 @@ namespace CookedRabbit.Core
         /// <param name="decrypt"></param>
         /// <param name="decompress"></param>
         /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
         public async Task<TResult> GetTypeFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null)
         {
             switch (ContentType)
             {
-                case Utils.Constants.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync().ConfigureAwait(false);
+                    await CreateLetterFromDataAsync();
 
                     return JsonSerializer.Deserialize<TResult>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Utils.Constants.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJson(Data))
                     {
-                        await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
+                        await DecomcryptDataAsync(decrypt, decompress);
 
                         return JsonSerializer.Deserialize<TResult>(Data.AsSpan(), jsonSerializerOptions);
                     }
                     else
-                    { return default; }
+                    { return default(TResult); }
             }
         }
 
@@ -250,27 +255,29 @@ namespace CookedRabbit.Core
         /// <param name="decrypt"></param>
         /// <param name="decompress"></param>
         /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
         public async Task<IEnumerable<TResult>> GetTypesFromJsonAsync<TResult>(bool decrypt = false, bool decompress = false, JsonSerializerOptions jsonSerializerOptions = null)
         {
             switch (ContentType)
             {
-                case Utils.Constants.HeaderValueForLetter:
+                case Constants.HeaderValueForLetter:
 
-                    await CreateLetterFromDataAsync().ConfigureAwait(false);
+                    await CreateLetterFromDataAsync();
 
                     return JsonSerializer.Deserialize<List<TResult>>(Letter.Body.AsSpan(), jsonSerializerOptions);
 
-                case Utils.Constants.HeaderValueForMessage:
+                case Constants.HeaderValueForMessage:
                 default:
 
                     if (Bytes.IsJsonArray(Data))
                     {
-                        await DecomcryptDataAsync(decrypt, decompress).ConfigureAwait(false);
+                        await DecomcryptDataAsync(decrypt, decompress);
 
                         return JsonSerializer.Deserialize<List<TResult>>(Data, jsonSerializerOptions);
                     }
                     else
                     { return default(List<TResult>); }
+
             }
         }
 
@@ -324,27 +331,12 @@ namespace CookedRabbit.Core
         /// </summary>
         public Task<bool> Completion() => CompletionSource.Task;
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    CompletionSource.Task.Dispose();
-                }
-
-                if (Channel != null) { Channel = null; }
-                if (Letter != null) { Letter = null; }
-
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (Channel != null) { Channel = null; }
+            if (Letter != null) { Letter = null; }
+
+            CompletionSource.Task.Dispose();
         }
     }
 }

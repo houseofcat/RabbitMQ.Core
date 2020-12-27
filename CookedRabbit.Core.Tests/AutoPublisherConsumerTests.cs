@@ -8,36 +8,36 @@ using static CookedRabbit.Core.Utils.RandomData;
 
 namespace CookedRabbit.Core.Tests
 {
-    public class PublisherConsumerTests
+    public class AutoPublisherConsumerTests
     {
         private readonly ITestOutputHelper output;
         private readonly Config config;
         private readonly Topologer topologer;
-        private readonly Publisher publisher;
+        private readonly AutoPublisher autoPublisher;
         private readonly Consumer consumer;
 
-        public PublisherConsumerTests(ITestOutputHelper output)
+        public AutoPublisherConsumerTests(ITestOutputHelper output)
         {
             this.output = output;
-            config = ConfigReader.ConfigFileReadAsync("TestConfig.json").GetAwaiter().GetResult();
+            config = ConfigReader.ConfigFileReadAsync("Config.json").GetAwaiter().GetResult();
 
             var channelPool = new ChannelPool(config);
             topologer = new Topologer(channelPool);
+            topologer.InitializeAsync().GetAwaiter().GetResult();
 
-            publisher = new Publisher(channelPool, new byte[] { });
-            consumer = new Consumer(channelPool, "TestAutoPublisherConsumerName");
+            autoPublisher = new AutoPublisher(channelPool);
+            consumer = new Consumer(channelPool, "ConsumerFromConfig");
         }
 
         [Fact]
         public async Task AutoPublishAndConsume()
         {
-            await topologer.CreateQueueAsync("TestAutoPublisherConsumerQueue").ConfigureAwait(false);
-            await publisher.StartAutoPublishAsync().ConfigureAwait(false);
+            await autoPublisher.StartAsync().ConfigureAwait(false);
 
             const ulong count = 10000;
 
-            var processReceiptsTask = ProcessReceiptsAsync(publisher, count);
-            var publishLettersTask = PublishLettersAsync(publisher, count);
+            var processReceiptsTask = ProcessReceiptsAsync(autoPublisher, count);
+            var publishLettersTask = PublishLettersAsync(autoPublisher, count);
             var consumeMessagesTask = ConsumeMessagesAsync(consumer, count);
 
             while (!publishLettersTask.IsCompleted)
@@ -46,7 +46,7 @@ namespace CookedRabbit.Core.Tests
             while (!processReceiptsTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
 
-            await publisher.StopAutoPublishAsync().ConfigureAwait(false);
+            await autoPublisher.StopAsync().ConfigureAwait(false);
 
             while (!consumeMessagesTask.IsCompleted)
             { await Task.Delay(1).ConfigureAwait(false); }
@@ -60,7 +60,7 @@ namespace CookedRabbit.Core.Tests
             await topologer.DeleteQueueAsync("TestAutoPublisherConsumerQueue").ConfigureAwait(false);
         }
 
-        private async Task PublishLettersAsync(Publisher apub, ulong count)
+        private async Task PublishLettersAsync(AutoPublisher apub, ulong count)
         {
             var sw = Stopwatch.StartNew();
             for (ulong i = 0; i < count; i++)
@@ -75,7 +75,7 @@ namespace CookedRabbit.Core.Tests
             output.WriteLine($"Finished queueing all letters in {sw.ElapsedMilliseconds} ms.");
         }
 
-        private async Task<bool> ProcessReceiptsAsync(Publisher apub, ulong count)
+        private async Task<bool> ProcessReceiptsAsync(AutoPublisher apub, ulong count)
         {
             await Task.Yield();
 

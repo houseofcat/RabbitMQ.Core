@@ -1,3 +1,4 @@
+using CookedRabbit.Core.Configs;
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using CookedRabbit.Core.WorkEngines;
@@ -14,10 +15,12 @@ namespace CookedRabbit.Core.Service
 {
     public interface IRabbitService
     {
-        IPublisher Publisher { get; }
+        IAutoPublisher AutoPublisher { get; }
         IChannelPool ChannelPool { get; }
         Config Config { get; }
+        ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; }
         ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; }
+        bool Initialized { get; }
         ITopologer Topologer { get; }
 
         Task ComcryptAsync(Letter letter);
@@ -31,87 +34,133 @@ namespace CookedRabbit.Core.Service
         Task<ReadOnlyMemory<byte>?> GetAsync(string queueName);
         Task<T> GetAsync<T>(string queueName);
         IConsumer<ReceivedData> GetConsumer(string consumerName);
-        IConsumer<ReceivedData> GetConsumerByPipelineName(string consumerPipelineName);
-
+        ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName);
+        ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName);
+        ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName);
+        Task InitializeAsync();
+        Task InitializeAsync(string passphrase, string salt);
         ValueTask ShutdownAsync(bool immediately);
     }
 
-    public class RabbitService : IRabbitService, IDisposable
+    public class RabbitService : IRabbitService
     {
-        private byte[] _hashKey { get; }
+        private byte[] _hashKey { get; set; }
         private readonly SemaphoreSlim _serviceLock = new SemaphoreSlim(1, 1);
-        private bool _disposedValue;
 
+        public bool Initialized { get; private set; }
         public Config Config { get; }
         public IChannelPool ChannelPool { get; }
-        public IPublisher Publisher { get; }
+        public IAutoPublisher AutoPublisher { get; }
         public ITopologer Topologer { get; }
 
-        public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; private set; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
-        private ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineNameToConsumerSetting { get; set; } = new ConcurrentDictionary<string, ConsumerOptions>();
+        public ConcurrentDictionary<string, IConsumer<ReceivedData>> Consumers { get; } = new ConcurrentDictionary<string, IConsumer<ReceivedData>>();
+        public ConcurrentDictionary<string, ConsumerOptions> ConsumerPipelineSettings { get; } = new ConcurrentDictionary<string, ConsumerOptions>();
 
         /// <summary>
         /// Reads config from a provided file name path. Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="fileNamePath"></param>
-        /// <param name="passphrase"></param>
-        /// <param name="salt"></param>
         /// <param name="loggerFactory"></param>
-        /// <param name="processReceiptAsync"></param>
-        public RabbitService(string fileNamePath, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
-            : this(
-                  ConfigReader
-                    .ConfigFileReadAsync(fileNamePath)
-                    .GetAwaiter()
-                    .GetResult(),
-                  passphrase,
-                  salt,
-                  loggerFactory,
-                  processReceiptAsync)
-        { }
+        public RabbitService(string fileNamePath, ILoggerFactory loggerFactory = null)
+        {
+            LogHelper.LoggerFactory = loggerFactory;
+
+            Config = ConfigReader
+                .ConfigFileReadAsync(fileNamePath)
+                .GetAwaiter()
+                .GetResult();
+
+            ChannelPool = new ChannelPool(Config);
+            AutoPublisher = new AutoPublisher(ChannelPool);
+            Topologer = new Topologer(ChannelPool);
+
+            BuildConsumers();
+        }
 
         /// <summary>
         /// Builds out a RabbitService with instantiated dependencies based on config settings.
         /// </summary>
         /// <param name="config"></param>
-        /// <param name="passphrase"></param>
-        /// <param name="salt"></param>
         /// <param name="loggerFactory"></param>
-        /// <param name="processReceiptAsync"></param>
-        public RabbitService(Config config, string passphrase, string salt, ILoggerFactory loggerFactory = null, Func<PublishReceipt, ValueTask> processReceiptAsync = null)
+        public RabbitService(Config config, ILoggerFactory loggerFactory = null)
         {
             LogHelper.LoggerFactory = loggerFactory;
 
             Config = config;
             ChannelPool = new ChannelPool(Config);
-
-            if (!string.IsNullOrWhiteSpace(passphrase))
-            {
-                _hashKey = ArgonHash
-                    .GetHashKeyAsync(passphrase, salt, Utils.Constants.EncryptionKeySize)
-                    .GetAwaiter().GetResult();
-            }
-
-            Publisher = new Publisher(ChannelPool, _hashKey);
+            AutoPublisher = new AutoPublisher(ChannelPool);
             Topologer = new Topologer(ChannelPool);
 
             BuildConsumers();
-
-            StartAsync(processReceiptAsync).GetAwaiter().GetResult();
         }
 
-        private async Task StartAsync(Func<PublishReceipt, ValueTask> processReceiptAsync)
+        /// <summary>
+        /// Use this constructor with DependencyInjection. Config's values are only used for RabbitService-esque settings and for building of Consumers.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="channelPool"></param>
+        /// <param name="autoPublisher"></param>
+        /// <param name="toploger"></param>
+        /// <param name="loggerFactory"></param>
+        public RabbitService(Config config, IChannelPool channelPool, IAutoPublisher autoPublisher, ITopologer toploger, ILoggerFactory loggerFactory = null)
+        {
+            LogHelper.LoggerFactory = loggerFactory;
+
+            Config = config;
+            ChannelPool = channelPool;
+            AutoPublisher = autoPublisher;
+            Topologer = toploger;
+
+            BuildConsumers();
+        }
+
+        public async Task InitializeAsync()
         {
             await _serviceLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                await Publisher
-                    .StartAutoPublishAsync(processReceiptAsync)
-                    .ConfigureAwait(false);
+                if (!Initialized)
+                {
+                    await ChannelPool
+                        .InitializeAsync()
+                        .ConfigureAwait(false);
 
-                await BuildConsumerTopology()
-                    .ConfigureAwait(false);
+                    await AutoPublisher
+                        .StartAsync()
+                        .ConfigureAwait(false);
+
+                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
+                    Initialized = true;
+                }
+            }
+            finally
+            { _serviceLock.Release(); }
+        }
+
+        public async Task InitializeAsync(string passphrase, string salt)
+        {
+            await _serviceLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                if (!Initialized)
+                {
+                    _hashKey = await ArgonHash
+                        .GetHashKeyAsync(passphrase, salt, Constants.EncryptionKeySize)
+                        .ConfigureAwait(false);
+
+                    await ChannelPool
+                        .InitializeAsync()
+                        .ConfigureAwait(false);
+
+                    await AutoPublisher
+                        .StartAsync(_hashKey)
+                        .ConfigureAwait(false);
+
+                    await FinishSettingUpConsumersAsync().ConfigureAwait(false);
+                    Initialized = true;
+                }
             }
             finally
             { _serviceLock.Release(); }
@@ -123,8 +172,8 @@ namespace CookedRabbit.Core.Service
 
             try
             {
-                await Publisher
-                    .StopAutoPublishAsync(immediately)
+                await AutoPublisher
+                    .StopAsync(immediately)
                     .ConfigureAwait(false);
 
                 await StopAllConsumers(immediately)
@@ -153,9 +202,6 @@ namespace CookedRabbit.Core.Service
         {
             foreach (var consumerSetting in Config.ConsumerSettings)
             {
-                // Apply the global consumer settings and global consumer pipeline settings
-                // on top of (overriding) individual consumer settings. Opt out by not setting
-                // the global settings field.
                 if (!string.IsNullOrWhiteSpace(consumerSetting.Value.GlobalSettings)
                     && Config.GlobalConsumerSettings.ContainsKey(consumerSetting.Value.GlobalSettings))
                 {
@@ -189,6 +235,10 @@ namespace CookedRabbit.Core.Service
                         globalOverrides.BehaviorWhenFull
                         ?? consumerSetting.Value.BehaviorWhenFull;
 
+                    consumerSetting.Value.SleepOnIdleInterval =
+                        globalOverrides.SleepOnIdleInterval
+                        ?? consumerSetting.Value.SleepOnIdleInterval;
+
                     if (globalOverrides.GlobalConsumerPipelineSettings != null)
                     {
                         if (consumerSetting.Value.ConsumerPipelineSettings == null)
@@ -210,30 +260,35 @@ namespace CookedRabbit.Core.Service
 
                 if (!string.IsNullOrEmpty(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName))
                 {
-                    ConsumerPipelineNameToConsumerSetting.TryAdd(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName, consumerSetting.Value);
+                    ConsumerPipelineSettings.TryAdd(consumerSetting.Value.ConsumerPipelineSettings.ConsumerPipelineName, consumerSetting.Value);
                 }
                 Consumers.TryAdd(consumerSetting.Value.ConsumerName, new Consumer(ChannelPool, consumerSetting.Value, _hashKey));
             }
         }
 
-        private async Task BuildConsumerTopology()
+        private async Task FinishSettingUpConsumersAsync()
         {
             foreach (var consumer in Consumers)
             {
                 consumer.Value.HashKey = _hashKey;
-                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.QueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.QueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.Options.QueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.ErrorQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.TargetQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.Options.ErrorQueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.Options.TargetQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.Options.TargetQueueName).ConfigureAwait(false);
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
+                {
+                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
                 }
             }
         }
@@ -267,74 +322,105 @@ namespace CookedRabbit.Core.Service
             return Consumers[consumerName];
         }
 
-        public IConsumer<ReceivedData> GetConsumerByPipelineName(string consumerPipelineName)
+        public ConsumerOptions GetConsumerSettingsByPipelineName(string consumerPipelineName)
         {
-            if (!ConsumerPipelineNameToConsumerSetting.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
-            if (!Consumers.ContainsKey(ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName));
-            return Consumers[ConsumerPipelineNameToConsumerSetting[consumerPipelineName].ConsumerName];
+            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
+            return ConsumerPipelineSettings[consumerPipelineName];
+        }
+
+        public ConsumerPipelineOptions GetConsumerPipelineSettingsByName(string consumerPipelineName)
+        {
+            if (!ConsumerPipelineSettings.ContainsKey(consumerPipelineName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerPipelineSettingsMessage, consumerPipelineName));
+            return ConsumerPipelineSettings[consumerPipelineName].ConsumerPipelineSettings;
+        }
+
+        public ConsumerPipelineOptions GetConsumerPipelineSettingsByConsumerName(string consumerName)
+        {
+            if (!Consumers.ContainsKey(consumerName)) throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, ExceptionMessages.NoConsumerSettingsMessage, consumerName));
+            return Consumers[consumerName].ConsumerSettings.ConsumerPipelineSettings;
         }
 
         public async Task DecomcryptAsync(Letter letter)
         {
-            var decrypted = Decrypt(letter);
-
-            if (decrypted)
+            var decryptFailed = false;
+            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
-                await DecompressAsync(letter).ConfigureAwait(false);
+                try
+                {
+                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = false;
+                }
+                catch { decryptFailed = true; }
+            }
+
+            if (!decryptFailed && letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = false;
+                }
+                catch { }
             }
         }
 
         public async Task ComcryptAsync(Letter letter)
         {
-            await CompressAsync(letter).ConfigureAwait(false);
+            if (letter.LetterMetadata.Compressed)
+            {
+                try
+                {
+                    letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
+                    letter.LetterMetadata.Compressed = true;
+                }
+                catch { }
+            }
 
-            Encrypt(letter);
+            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
+            {
+                try
+                {
+                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = true;
+                }
+                catch { }
+            }
         }
 
         public bool Encrypt(Letter letter)
         {
-            if (letter.LetterMetadata.Encrypted || (_hashKey == null && _hashKey.Length == 0))
-            { return false; } // Don't double encrypt.
-
-            try
+            if (!letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
-                letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
-                letter.LetterMetadata.Encrypted = true;
-                letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncrypt] = Utils.Constants.HeaderValueForArgonAesEncrypt;
-                letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForEncryptDate] = Time.GetDateTimeUtcNow();
+                try
+                {
+                    letter.Body = AesEncrypt.Encrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = true;
+                }
+                catch { }
             }
-            catch { return false; }
 
-            return true;
+            return letter.LetterMetadata.Encrypted;
         }
 
-        // Returns Success
         public bool Decrypt(Letter letter)
         {
-            if (!letter.LetterMetadata.Encrypted || (_hashKey == null && _hashKey.Length == 0))
-            { return false; } // Don't decrypt without it being encrypted.
-
-            try
+            if (letter.LetterMetadata.Encrypted && (_hashKey?.Length > 0))
             {
-                letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
-                letter.LetterMetadata.Encrypted = false;
-
-                if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForEncrypt))
-                { letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForEncrypt); }
-
-                if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForEncryptDate))
-                { letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForEncryptDate); }
+                try
+                {
+                    letter.Body = AesEncrypt.Decrypt(letter.Body, _hashKey);
+                    letter.LetterMetadata.Encrypted = false;
+                }
+                catch { }
             }
-            catch { return false; }
 
-            return true;
+            return !letter.LetterMetadata.Encrypted;
         }
 
-        // Returns Success
         public async Task<bool> CompressAsync(Letter letter)
         {
             if (letter.LetterMetadata.Encrypted)
-            { return false; } // Don't compress after encryption.
+            { return false; }
 
             if (!letter.LetterMetadata.Compressed)
             {
@@ -342,19 +428,17 @@ namespace CookedRabbit.Core.Service
                 {
                     letter.Body = await Gzip.CompressAsync(letter.Body).ConfigureAwait(false);
                     letter.LetterMetadata.Compressed = true;
-                    letter.LetterMetadata.CustomFields[Utils.Constants.HeaderForCompress] = Utils.Constants.HeaderValueForGzipCompress;
                 }
-                catch { return false; }
+                catch { }
             }
 
-            return true;
+            return letter.LetterMetadata.Compressed;
         }
 
-        // Returns Success
         public async Task<bool> DecompressAsync(Letter letter)
         {
             if (letter.LetterMetadata.Encrypted)
-            { return false; } // Don't decompress before decryption.
+            { return false; }
 
             if (letter.LetterMetadata.Compressed)
             {
@@ -362,15 +446,11 @@ namespace CookedRabbit.Core.Service
                 {
                     letter.Body = await Gzip.DecompressAsync(letter.Body).ConfigureAwait(false);
                     letter.LetterMetadata.Compressed = false;
-                    if (letter.LetterMetadata.CustomFields.ContainsKey(Utils.Constants.HeaderForCompress))
-                    {
-                        letter.LetterMetadata.CustomFields.Remove(Utils.Constants.HeaderForCompress);
-                    }
                 }
-                catch { return false; }
+                catch { }
             }
 
-            return true;
+            return !letter.LetterMetadata.Compressed;
         }
 
         /// <summary>
@@ -395,7 +475,7 @@ namespace CookedRabbit.Core.Service
             try
             {
                 result = chanHost
-                    .GetChannel()
+                    .Channel
                     .BasicGet(queueName, true);
             }
             catch { error = true; }
@@ -431,7 +511,7 @@ namespace CookedRabbit.Core.Service
             try
             {
                 result = chanHost
-                    .GetChannel()
+                    .Channel
                     .BasicGet(queueName, true);
             }
             catch { error = true; }
@@ -443,28 +523,6 @@ namespace CookedRabbit.Core.Service
             }
 
             return result != null ? JsonSerializer.Deserialize<T>(result.Body.Span) : default;
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    _serviceLock.Dispose();
-                }
-
-                Consumers = null;
-                ConsumerPipelineNameToConsumerSetting = null;
-                _disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }
