@@ -1,0 +1,60 @@
+{
+  "FactorySettings": {
+    "Uri": "amqp://guest:guest@localhost:5672/",
+    "MaxChannelsPerConnection": 100,
+    "HeartbeatInterval": 6,
+    "AutoRecovery": true,
+    "TopologyRecovery": true,
+    "NetRecoveryTimeout": 10,
+    "ContinuationTimeout": 10,
+    "EnableDispatchConsumersAsync": true,
+    "UseBackgroundThreadsForIO": true,
+    "SslSettings": {
+      "EnableSsl": false,
+      "CertServerName": "",
+      "LocalCertPath": "",
+      "LocalCertPassword": "",
+      "ProtocolVersions": 3072
+    }
+  },
+  "PoolSettings": {
+    "ConnectionPoolName": "ServiceName",
+    "MaxConnections": 5,
+    "MaxChannels": 25,
+    "SleepOnErrorInterval": 1000
+  },
+  "PublisherSettings": {
+    "LetterQueueBufferSize": 10000,
+    "PriorityLetterQueueBufferSize": 100,
+    "BehaviorWhenFull": 0,
+    "AutoPublisherSleepInterval": 1000
+  },
+  "LetterConsumerSettings": {
+    "ServiceConsumerName": {
+      "Enabled": true,
+      "ConsumerName": "LetterConsumerName",
+      "QueueName": "LetterQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "LetterQueueTwo",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
+      "BehaviorWhenFull": 0
+    }
+  },
+  "MessageConsumerSettings": {
+    "ServiceConsumerName": {
+      "Enabled": true,
+      "ConsumerName": "MessageConsumerName",
+      "QueueName": "MessageQueue",
+      "ErrorSuffix": "Error",
+      "TargetQueueName": "MessageQueueTwo",
+      "NoLocal": false,
+      "Exclusive": false,
+      "QosPrefetchCount": 5,
+      "MessageBufferSize": 100,
+      "BehaviorWhenFull": 0
+    }
+  }
+}
