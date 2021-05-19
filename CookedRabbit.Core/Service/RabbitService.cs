@@ -273,22 +273,87 @@ namespace CookedRabbit.Core.Service
                 consumer.Value.HashKey = _hashKey;
                 if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.QueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName).ConfigureAwait(false);
+                    if (consumer.Value.ConsumerSettings.QueueArgs == null)
+                    {
+                        await Topologer
+                            .CreateQueueAsync(consumer.Value.ConsumerSettings.QueueName)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Topologer
+                            .CreateQueueAsync(
+                                consumer.Value.ConsumerSettings.QueueName,
+                                true,
+                                false,
+                                false,
+                                consumer.Value.ConsumerSettings.QueueArgs)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.TargetQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName).ConfigureAwait(false);
+                    if (consumer.Value.ConsumerSettings.TargetQueueArgs == null)
+                    {
+                        await Topologer
+                            .CreateQueueAsync(consumer.Value.ConsumerSettings.TargetQueueName)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Topologer
+                            .CreateQueueAsync(
+                                consumer.Value.ConsumerSettings.TargetQueueName,
+                                true,
+                                false,
+                                false,
+                                consumer.Value.ConsumerSettings.TargetQueueArgs)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.AltQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName).ConfigureAwait(false);
+                    if (consumer.Value.ConsumerSettings.AltQueueArgs == null)
+                    {
+                        await Topologer
+                            .CreateQueueAsync(consumer.Value.ConsumerSettings.AltQueueName)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Topologer
+                            .CreateQueueAsync(
+                                consumer.Value.ConsumerSettings.AltQueueName,
+                                true,
+                                false,
+                                false,
+                                consumer.Value.ConsumerSettings.AltQueueArgs)
+                            .ConfigureAwait(false);
+                    }
                 }
 
-                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorSuffix) && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
+                if (!string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorSuffix)
+                    && !string.IsNullOrWhiteSpace(consumer.Value.ConsumerSettings.ErrorQueueName))
                 {
-                    await Topologer.CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName).ConfigureAwait(false);
+                    if (consumer.Value.ConsumerSettings.ErrorQueueArgs == null)
+                    {
+                        await Topologer
+                            .CreateQueueAsync(consumer.Value.ConsumerSettings.ErrorQueueName)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Topologer
+                            .CreateQueueAsync(
+                                consumer.Value.ConsumerSettings.ErrorQueueName,
+                                true,
+                                false,
+                                false,
+                                consumer.Value.ConsumerSettings.ErrorQueueArgs)
+                            .ConfigureAwait(false);
+                    }
                 }
             }
         }

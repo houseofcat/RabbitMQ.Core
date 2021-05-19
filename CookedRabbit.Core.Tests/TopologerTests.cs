@@ -1,6 +1,7 @@
 using CookedRabbit.Core.Pools;
 using CookedRabbit.Core.Utils;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -63,6 +64,27 @@ namespace CookedRabbit.Core.Tests
 
             var top = new Topologer(config);
             var error = await top.CreateQueueAsync("TestQueueTest", false, false, false, null).ConfigureAwait(false);
+            Assert.False(error);
+        }
+
+        [Fact]
+        public async Task CreateQueueWithArgsAsync()
+        {
+            var config = new Config();
+            config.FactorySettings.Uri = new Uri("amqp://guest:guest@localhost:5672/");
+
+            var top = new Topologer(config);
+            await top.InitializeAsync().ConfigureAwait(false);
+
+
+            var args = new Dictionary<string, object>()
+            {
+                { "Test", "Value" }
+            };
+            var error = await top
+                .CreateQueueAsync("TestQueueTest", false, false, false, args)
+                .ConfigureAwait(false);
+
             Assert.False(error);
         }
 
